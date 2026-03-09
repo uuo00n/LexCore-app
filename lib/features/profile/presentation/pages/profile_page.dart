@@ -2,11 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/features/profile/domain/entities/profile_summary.dart';
+import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -21,87 +25,73 @@ class ProfilePage extends ConsumerWidget {
       body: AppMobileCanvas(
         child: SafeArea(
           bottom: false,
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
-                child: AppFadeSlideIn(
-                  delay: const Duration(milliseconds: 20),
-                  beginOffset: const Offset(0, -0.02),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.menu_rounded),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '个人资料',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                      IconButton(
-                        onPressed: () => context.push(RouteNames.settingsPath),
-                        icon: const Icon(Icons.settings_outlined),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-                  children: AppStagger.sections([
-                    _ProfileHero(summary: summary),
-                    const SizedBox(height: 18),
-                    _SubscriptionCard(summary: summary),
-                    const SizedBox(height: 18),
-                    _SectionTitle(text: '账户详情', color: AppColors.primary),
-                    const SizedBox(height: 8),
-                    _SectionGroup(
-                      children: [
-                        for (var i = 0; i < menus.length; i++)
-                          _SectionRow(
-                            title: menus[i].title,
-                            subtitle: _subtitle(menus[i].title),
-                            leading: _iconFrom(menus[i].icon),
-                            onTap: () => context.push(menus[i].route),
-                            showDivider: i != menus.length - 1,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+              final splitLayout =
+                  viewport == AppViewportSize.expanded ||
+                  viewport == AppViewportSize.ultra;
+
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+                    child: AppFadeSlideIn(
+                      delay: const Duration(milliseconds: 20),
+                      beginOffset: const Offset(0, -0.02),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.menu_rounded),
                           ),
-                      ],
+                          Expanded(
+                            child: Text(
+                              '个人资料',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () =>
+                                context.push(RouteNames.settingsPath),
+                            icon: const Icon(Icons.settings_outlined),
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    _SectionTitle(
-                      text: '其他',
-                      color: AppColors.onSurfaceVariant,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+                      child: splitLayout
+                          ? AppAdaptiveSplitView(
+                              splitMinWidth: 980,
+                              secondaryMaxWidth: 420,
+                              primary: ListView(
+                                children: [
+                                  _ProfileHero(summary: summary),
+                                  const SizedBox(height: 18),
+                                  _SubscriptionCard(summary: summary),
+                                ],
+                              ),
+                              secondary: _ProfileMenuPanel(menus: menus),
+                            )
+                          : ListView(
+                              children: AppStagger.sections([
+                                _ProfileHero(summary: summary),
+                                const SizedBox(height: 18),
+                                _SubscriptionCard(summary: summary),
+                                const SizedBox(height: 18),
+                                _ProfileMenuPanel(menus: menus),
+                              ]),
+                            ),
                     ),
-                    const SizedBox(height: 8),
-                    _SectionGroup(
-                      children: [
-                        _SectionRow(
-                          title: '帮助与支持',
-                          subtitle: '常见问题与人工服务',
-                          leading: Icons.help_outline,
-                          onTap: () {},
-                          showDivider: true,
-                        ),
-                        _SectionRow(
-                          title: '退出登录',
-                          subtitle: '',
-                          leading: Icons.logout,
-                          onTap: () {},
-                          titleColor: const Color(0xFFDC2626),
-                          iconColor: const Color(0xFFDC2626),
-                          showChevron: false,
-                        ),
-                      ],
-                    ),
-                  ]),
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -135,6 +125,67 @@ class ProfilePage extends ConsumerWidget {
   }
 }
 
+class _ProfileMenuPanel extends StatelessWidget {
+  const _ProfileMenuPanel({required this.menus});
+
+  final List<ProfileMenuItem> menus;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        _SectionTitle(text: '账户详情', color: AppColors.primary),
+        const SizedBox(height: 8),
+        AppSurfaceCard(
+          padding: EdgeInsets.zero,
+          backgroundColor: const Color(0xFFF8FAFD),
+          child: Column(
+            children: [
+              for (var i = 0; i < menus.length; i++)
+                _SectionRow(
+                  title: menus[i].title,
+                  subtitle: ProfilePage._subtitle(menus[i].title),
+                  leading: ProfilePage._iconFrom(menus[i].icon),
+                  onTap: () => context.push(menus[i].route),
+                  showDivider: i != menus.length - 1,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _SectionTitle(text: '其他', color: AppColors.onSurfaceVariant),
+        const SizedBox(height: 8),
+        AppSurfaceCard(
+          padding: EdgeInsets.zero,
+          backgroundColor: const Color(0xFFF8FAFD),
+          child: Column(
+            children: [
+              _SectionRow(
+                title: '帮助与支持',
+                subtitle: '常见问题与人工服务',
+                leading: Icons.help_outline,
+                onTap: () {},
+                showDivider: true,
+              ),
+              _SectionRow(
+                title: '退出登录',
+                subtitle: '',
+                leading: Icons.logout,
+                onTap: () {},
+                titleColor: const Color(0xFFDC2626),
+                iconColor: const Color(0xFFDC2626),
+                showChevron: false,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ProfileHero extends StatelessWidget {
   const _ProfileHero({required this.summary});
 
@@ -159,9 +210,9 @@ class _ProfileHero extends StatelessWidget {
                   ),
                 ),
                 child: Container(
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFFF3F5F9),
+                    color: Color(0xFFF3F5F9),
                   ),
                   child: const Icon(
                     Icons.person,
@@ -229,15 +280,7 @@ class _SubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.7),
-        ),
-      ),
+    return AppSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -345,23 +388,6 @@ class _SectionTitle extends StatelessWidget {
         fontWeight: FontWeight.w800,
         letterSpacing: 0.8,
       ),
-    );
-  }
-}
-
-class _SectionGroup extends StatelessWidget {
-  const _SectionGroup({required this.children});
-
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFD),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(children: children),
     );
   }
 }

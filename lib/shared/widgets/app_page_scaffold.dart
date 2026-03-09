@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:lexcore/app/adaptive/app_adaptive_frame.dart';
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
 
@@ -23,6 +25,14 @@ class AppPageScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final viewport = context.viewportSize;
+    final horizontalPadding = switch (viewport) {
+      AppViewportSize.compact => AppSpacing.md,
+      AppViewportSize.medium => 20.0,
+      AppViewportSize.expanded => 24.0,
+      AppViewportSize.ultra => 28.0,
+    };
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -31,12 +41,12 @@ class AppPageScaffold extends StatelessWidget {
         automaticallyImplyLeading: showBackButton,
         actions: actions,
       ),
-      body: AppMobileCanvas(
+      body: AppAdaptiveFrame(
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
               vertical: AppSpacing.sm,
             ),
             child: AppFadeSlideIn(
@@ -49,7 +59,9 @@ class AppPageScaffold extends StatelessWidget {
       ),
       bottomNavigationBar: bottomNavigationBar == null
           ? null
-          : AppMobileCanvas(child: bottomNavigationBar!),
+          : AppAdaptiveFrame(
+              child: AppMobileCanvas(child: bottomNavigationBar!),
+            ),
     );
   }
 }

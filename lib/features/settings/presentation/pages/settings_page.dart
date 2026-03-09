@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/settings/application/settings_controller.dart';
+import 'package:lexcore/features/settings/domain/entities/settings_state.dart';
+import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -20,8 +25,80 @@ class SettingsPage extends ConsumerWidget {
       actions: [
         IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
       ],
-      body: ListView(
-        children: [
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+          final splitLayout =
+              viewport == AppViewportSize.expanded ||
+              viewport == AppViewportSize.ultra;
+
+          if (!splitLayout) {
+            return _SettingsMain(
+              state: state,
+              items: items,
+              profileName: profile.name,
+              profileMembership: profile.membership,
+              version: version,
+              onNotificationChanged: (value) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setNotifications(value),
+              onBiometricChanged: (value) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setBiometric(value),
+            );
+          }
+
+          return AppAdaptiveSplitView(
+            splitMinWidth: 980,
+            secondaryMaxWidth: 360,
+            primary: _SettingsMain(
+              state: state,
+              items: items,
+              profileName: profile.name,
+              profileMembership: profile.membership,
+              version: version,
+              showAccountHeader: true,
+              onNotificationChanged: (value) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setNotifications(value),
+              onBiometricChanged: (value) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setBiometric(value),
+            ),
+            secondary: _SettingsSidePanel(version: version),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SettingsMain extends StatelessWidget {
+  const _SettingsMain({
+    required this.state,
+    required this.items,
+    required this.profileName,
+    required this.profileMembership,
+    required this.version,
+    required this.onNotificationChanged,
+    required this.onBiometricChanged,
+    this.showAccountHeader = true,
+  });
+
+  final SettingsState state;
+  final List<SettingItem> items;
+  final String profileName;
+  final String profileMembership;
+  final String version;
+  final ValueChanged<bool> onNotificationChanged;
+  final ValueChanged<bool> onBiometricChanged;
+  final bool showAccountHeader;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        if (showAccountHeader)
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -38,12 +115,12 @@ class SettingsPage extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        profile.name,
+                        profileName,
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        profile.membership,
+                        profileMembership,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.primary,
                         ),
@@ -68,71 +145,66 @@ class SettingsPage extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          Text(
-            '账户设置',
+        const SizedBox(height: 16),
+        Text(
+          '账户设置',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 8),
+        _SettingRow(
+          icon: Icons.notifications_outlined,
+          title: '消息通知',
+          subtitle: '案件进度与文档提醒',
+          trailing: Switch(
+            value: state.notificationsEnabled,
+            onChanged: onNotificationChanged,
+          ),
+        ),
+        _SettingRow(
+          icon: Icons.fingerprint,
+          title: '生物识别登录',
+          subtitle: 'Face ID / 指纹快速验证',
+          trailing: Switch(
+            value: state.biometricEnabled,
+            onChanged: onBiometricChanged,
+          ),
+        ),
+        ...items.map(
+          (item) => _SettingRow(
+            icon: _iconFrom(item.icon),
+            title: item.title,
+            subtitle: item.subtitle,
+            trailing: const Icon(Icons.chevron_right),
+          ),
+        ),
+        const SizedBox(height: 18),
+        FilledButton.icon(
+          onPressed: () {},
+          style: FilledButton.styleFrom(
+            backgroundColor: const Color(0xFFFEE4E2),
+            foregroundColor: const Color(0xFFB42318),
+            minimumSize: const Size.fromHeight(46),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          icon: const Icon(Icons.logout),
+          label: const Text('退出登录'),
+        ),
+        const SizedBox(height: 12),
+        Center(
+          child: Text(
+            version,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
+              color: AppColors.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 8),
-          _SettingRow(
-            icon: Icons.notifications_outlined,
-            title: '消息通知',
-            subtitle: '案件进度与文档提醒',
-            trailing: Switch(
-              value: state.notificationsEnabled,
-              onChanged: (value) => ref
-                  .read(settingsControllerProvider.notifier)
-                  .setNotifications(value),
-            ),
-          ),
-          _SettingRow(
-            icon: Icons.fingerprint,
-            title: '生物识别登录',
-            subtitle: 'Face ID / 指纹快速验证',
-            trailing: Switch(
-              value: state.biometricEnabled,
-              onChanged: (value) => ref
-                  .read(settingsControllerProvider.notifier)
-                  .setBiometric(value),
-            ),
-          ),
-          ...items.map(
-            (item) => _SettingRow(
-              icon: _iconFrom(item.icon),
-              title: item.title,
-              subtitle: item.subtitle,
-              trailing: const Icon(Icons.chevron_right),
-            ),
-          ),
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: () {},
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFEE4E2),
-              foregroundColor: const Color(0xFFB42318),
-              minimumSize: const Size.fromHeight(46),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            icon: const Icon(Icons.logout),
-            label: const Text('退出登录'),
-          ),
-          const SizedBox(height: 12),
-          Center(
-            child: Text(
-              version,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -149,6 +221,56 @@ class SettingsPage extends ConsumerWidget {
       default:
         return Icons.settings;
     }
+  }
+}
+
+class _SettingsSidePanel extends StatelessWidget {
+  const _SettingsSidePanel({required this.version});
+
+  final String version;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        AppSurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('桌面端快捷操作', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 10),
+              FilledButton.tonalIcon(
+                onPressed: () {},
+                icon: const Icon(Icons.cleaning_services_outlined),
+                label: const Text('清理缓存'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.policy_outlined),
+                label: const Text('查看隐私政策'),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppSurfaceCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('版本信息', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 8),
+              Text(
+                version,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

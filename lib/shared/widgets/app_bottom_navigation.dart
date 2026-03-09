@@ -1,26 +1,22 @@
 import 'package:flutter/material.dart';
 
 import 'package:lexcore/app/motion/app_motion.dart';
+import 'package:lexcore/app/navigation/app_shell_destinations.dart';
 
 class AppBottomNavigation extends StatelessWidget {
   const AppBottomNavigation({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    required this.items,
   });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final List<AppShellDestination> items;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      _NavItem('首页', Icons.home_outlined, Icons.home),
-      _NavItem('搜索', Icons.search_outlined, Icons.search),
-      _NavItem('历史', Icons.history_outlined, Icons.history),
-      _NavItem('我的', Icons.person_outline, Icons.person),
-    ];
-
     return Container(
       height: 82,
       padding: const EdgeInsets.fromLTRB(8, 6, 8, 10),
@@ -103,12 +99,4 @@ class AppBottomNavigation extends StatelessWidget {
       ),
     );
   }
-}
-
-class _NavItem {
-  const _NavItem(this.label, this.icon, this.selectedIcon);
-
-  final String label;
-  final IconData icon;
-  final IconData selectedIcon;
 }

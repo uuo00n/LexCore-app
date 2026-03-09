@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/home/application/home_providers.dart';
+import 'package:lexcore/features/home/domain/entities/home_entity.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
@@ -15,179 +17,71 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final homeData = ref.watch(homeDataProvider);
-    final recentActivitySection = Column(
-      children: [
-        Row(
-          children: [
-            Text('最近活动', style: Theme.of(context).textTheme.titleSmall),
-            const Spacer(),
-            TextButton(onPressed: () {}, child: const Text('查看全部')),
-          ],
-        ),
-        const SizedBox(height: 6),
-        ...homeData.activities.map(
-          (item) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: AppSurfaceCard(
-              onTap: () {},
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              child: Row(
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
-                      color: AppColors.surfaceVariant,
-                    ),
-                    child: const Icon(Icons.history, size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${DateTimeUtils.relativeFromNow(item.time)} · ${item.tag}',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.onSurfaceVariant),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
 
     return Scaffold(
       body: AppMobileCanvas(
         child: SafeArea(
           bottom: false,
-          child: Column(
-            children: [
-              const AppFadeSlideIn(
-                delay: Duration(milliseconds: 20),
-                beginOffset: Offset(0, -0.02),
-                child: _HomeTopBar(),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  children: AppStagger.sections([
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '您好, 法律专家',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(color: AppColors.primary),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '今天想处理什么法律事务？',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.onSurfaceVariant),
-                        ),
-                        const SizedBox(height: 18),
-                        Text(
-                          '核心服务',
-                          style: Theme.of(context).textTheme.labelMedium
-                              ?.copyWith(
-                                color: AppColors.onSurfaceVariant,
-                                letterSpacing: 0.4,
-                              ),
-                        ),
-                        const SizedBox(height: 10),
-                        GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: homeData.actions.length,
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 1.2,
-                                mainAxisSpacing: 12,
-                                crossAxisSpacing: 12,
-                              ),
-                          itemBuilder: (context, index) {
-                            final action = homeData.actions[index];
-                            final highlighted = index == 0;
-                            final iconColor = highlighted
-                                ? Colors.white
-                                : AppColors.onSurfaceVariant;
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+              final gridColumnCount = switch (viewport) {
+                AppViewportSize.compact => 2,
+                AppViewportSize.medium => 3,
+                AppViewportSize.expanded => 3,
+                AppViewportSize.ultra => 4,
+              };
+              final useSplitLayout =
+                  viewport == AppViewportSize.expanded ||
+                  viewport == AppViewportSize.ultra;
 
-                            return AppSurfaceCard(
-                              backgroundColor: highlighted
-                                  ? AppColors.primary.withValues(alpha: 0.95)
-                                  : Colors.white,
-                              onTap: () => context.push(action.route),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: highlighted
-                                          ? Colors.white.withValues(alpha: 0.24)
-                                          : AppColors.surfaceVariant,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Icon(
-                                      _iconFrom(action.icon),
-                                      color: iconColor,
-                                    ),
+              return Column(
+                children: [
+                  const AppFadeSlideIn(
+                    delay: Duration(milliseconds: 20),
+                    beginOffset: Offset(0, -0.02),
+                    child: _HomeTopBar(),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: useSplitLayout
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 7,
+                                  child: _CoreSection(
+                                    gridColumnCount: gridColumnCount,
+                                    homeData: homeData,
+                                    iconFrom: _iconFrom,
                                   ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    action.title,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          color: highlighted
-                                              ? Colors.white
-                                              : AppColors.onSurface,
-                                        ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  flex: 4,
+                                  child: _RecentActivitySection(
+                                    homeData: homeData,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    action.subtitle,
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: highlighted
-                                              ? Colors.white.withValues(
-                                                  alpha: 0.86,
-                                                )
-                                              : AppColors.onSurfaceVariant,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                                ),
+                              ],
+                            )
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: AppStagger.sections([
+                                _CoreSection(
+                                  gridColumnCount: gridColumnCount,
+                                  homeData: homeData,
+                                  iconFrom: _iconFrom,
+                                ),
+                                _RecentActivitySection(homeData: homeData),
+                              ]),
+                            ),
                     ),
-                    recentActivitySection,
-                    const SizedBox(height: 12),
-                  ]),
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -207,6 +101,181 @@ class HomePage extends ConsumerWidget {
       default:
         return Icons.apps;
     }
+  }
+}
+
+class _CoreSection extends StatelessWidget {
+  const _CoreSection({
+    required this.gridColumnCount,
+    required this.homeData,
+    required this.iconFrom,
+  });
+
+  final int gridColumnCount;
+  final HomeEntity homeData;
+  final IconData Function(String) iconFrom;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppFadeSlideIn(
+      delay: const Duration(milliseconds: 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '您好, 法律专家',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: AppColors.primary),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '今天想处理什么法律事务？',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariant),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            '核心服务',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: AppColors.onSurfaceVariant,
+              letterSpacing: 0.4,
+            ),
+          ),
+          const SizedBox(height: 10),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: homeData.actions.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: gridColumnCount,
+              childAspectRatio: gridColumnCount > 3 ? 1.1 : 1.2,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+            ),
+            itemBuilder: (context, index) {
+              final action = homeData.actions[index];
+              final highlighted = index == 0;
+              final iconColor = highlighted
+                  ? Colors.white
+                  : AppColors.onSurfaceVariant;
+
+              return AppSurfaceCard(
+                backgroundColor: highlighted
+                    ? AppColors.primary.withValues(alpha: 0.95)
+                    : Colors.white,
+                onTap: () => context.push(action.route),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: highlighted
+                            ? Colors.white.withValues(alpha: 0.24)
+                            : AppColors.surfaceVariant,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(iconFrom(action.icon), color: iconColor),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      action.title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: highlighted ? Colors.white : AppColors.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      action.subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: highlighted
+                            ? Colors.white.withValues(alpha: 0.86)
+                            : AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentActivitySection extends StatelessWidget {
+  const _RecentActivitySection({required this.homeData});
+
+  final HomeEntity homeData;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppFadeSlideIn(
+      delay: const Duration(milliseconds: 90),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Text('最近活动', style: Theme.of(context).textTheme.titleSmall),
+              const Spacer(),
+              TextButton(onPressed: () {}, child: const Text('查看全部')),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...homeData.activities.map<Widget>(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: AppSurfaceCard(
+                onTap: () {},
+                padding: const EdgeInsets.symmetric(
+                  vertical: 10,
+                  horizontal: 12,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(999),
+                        color: AppColors.surfaceVariant,
+                      ),
+                      child: const Icon(Icons.history, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${DateTimeUtils.relativeFromNow(item.time)} · ${item.tag}',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

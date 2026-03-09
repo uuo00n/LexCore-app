@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
@@ -15,266 +17,392 @@ class AnalysisResultPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(analysisReportProvider);
 
-    return Scaffold(
-      body: AppMobileCanvas(
-        child: SafeArea(
-          bottom: false,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            children: [
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 20),
-                beginOffset: const Offset(0, -0.02),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '案件分析结果',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(onPressed: () {}, icon: const Icon(Icons.share)),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.more_vert),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 55),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'LexiAI 智能分析报告',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 75),
-                child: Text(
-                  '报告编号: ${report.reportId} • 生成于 ${report.generatedAt}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 110),
-                child: AppSurfaceCard(
-                  padding: EdgeInsets.zero,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        height: 192,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withValues(alpha: 0.12),
-                              AppColors.primary.withValues(alpha: 0.3),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(18),
-                          ),
-                        ),
-                        child: Stack(
-                          children: [
-                            const Center(
-                              child: Icon(
-                                Icons.gavel_outlined,
-                                size: 58,
-                                color: Color(0x420B50DA),
-                              ),
-                            ),
-                            Positioned(
-                              left: 14,
-                              bottom: 14,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                                child: Text(
-                                  '结构化分析已完成',
-                                  style: Theme.of(context).textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.4,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '案件概览',
-                              style: Theme.of(context).textTheme.titleSmall,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              report.overview,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                            const SizedBox(height: 10),
-                            FilledButton.icon(
-                              onPressed: () {},
-                              icon: const Icon(Icons.open_in_new, size: 18),
-                              label: const Text('查看详细摘要'),
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size.fromHeight(42),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 150),
-                child: AppSurfaceCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+        final splitLayout =
+            viewport == AppViewportSize.expanded ||
+            viewport == AppViewportSize.ultra;
+        final showMobileBottomBar = viewport == AppViewportSize.compact;
+
+        return Scaffold(
+          body: AppMobileCanvas(
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  AppFadeSlideIn(
+                    delay: const Duration(milliseconds: 20),
+                    beginOffset: const Offset(0, -0.02),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
+                      child: Row(
                         children: [
-                          const Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.amber,
+                          IconButton(
+                            onPressed: () => Navigator.of(context).maybePop(),
+                            icon: const Icon(Icons.arrow_back),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '风险指标评估',
-                            style: Theme.of(context).textTheme.titleSmall,
+                            '案件分析结果',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.share),
+                          ),
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.more_vert),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      ...report.riskIndicators.map(
-                        (risk) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: _RiskBar(
-                            label: risk.label,
-                            value: risk.value,
-                            levelText: _riskLabel(risk.level),
-                            color: _riskColor(risk.level),
+                    ),
+                  ),
+                  Expanded(
+                    child: splitLayout
+                        ? Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                            child: AppAdaptiveSplitView(
+                              splitMinWidth: 980,
+                              secondaryMaxWidth: 360,
+                              primary: _MainContent(
+                                report: report,
+                                includeRiskSection: false,
+                                summaryGridColumns: 2,
+                              ),
+                              secondary: _SidePanel(report: report),
+                            ),
+                          )
+                        : Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                            child: _MainContent(
+                              report: report,
+                              includeRiskSection: true,
+                              summaryGridColumns: 1,
+                            ),
                           ),
-                        ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          bottomNavigationBar: showMobileBottomBar
+              ? Container(
+                  height: 74,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    border: Border(
+                      top: BorderSide(color: Theme.of(context).dividerColor),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: const [
+                      _BottomMini(
+                        label: '报告',
+                        icon: Icons.description,
+                        active: true,
                       ),
+                      _BottomMini(
+                        label: '证据',
+                        icon: Icons.folder_open_outlined,
+                      ),
+                      _BottomMini(label: '法规', icon: Icons.gavel_outlined),
+                      _BottomMini(label: '我的', icon: Icons.person_outline),
                     ],
                   ),
-                ),
+                )
+              : null,
+        );
+      },
+    );
+  }
+}
+
+class _MainContent extends StatelessWidget {
+  const _MainContent({
+    required this.report,
+    required this.includeRiskSection,
+    required this.summaryGridColumns,
+  });
+
+  final AnalysisSummary report;
+  final bool includeRiskSection;
+  final int summaryGridColumns;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 55),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome,
+                color: AppColors.primary,
+                size: 22,
               ),
-              const SizedBox(height: 14),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 190),
-                child: GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 1,
-                  childAspectRatio: 1.9,
-                  mainAxisSpacing: 10,
-                  children: [
-                    _SummaryCard(
-                      title: '争议焦点',
-                      icon: Icons.center_focus_strong,
-                      lines: report.disputeFocus,
-                    ),
-                    _SummaryCard(
-                      title: '法律关系',
-                      icon: Icons.account_tree_outlined,
-                      lines: report.legalRelations,
-                    ),
-                  ],
-                ),
+              const SizedBox(width: 6),
+              Text(
+                'LexiAI 智能分析报告',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
-              const SizedBox(height: 8),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 220),
-                child: Text(
-                  '关键证据效力',
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...report.evidences.asMap().entries.map((entry) {
-                final index = entry.key;
-                final evidence = entry.value;
-                return AppFadeSlideIn(
-                  delay: Duration(milliseconds: 30 + (index * 35)),
-                  beginOffset: const Offset(0, 0.02),
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _EvidenceTile(
-                      title: evidence.title,
-                      score: evidence.score,
-                      strong: evidence.strong,
-                    ),
-                  ),
-                );
-              }),
-              const SizedBox(height: 10),
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: Container(
-        height: 74,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          border: Border(
-            top: BorderSide(color: Theme.of(context).dividerColor),
+        const SizedBox(height: 6),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 75),
+          child: Text(
+            '报告编号: ${report.reportId} • 生成于 ${report.generatedAt}',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
-            _BottomMini(label: '报告', icon: Icons.description, active: true),
-            _BottomMini(label: '证据', icon: Icons.folder_open_outlined),
-            _BottomMini(label: '法规', icon: Icons.gavel_outlined),
-            _BottomMini(label: '我的', icon: Icons.person_outline),
-          ],
+        const SizedBox(height: 14),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 110),
+          child: _OverviewCard(report: report),
         ),
+        if (includeRiskSection) ...[
+          const SizedBox(height: 14),
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 150),
+            child: _RiskSection(report: report),
+          ),
+        ],
+        const SizedBox(height: 14),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 190),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: summaryGridColumns,
+            childAspectRatio: summaryGridColumns == 1 ? 1.9 : 1.45,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            children: [
+              _SummaryCard(
+                title: '争议焦点',
+                icon: Icons.center_focus_strong,
+                lines: report.disputeFocus,
+              ),
+              _SummaryCard(
+                title: '法律关系',
+                icon: Icons.account_tree_outlined,
+                lines: report.legalRelations,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 220),
+          child: Text('关键证据效力', style: Theme.of(context).textTheme.titleSmall),
+        ),
+        const SizedBox(height: 8),
+        ...report.evidences.asMap().entries.map((entry) {
+          final index = entry.key;
+          final evidence = entry.value;
+          return AppFadeSlideIn(
+            delay: Duration(milliseconds: 30 + (index * 35)),
+            beginOffset: const Offset(0, 0.02),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _EvidenceTile(
+                title: evidence.title,
+                score: evidence.score,
+                strong: evidence.strong,
+              ),
+            ),
+          );
+        }),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+}
+
+class _OverviewCard extends StatelessWidget {
+  const _OverviewCard({required this.report});
+
+  final AnalysisSummary report;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurfaceCard(
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            height: 192,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primary.withValues(alpha: 0.12),
+                  AppColors.primary.withValues(alpha: 0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
+            ),
+            child: Stack(
+              children: [
+                const Center(
+                  child: Icon(
+                    Icons.gavel_outlined,
+                    size: 58,
+                    color: Color(0x420B50DA),
+                  ),
+                ),
+                Positioned(
+                  left: 14,
+                  bottom: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '结构化分析已完成',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('案件概览', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 6),
+                Text(
+                  report.overview,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 10),
+                FilledButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.open_in_new, size: 18),
+                  label: const Text('查看详细摘要'),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(42),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SidePanel extends StatelessWidget {
+  const _SidePanel({required this.report});
+
+  final AnalysisSummary report;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 120),
+          child: _RiskSection(report: report),
+        ),
+        const SizedBox(height: 12),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 160),
+          child: AppSurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('快捷操作', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                FilledButton.tonalIcon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('导出 PDF 报告'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border),
+                  label: const Text('收藏到案件库'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.share_outlined),
+                  label: const Text('分享报告链接'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RiskSection extends StatelessWidget {
+  const _RiskSection({required this.report});
+
+  final AnalysisSummary report;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurfaceCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+              const SizedBox(width: 6),
+              Text('风险指标评估', style: Theme.of(context).textTheme.titleSmall),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...report.riskIndicators.map(
+            (risk) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _RiskBar(
+                label: risk.label,
+                value: risk.value,
+                levelText: _riskLabel(risk.level),
+                color: _riskColor(risk.level),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

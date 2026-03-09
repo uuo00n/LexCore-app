@@ -1,39 +1,34 @@
 import 'package:flutter/material.dart';
 
+import 'package:lexcore/app/adaptive/app_adaptive_frame.dart';
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
+
 class AppMobileCanvas extends StatelessWidget {
-  const AppMobileCanvas({super.key, required this.child});
+  const AppMobileCanvas({
+    super.key,
+    required this.child,
+    this.maxContentWidth,
+    this.padding,
+  });
 
   final Widget child;
+  final double? maxContentWidth;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final shouldConstrain = constraints.maxWidth > 540;
-        if (!shouldConstrain) {
+        final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+        if (viewport == AppViewportSize.compact) {
           return child;
         }
 
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                border: Border(
-                  left: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 0.6,
-                  ),
-                  right: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 0.6,
-                  ),
-                ),
-              ),
-              child: child,
-            ),
-          ),
+        return AppAdaptiveFrame(
+          maxContentWidth:
+              maxContentWidth ?? AppBreakpoints.canvasMaxWidth(viewport),
+          padding: padding,
+          child: child,
         );
       },
     );

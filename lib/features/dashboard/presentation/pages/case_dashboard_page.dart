@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
+import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/dashboard/application/dashboard_provider.dart';
+import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
@@ -17,151 +20,25 @@ class CaseDashboardPage extends ConsumerWidget {
     return Scaffold(
       body: AppMobileCanvas(
         child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-            children: [
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 20),
-                beginOffset: const Offset(0, -0.02),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.menu),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'LexiAI 案件分析',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.search),
-                    ),
-                    const CircleAvatar(
-                      radius: 16,
-                      backgroundColor: Color(0x220B50DA),
-                      child: Icon(
-                        Icons.account_circle_outlined,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 70),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    AppSurfaceCard(
-                      backgroundColor: AppColors.primaryContainer,
-                      child: _MetricBlock(
-                        label: '总案件量',
-                        value: '${data.totalCases}',
-                        trailing: const Icon(Icons.folder_open),
-                        caption: '本月 +12%',
-                        valueColor: AppColors.onPrimaryContainer,
-                      ),
-                    ),
-                    AppSurfaceCard(
-                      backgroundColor: AppColors.surfaceVariant,
-                      child: _MetricBlock(
-                        label: '分析中',
-                        value: '${data.inProgress}',
-                        trailing: const Icon(Icons.insights_outlined),
-                        caption: '平均用时 4h',
-                      ),
-                    ),
-                    AppSurfaceCard(
-                      child: _MetricBlock(
-                        label: '准确率',
-                        value: '${data.accuracy.toStringAsFixed(1)}%',
-                        trailing: const Icon(
-                          Icons.verified_outlined,
-                          color: Colors.green,
-                        ),
-                        caption: '符合司法标准',
-                        valueColor: AppColors.onSurface,
-                      ),
-                    ),
-                    AppSurfaceCard(
-                      child: _MetricBlock(
-                        label: '已完成',
-                        value: '${data.completed}',
-                        trailing: const Icon(Icons.check_circle_outline),
-                        caption: '质量稳定',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 14),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 120),
-                child: AppSurfaceCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '分析趋势',
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '过去7天的案件处理效率',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 120,
-                        child: CustomPaint(
-                          size: const Size(double.infinity, 120),
-                          painter: _TrendPainter(points: data.trendPoints),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 160),
-                child: Row(
-                  children: [
-                    Text(
-                      '进行中的案件分析',
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const Spacer(),
-                    TextButton(onPressed: () {}, child: const Text('查看全部')),
-                  ],
-                ),
-              ),
-              ...data.cases.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return AppFadeSlideIn(
-                  delay: Duration(milliseconds: 30 + (index * 35)),
-                  beginOffset: const Offset(0, 0.02),
-                  child: _ProgressListItem(
-                    title: item.title,
-                    subtitle: item.subtitle,
-                    progress: item.progress,
-                    icon: _iconFrom(item.icon),
-                  ),
-                );
-              }),
-            ],
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+              final splitLayout =
+                  viewport == AppViewportSize.expanded ||
+                  viewport == AppViewportSize.ultra;
+
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: splitLayout
+                    ? AppAdaptiveSplitView(
+                        splitMinWidth: 980,
+                        secondaryMaxWidth: 360,
+                        primary: _DashboardMainPane(data: data),
+                        secondary: _DashboardSidePane(data: data),
+                      )
+                    : _DashboardMainPane(data: data),
+              );
+            },
           ),
         ),
       ),
@@ -169,6 +46,156 @@ class CaseDashboardPage extends ConsumerWidget {
         onPressed: () {},
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class _DashboardMainPane extends StatelessWidget {
+  const _DashboardMainPane({required this.data});
+
+  final DashboardEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final gridColumns = width >= 1200 ? 4 : 2;
+
+    return ListView(
+      children: [
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 20),
+          beginOffset: const Offset(0, -0.02),
+          child: Row(
+            children: [
+              IconButton(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.menu),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'LexiAI 案件分析',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const Spacer(),
+              IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
+              const CircleAvatar(
+                radius: 16,
+                backgroundColor: Color(0x220B50DA),
+                child: Icon(
+                  Icons.account_circle_outlined,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 70),
+          child: GridView.count(
+            crossAxisCount: gridColumns,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: gridColumns > 2 ? 1.35 : 1.2,
+            children: [
+              AppSurfaceCard(
+                backgroundColor: AppColors.primaryContainer,
+                child: _MetricBlock(
+                  label: '总案件量',
+                  value: '${data.totalCases}',
+                  trailing: const Icon(Icons.folder_open),
+                  caption: '本月 +12%',
+                  valueColor: AppColors.onPrimaryContainer,
+                ),
+              ),
+              AppSurfaceCard(
+                backgroundColor: AppColors.surfaceVariant,
+                child: _MetricBlock(
+                  label: '分析中',
+                  value: '${data.inProgress}',
+                  trailing: const Icon(Icons.insights_outlined),
+                  caption: '平均用时 4h',
+                ),
+              ),
+              AppSurfaceCard(
+                child: _MetricBlock(
+                  label: '准确率',
+                  value: '${data.accuracy.toStringAsFixed(1)}%',
+                  trailing: const Icon(
+                    Icons.verified_outlined,
+                    color: Colors.green,
+                  ),
+                  caption: '符合司法标准',
+                  valueColor: AppColors.onSurface,
+                ),
+              ),
+              AppSurfaceCard(
+                child: _MetricBlock(
+                  label: '已完成',
+                  value: '${data.completed}',
+                  trailing: const Icon(Icons.check_circle_outline),
+                  caption: '质量稳定',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 120),
+          child: AppSurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('分析趋势', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(
+                  '过去7天的案件处理效率',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 120,
+                  child: CustomPaint(
+                    size: const Size(double.infinity, 120),
+                    painter: _TrendPainter(points: data.trendPoints),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 160),
+          child: Row(
+            children: [
+              Text('进行中的案件分析', style: Theme.of(context).textTheme.titleSmall),
+              const Spacer(),
+              TextButton(onPressed: () {}, child: const Text('查看全部')),
+            ],
+          ),
+        ),
+        ...data.cases.asMap().entries.map((entry) {
+          final index = entry.key;
+          final item = entry.value;
+          return AppFadeSlideIn(
+            delay: Duration(milliseconds: 30 + (index * 35)),
+            beginOffset: const Offset(0, 0.02),
+            child: _ProgressListItem(
+              title: item.title,
+              subtitle: item.subtitle,
+              progress: item.progress,
+              icon: _iconFrom(item.icon),
+            ),
+          );
+        }),
+      ],
     );
   }
 
@@ -183,6 +210,85 @@ class CaseDashboardPage extends ConsumerWidget {
       default:
         return Icons.folder_outlined;
     }
+  }
+}
+
+class _DashboardSidePane extends StatelessWidget {
+  const _DashboardSidePane({required this.data});
+
+  final DashboardEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      children: [
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 80),
+          child: AppSurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('本周重点', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 8),
+                _SideBullet(text: '优先推进 ${data.inProgress} 个进行中案件'),
+                _SideBullet(text: '复盘高风险案件并补全证据链'),
+                _SideBullet(text: '输出标准化结案摘要模板'),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        AppFadeSlideIn(
+          delay: const Duration(milliseconds: 120),
+          child: AppSurfaceCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('快捷操作', style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 10),
+                FilledButton.tonalIcon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.add_chart_outlined),
+                  label: const Text('新建分析任务'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.file_download_outlined),
+                  label: const Text('导出周报'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SideBullet extends StatelessWidget {
+  const _SideBullet({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Icon(Icons.circle, size: 6, color: AppColors.primary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ],
+      ),
+    );
   }
 }
 

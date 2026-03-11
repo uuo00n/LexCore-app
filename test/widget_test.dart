@@ -19,7 +19,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('LexiAI'), findsOneWidget);
+    expect(find.text('衡法智核 LexCore'), findsOneWidget);
     expect(find.text('使用邮箱登录'), findsOneWidget);
     expect(find.text('使用 Google 账号继续'), findsOneWidget);
     expect(find.text('还没有账号？'), findsOneWidget);
@@ -40,7 +40,7 @@ void main() {
     await tester.tap(find.text('立即注册'));
     await tester.pumpAndSettle();
 
-    expect(find.text('创建您的账户'), findsOneWidget);
+    expect(find.text('创建衡法智核账户'), findsOneWidget);
     expect(find.text('或'), findsOneWidget);
     expect(find.text('Google'), findsOneWidget);
     expect(find.text('微信'), findsOneWidget);

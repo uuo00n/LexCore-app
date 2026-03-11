@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/core/constants/app_constants.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
@@ -78,7 +79,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     if (!success) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请先勾选用户协议')));
+      ).showSnackBar(const SnackBar(content: Text('请先勾选服务条款与隐私政策')));
       return;
     }
 
@@ -99,7 +100,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           child: Column(
             children: [
               AuthTopBar(
-                title: '注册 LexiAI',
+                title: '注册 LexCore',
                 onBack: () => context.go(RouteNames.authPath),
               ),
               Expanded(
@@ -127,7 +128,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   Text(
-                                    '创建您的账户',
+                                    '创建衡法智核账户',
                                     textAlign: TextAlign.center,
                                     style: Theme.of(context)
                                         .textTheme
@@ -139,13 +140,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                   ),
                                   const SizedBox(height: AppSpacing.xs),
                                   Text(
-                                    '加入 LexiAI，开启高效智能法律服务体验',
+                                    '${AppConstants.appName}——${AppConstants.appSubtitle}\n'
+                                    '${AppConstants.appSlogan}',
                                     textAlign: TextAlign.center,
                                     style: Theme.of(context)
                                         .textTheme
                                         .bodyMedium
                                         ?.copyWith(
                                           color: AppColors.onSurfaceVariant,
+                                          height: 1.4,
                                         ),
                                   ),
                                   const SizedBox(height: 28),
@@ -241,7 +244,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                             top: 2,
                                           ),
                                           child: Text(
-                                            '已阅读并同意《用户协议》《隐私政策》',
+                                            '已阅读并同意《服务条款》《隐私政策》',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall

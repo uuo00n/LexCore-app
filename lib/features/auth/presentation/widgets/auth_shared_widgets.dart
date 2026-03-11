@@ -7,6 +7,7 @@ import 'package:lexcore/app/theme/app_spacing.dart';
 class AuthIconAssets {
   const AuthIconAssets._();
 
+  static const brandLogo = 'assets/icons/auth/brand_scale.svg';
   static const google = 'assets/icons/auth/google.svg';
   static const wechat = 'assets/icons/auth/wechat.svg';
 }

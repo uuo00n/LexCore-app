@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/core/constants/app_constants.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
@@ -62,7 +63,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     if (!success) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请先阅读并同意用户协议')));
+      ).showSnackBar(const SnackBar(content: Text('请先阅读并同意服务条款与隐私政策')));
       return;
     }
 
@@ -170,7 +171,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                             top: 2,
                                           ),
                                           child: Text(
-                                            '已阅读并同意《用户协议》《隐私政策》',
+                                            '已阅读并同意《服务条款》《隐私政策》',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall
@@ -310,11 +311,16 @@ class _BrandSection extends StatelessWidget {
               ),
             ],
           ),
-          child: const Icon(Icons.auto_stories, color: Colors.white, size: 36),
+          child: SvgPicture.asset(
+            AuthIconAssets.brandLogo,
+            width: 36,
+            height: 36,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          ),
         ),
         const SizedBox(height: 24),
         Text(
-          'LexiAI',
+          AppConstants.appName,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             color: AppColors.onSurface,
@@ -324,7 +330,7 @@ class _BrandSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '您的智能阅读与学习助手，\n开启深度阅读的新篇章。',
+          '${AppConstants.appSubtitle}\n${AppConstants.appSlogan}',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppColors.onSurfaceVariant,

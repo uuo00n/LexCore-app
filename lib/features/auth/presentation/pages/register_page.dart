@@ -312,6 +312,12 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                                 child: _RegisterFooter(
                                   onLogin: () =>
                                       context.go(RouteNames.authPath),
+                                  onTermsOfService: () => context.push(
+                                    RouteNames.termsOfServicePath,
+                                  ),
+                                  onPrivacyPolicy: () => context.push(
+                                    RouteNames.privacyPolicyPath,
+                                  ),
                                 ),
                               ),
                             ),
@@ -470,9 +476,15 @@ class _RegisterSocialButton extends StatelessWidget {
 }
 
 class _RegisterFooter extends StatelessWidget {
-  const _RegisterFooter({required this.onLogin});
+  const _RegisterFooter({
+    required this.onLogin,
+    required this.onTermsOfService,
+    required this.onPrivacyPolicy,
+  });
 
   final VoidCallback onLogin;
+  final VoidCallback onTermsOfService;
+  final VoidCallback onPrivacyPolicy;
 
   @override
   Widget build(BuildContext context) {
@@ -494,14 +506,14 @@ class _RegisterFooter extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextButton(onPressed: () {}, child: const Text('服务条款')),
+            TextButton(onPressed: onTermsOfService, child: const Text('服务条款')),
             Text(
               '·',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),
-            TextButton(onPressed: () {}, child: const Text('隐私政策')),
+            TextButton(onPressed: onPrivacyPolicy, child: const Text('隐私政策')),
           ],
         ),
       ],

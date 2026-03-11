@@ -35,9 +35,16 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
-        backgroundColor: AppColors.background.withValues(alpha: 0.88),
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.surface,
         foregroundColor: AppColors.onSurface,
-        titleTextStyle: textTheme.titleMedium,
+        titleTextStyle: textTheme.titleMedium?.copyWith(
+          color: AppColors.onSurface,
+          fontWeight: FontWeight.w700,
+        ),
+        iconTheme: const IconThemeData(color: AppColors.onSurface),
+        actionsIconTheme: const IconThemeData(color: AppColors.onSurface),
       ),
       cardTheme: const CardThemeData(
         elevation: 0,
@@ -113,6 +120,20 @@ class AppTheme {
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.backgroundDark,
       textTheme: textTheme,
+      appBarTheme: AppBarTheme(
+        centerTitle: true,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.backgroundDark,
+        foregroundColor: Colors.white,
+        titleTextStyle: textTheme.titleMedium?.copyWith(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        actionsIconTheme: const IconThemeData(color: Colors.white),
+      ),
       extensions: const [
         AppTokensExtension(
           success: AppColors.success,

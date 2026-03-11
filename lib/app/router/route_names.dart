@@ -17,6 +17,8 @@ class RouteNames {
   static const history = 'history';
   static const profile = 'profile';
   static const settings = 'settings';
+  static const privacyPolicy = 'privacy_policy';
+  static const termsOfService = 'terms_of_service';
 
   static const authPath = '/auth';
   static const registerPath = '/register';
@@ -34,4 +36,6 @@ class RouteNames {
   static const historyPath = '/history';
   static const profilePath = '/profile';
   static const settingsPath = '/settings';
+  static const privacyPolicyPath = '/legal/privacy-policy';
+  static const termsOfServicePath = '/legal/terms-of-service';
 }

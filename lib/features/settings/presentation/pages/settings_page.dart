@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/settings/application/settings_controller.dart';
 import 'package:lexcore/features/settings/domain/entities/settings_state.dart';
@@ -12,6 +14,19 @@ import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
+
+  void _handleSettingTap(BuildContext context, SettingItem item) {
+    switch (item.icon) {
+      case 'policy':
+        context.push(RouteNames.privacyPolicyPath);
+        return;
+      case 'description':
+        context.push(RouteNames.termsOfServicePath);
+        return;
+      default:
+        return;
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,6 +60,7 @@ class SettingsPage extends ConsumerWidget {
               onBiometricChanged: (value) => ref
                   .read(settingsControllerProvider.notifier)
                   .setBiometric(value),
+              onSettingTap: (item) => _handleSettingTap(context, item),
             );
           }
 
@@ -64,8 +80,15 @@ class SettingsPage extends ConsumerWidget {
               onBiometricChanged: (value) => ref
                   .read(settingsControllerProvider.notifier)
                   .setBiometric(value),
+              onSettingTap: (item) => _handleSettingTap(context, item),
             ),
-            secondary: _SettingsSidePanel(version: version),
+            secondary: _SettingsSidePanel(
+              version: version,
+              onOpenPrivacyPolicy: () =>
+                  context.push(RouteNames.privacyPolicyPath),
+              onOpenTermsOfService: () =>
+                  context.push(RouteNames.termsOfServicePath),
+            ),
           );
         },
       ),
@@ -82,6 +105,7 @@ class _SettingsMain extends StatelessWidget {
     required this.version,
     required this.onNotificationChanged,
     required this.onBiometricChanged,
+    required this.onSettingTap,
     this.showAccountHeader = true,
   });
 
@@ -92,6 +116,7 @@ class _SettingsMain extends StatelessWidget {
   final String version;
   final ValueChanged<bool> onNotificationChanged;
   final ValueChanged<bool> onBiometricChanged;
+  final ValueChanged<SettingItem> onSettingTap;
   final bool showAccountHeader;
 
   @override
@@ -179,6 +204,7 @@ class _SettingsMain extends StatelessWidget {
             title: item.title,
             subtitle: item.subtitle,
             trailing: const Icon(Icons.chevron_right),
+            onTap: () => onSettingTap(item),
           ),
         ),
         const SizedBox(height: 18),
@@ -216,6 +242,8 @@ class _SettingsMain extends StatelessWidget {
         return Icons.cleaning_services_outlined;
       case 'policy':
         return Icons.policy_outlined;
+      case 'description':
+        return Icons.description_outlined;
       case 'info':
         return Icons.info_outline;
       default:
@@ -225,9 +253,15 @@ class _SettingsMain extends StatelessWidget {
 }
 
 class _SettingsSidePanel extends StatelessWidget {
-  const _SettingsSidePanel({required this.version});
+  const _SettingsSidePanel({
+    required this.version,
+    required this.onOpenPrivacyPolicy,
+    required this.onOpenTermsOfService,
+  });
 
   final String version;
+  final VoidCallback onOpenPrivacyPolicy;
+  final VoidCallback onOpenTermsOfService;
 
   @override
   Widget build(BuildContext context) {
@@ -246,9 +280,15 @@ class _SettingsSidePanel extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
-                onPressed: () {},
+                onPressed: onOpenPrivacyPolicy,
                 icon: const Icon(Icons.policy_outlined),
                 label: const Text('查看隐私政策'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: onOpenTermsOfService,
+                icon: const Icon(Icons.description_outlined),
+                label: const Text('查看服务条款'),
               ),
             ],
           ),
@@ -280,16 +320,18 @@ class _SettingRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.trailing,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final Widget trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final content = Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -331,5 +373,11 @@ class _SettingRow extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap == null) {
+      return content;
+    }
+
+    return GestureDetector(onTap: onTap, child: content);
   }
 }

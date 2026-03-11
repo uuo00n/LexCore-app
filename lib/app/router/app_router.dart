@@ -17,6 +17,8 @@ import 'package:lexcore/features/document/presentation/pages/document_preview_pa
 import 'package:lexcore/features/document/presentation/pages/saved_documents_page.dart';
 import 'package:lexcore/features/history/presentation/pages/history_page.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
+import 'package:lexcore/features/legal/presentation/pages/privacy_policy_page.dart';
+import 'package:lexcore/features/legal/presentation/pages/terms_of_service_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
@@ -249,6 +251,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: const SettingsPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.privacyPolicyPath,
+        name: RouteNames.privacyPolicy,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const PrivacyPolicyPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.termsOfServicePath,
+        name: RouteNames.termsOfService,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const TermsOfServicePage(),
         ),
       ),
     ],

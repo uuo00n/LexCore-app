@@ -211,6 +211,7 @@ class MockLegalRepository {
         subtitle: '查看与清理本地缓存',
         icon: 'cleaning_services',
       ),
+      SettingItem(title: '服务条款', subtitle: '查看平台使用规范', icon: 'description'),
       SettingItem(title: '隐私政策', subtitle: '查看数据使用说明', icon: 'policy'),
       SettingItem(title: '关于我们', subtitle: '版本信息与团队介绍', icon: 'info'),
     ];

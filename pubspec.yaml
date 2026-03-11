@@ -39,3 +39,5 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/auth/
+    - doc/privacy_policy.md
+    - doc/user_service.md

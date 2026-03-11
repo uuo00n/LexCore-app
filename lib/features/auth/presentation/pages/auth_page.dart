@@ -265,6 +265,12 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                 child: _AuthFooter(
                                   onRegister: () =>
                                       context.go(RouteNames.registerPath),
+                                  onTermsOfService: () => context.push(
+                                    RouteNames.termsOfServicePath,
+                                  ),
+                                  onPrivacyPolicy: () => context.push(
+                                    RouteNames.privacyPolicyPath,
+                                  ),
                                 ),
                               ),
                             ),
@@ -420,9 +426,15 @@ class _OrDivider extends StatelessWidget {
 }
 
 class _AuthFooter extends StatelessWidget {
-  const _AuthFooter({required this.onRegister});
+  const _AuthFooter({
+    required this.onRegister,
+    required this.onTermsOfService,
+    required this.onPrivacyPolicy,
+  });
 
   final VoidCallback onRegister;
+  final VoidCallback onTermsOfService;
+  final VoidCallback onPrivacyPolicy;
 
   @override
   Widget build(BuildContext context) {
@@ -444,14 +456,14 @@ class _AuthFooter extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextButton(onPressed: () {}, child: const Text('服务条款')),
+            TextButton(onPressed: onTermsOfService, child: const Text('服务条款')),
             Text(
               '·',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),
-            TextButton(onPressed: () {}, child: const Text('隐私政策')),
+            TextButton(onPressed: onPrivacyPolicy, child: const Text('隐私政策')),
           ],
         ),
       ],

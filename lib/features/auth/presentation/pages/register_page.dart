@@ -11,58 +11,74 @@ import 'package:lexcore/features/auth/domain/entities/auth_mode.dart';
 import 'package:lexcore/features/auth/presentation/widgets/auth_shared_widgets.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
-class AuthPage extends ConsumerStatefulWidget {
-  const AuthPage({super.key});
+class RegisterPage extends ConsumerStatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  ConsumerState<AuthPage> createState() => _AuthPageState();
+  ConsumerState<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _AuthPageState extends ConsumerState<AuthPage> {
+class _RegisterPageState extends ConsumerState<RegisterPage> {
   static const _footerReservedHeight = 136.0;
-  static const _topAlignmentSpacerHeight = 54.0;
 
-  final _accountController = TextEditingController();
-  final _credentialController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
   bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(authControllerProvider.notifier).setMode(AuthMode.login);
+      ref.read(authControllerProvider.notifier).setMode(AuthMode.register);
     });
   }
 
   @override
   void dispose() {
-    _accountController.dispose();
-    _credentialController.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     final controller = ref.read(authControllerProvider.notifier);
-    final account = _accountController.text.trim();
-    final credential = _credentialController.text.trim();
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirm = _confirmPasswordController.text.trim();
 
-    if (account.isEmpty || credential.isEmpty) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirm.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请输入邮箱和密码')));
+      ).showSnackBar(const SnackBar(content: Text('请完整填写注册信息')));
       return;
     }
 
+    if (password != confirm) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('两次输入的密码不一致')));
+      return;
+    }
+
+    controller.setMode(AuthMode.register);
     final success = await controller.submit(
-      account: account,
-      credential: credential,
+      account: email,
+      credential: password,
     );
+
     if (!mounted) return;
     if (!success) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请先阅读并同意用户协议')));
+      ).showSnackBar(const SnackBar(content: Text('请先勾选用户协议')));
       return;
     }
 
@@ -82,7 +98,10 @@ class _AuthPageState extends ConsumerState<AuthPage> {
           bottom: false,
           child: Column(
             children: [
-              const SizedBox(height: _topAlignmentSpacerHeight),
+              AuthTopBar(
+                title: '注册 LexiAI',
+                onBack: () => context.go(RouteNames.authPath),
+              ),
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, constraints) {
@@ -95,7 +114,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                         SingleChildScrollView(
                           padding: EdgeInsets.fromLTRB(
                             AppSpacing.xl,
-                            AppSpacing.xl,
+                            AppSpacing.md,
                             AppSpacing.xl,
                             AppSpacing.xl +
                                 _footerReservedHeight +
@@ -107,18 +126,45 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const _BrandSection(),
-                                  const SizedBox(height: 44),
-                                  _MinimalInputField(
-                                    label: '电子邮件',
-                                    controller: _accountController,
+                                  Text(
+                                    '创建您的账户',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineSmall
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: -0.3,
+                                        ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xs),
+                                  Text(
+                                    '加入 LexiAI，开启高效智能法律服务体验',
+                                    textAlign: TextAlign.center,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: AppColors.onSurfaceVariant,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 28),
+                                  _RegisterInputField(
+                                    label: '用户名',
+                                    controller: _nameController,
+                                    icon: Icons.person_outline_rounded,
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  _RegisterInputField(
+                                    label: '电子邮箱',
+                                    controller: _emailController,
                                     icon: Icons.mail_outline_rounded,
                                     keyboardType: TextInputType.emailAddress,
                                   ),
                                   const SizedBox(height: AppSpacing.md),
-                                  _MinimalInputField(
-                                    label: '密码',
-                                    controller: _credentialController,
+                                  _RegisterInputField(
+                                    label: '设置密码',
+                                    controller: _passwordController,
                                     icon: Icons.lock_outline_rounded,
                                     obscureText: !_passwordVisible,
                                     suffix: IconButton(
@@ -135,6 +181,31 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                         color: AppColors.onSurfaceVariant,
                                       ),
                                       tooltip: _passwordVisible
+                                          ? '隐藏密码'
+                                          : '显示密码',
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.md),
+                                  _RegisterInputField(
+                                    label: '确认密码',
+                                    controller: _confirmPasswordController,
+                                    icon: Icons.lock_reset_outlined,
+                                    obscureText: !_confirmPasswordVisible,
+                                    suffix: IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _confirmPasswordVisible =
+                                              !_confirmPasswordVisible;
+                                        });
+                                      },
+                                      icon: Icon(
+                                        _confirmPasswordVisible
+                                            ? Icons.visibility_off_outlined
+                                            : Icons.visibility_outlined,
+                                        size: 20,
+                                        color: AppColors.onSurfaceVariant,
+                                      ),
+                                      tooltip: _confirmPasswordVisible
                                           ? '隐藏密码'
                                           : '显示密码',
                                     ),
@@ -196,10 +267,10 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                             ),
                                           )
                                         : const Icon(
-                                            Icons.mail_outline_rounded,
+                                            Icons.person_add_alt_1_rounded,
                                             size: 20,
                                           ),
-                                    label: const Text('使用邮箱登录'),
+                                    label: const Text('立即注册'),
                                     style: FilledButton.styleFrom(
                                       minimumSize: const Size.fromHeight(56),
                                       shape: const StadiumBorder(),
@@ -216,31 +287,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                   const SizedBox(height: AppSpacing.lg),
                                   const _OrDivider(),
                                   const SizedBox(height: AppSpacing.lg),
-                                  OutlinedButton.icon(
-                                    onPressed: () {},
-                                    icon: SvgPicture.asset(
-                                      AuthIconAssets.google,
-                                      width: 20,
-                                      height: 20,
-                                    ),
-                                    label: const Text('使用 Google 账号继续'),
-                                    style: OutlinedButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(56),
-                                      shape: const StadiumBorder(),
-                                      side: BorderSide(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.24,
-                                        ),
-                                      ),
-                                      foregroundColor: AppColors.onSurface,
-                                      textStyle: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                  ),
+                                  const _RegisterSocialButtons(),
                                 ],
                               ),
                             ),
@@ -262,9 +309,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                                 constraints: const BoxConstraints(
                                   maxWidth: 420,
                                 ),
-                                child: _AuthFooter(
-                                  onRegister: () =>
-                                      context.go(RouteNames.registerPath),
+                                child: _RegisterFooter(
+                                  onLogin: () =>
+                                      context.go(RouteNames.authPath),
                                 ),
                               ),
                             ),
@@ -283,55 +330,8 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   }
 }
 
-class _BrandSection extends StatelessWidget {
-  const _BrandSection();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          width: 64,
-          height: 64,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            borderRadius: BorderRadius.all(Radius.circular(20)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x220B50DA),
-                blurRadius: 14,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Icon(Icons.auto_stories, color: Colors.white, size: 36),
-        ),
-        const SizedBox(height: 24),
-        Text(
-          'LexiAI',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            color: AppColors.onSurface,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.8,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          '您的智能阅读与学习助手，\n开启深度阅读的新篇章。',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.onSurfaceVariant,
-            height: 1.5,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MinimalInputField extends StatelessWidget {
-  const _MinimalInputField({
+class _RegisterInputField extends StatelessWidget {
+  const _RegisterInputField({
     required this.label,
     required this.controller,
     required this.icon,
@@ -419,10 +419,60 @@ class _OrDivider extends StatelessWidget {
   }
 }
 
-class _AuthFooter extends StatelessWidget {
-  const _AuthFooter({required this.onRegister});
+class _RegisterSocialButtons extends StatelessWidget {
+  const _RegisterSocialButtons();
 
-  final VoidCallback onRegister;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _RegisterSocialButton(
+            label: 'Google',
+            iconAsset: AuthIconAssets.google,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: _RegisterSocialButton(
+            label: '微信',
+            iconAsset: AuthIconAssets.wechat,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RegisterSocialButton extends StatelessWidget {
+  const _RegisterSocialButton({required this.label, required this.iconAsset});
+
+  final String label;
+  final String iconAsset;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: () {},
+      icon: SvgPicture.asset(iconAsset, width: 20, height: 20),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(56),
+        shape: const StadiumBorder(),
+        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.24)),
+        foregroundColor: AppColors.onSurface,
+        textStyle: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
+      ),
+    );
+  }
+}
+
+class _RegisterFooter extends StatelessWidget {
+  const _RegisterFooter({required this.onLogin});
+
+  final VoidCallback onLogin;
 
   @override
   Widget build(BuildContext context) {
@@ -433,12 +483,12 @@ class _AuthFooter extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '还没有账号？',
+              '已经有账户了？',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppColors.onSurfaceVariant,
               ),
             ),
-            TextButton(onPressed: onRegister, child: const Text('立即注册')),
+            TextButton(onPressed: onLogin, child: const Text('登录')),
           ],
         ),
         Row(

@@ -1,8 +1,8 @@
 class RouteNames {
   const RouteNames._();
 
-  static const splash = 'splash';
   static const auth = 'auth';
+  static const register = 'register';
   static const home = 'home';
   static const consultation = 'consultation';
   static const consultationStitchDetail = 'consultation_stitch_detail';
@@ -18,8 +18,8 @@ class RouteNames {
   static const profile = 'profile';
   static const settings = 'settings';
 
-  static const splashPath = '/splash';
   static const authPath = '/auth';
+  static const registerPath = '/register';
   static const homePath = '/home';
   static const consultationPath = '/consultation';
   static const consultationStitchDetailPath = '/consultation/stitch-detail';

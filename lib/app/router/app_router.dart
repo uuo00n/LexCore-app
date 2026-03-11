@@ -8,6 +8,7 @@ import 'package:lexcore/app/navigation/main_shell_page.dart';
 import 'package:lexcore/features/analysis/presentation/pages/analysis_detail_page.dart';
 import 'package:lexcore/features/analysis/presentation/pages/analysis_result_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
+import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_stitch_detail_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
@@ -20,7 +21,6 @@ import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
-import 'package:lexcore/features/splash/presentation/pages/splash_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 
 import 'route_names.dart';
@@ -40,18 +40,8 @@ final _profileNavigatorKey = GlobalKey<NavigatorState>(
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: RouteNames.splashPath,
+    initialLocation: RouteNames.authPath,
     routes: [
-      GoRoute(
-        path: RouteNames.splashPath,
-        name: RouteNames.splash,
-        pageBuilder: (context, state) => AppPageTransitions.build(
-          context: context,
-          state: state,
-          kind: AppRouteTransitionKind.none,
-          child: const SplashPage(),
-        ),
-      ),
       GoRoute(
         path: RouteNames.authPath,
         name: RouteNames.auth,
@@ -60,6 +50,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.standard,
           child: const AuthPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.registerPath,
+        name: RouteNames.register,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.standard,
+          child: const RegisterPage(),
         ),
       ),
       StatefulShellRoute(

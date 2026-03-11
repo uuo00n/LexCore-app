@@ -34,3 +34,8 @@ final searchResultsProvider = Provider<List<LawSearchItem>>((ref) {
 final articleDetailProvider = Provider<LawArticleDetail>((ref) {
   return ref.watch(searchRepositoryProvider).articleDetail();
 });
+
+final articleDetailByItemProvider =
+    Provider.family<LawArticleDetail, LawSearchItem?>((ref, item) {
+      return ref.watch(searchRepositoryProvider).articleDetail(item);
+    });

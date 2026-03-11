@@ -9,6 +9,7 @@ import 'package:lexcore/features/analysis/presentation/pages/analysis_detail_pag
 import 'package:lexcore/features/analysis/presentation/pages/analysis_result_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
+import 'package:lexcore/features/consultation/presentation/pages/consultation_stitch_detail_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
@@ -20,6 +21,7 @@ import 'package:lexcore/features/search/presentation/pages/legal_article_page.da
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
 import 'package:lexcore/features/splash/presentation/pages/splash_page.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 
 import 'route_names.dart';
 
@@ -105,7 +107,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                       context: context,
                       state: state,
                       kind: AppRouteTransitionKind.detail,
-                      child: const LegalArticlePage(),
+                      child: LegalArticlePage(
+                        searchItem: state.extra is LawSearchItem
+                            ? state.extra! as LawSearchItem
+                            : null,
+                      ),
                     ),
                   ),
                 ],
@@ -153,6 +159,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.modal,
           child: const ConsultationPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.consultationStitchDetailPath,
+        name: RouteNames.consultationStitchDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: ConsultationStitchDetailPage(
+            summary: state.extra is String ? state.extra! as String : null,
+          ),
         ),
       ),
       GoRoute(

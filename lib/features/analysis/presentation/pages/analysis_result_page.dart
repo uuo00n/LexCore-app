@@ -7,6 +7,7 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
 import 'package:lexcore/features/analysis/domain/entities/analysis_summary.dart';
+import 'package:lexcore/features/analysis/presentation/widgets/analysis_page_header.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
@@ -23,7 +24,6 @@ class AnalysisResultPage extends ConsumerWidget {
         final splitLayout =
             viewport == AppViewportSize.expanded ||
             viewport == AppViewportSize.ultra;
-        final showMobileBottomBar = viewport == AppViewportSize.compact;
 
         return Scaffold(
           body: AppMobileCanvas(
@@ -34,31 +34,19 @@ class AnalysisResultPage extends ConsumerWidget {
                   AppFadeSlideIn(
                     delay: const Duration(milliseconds: 20),
                     beginOffset: const Offset(0, -0.02),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(8, 4, 8, 2),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            icon: const Icon(Icons.arrow_back),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '案件分析结果',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          const Spacer(),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.share),
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.more_vert),
-                          ),
-                        ],
-                      ),
+                    child: AnalysisPageHeader(
+                      title: '案件分析结果',
+                      subtitle: '智能报告与证据评估',
+                      actions: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.share),
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.more_vert),
+                        ),
+                      ],
                     ),
                   ),
                   Expanded(
@@ -89,34 +77,6 @@ class AnalysisResultPage extends ConsumerWidget {
               ),
             ),
           ),
-          bottomNavigationBar: showMobileBottomBar
-              ? Container(
-                  height: 74,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    border: Border(
-                      top: BorderSide(color: Theme.of(context).dividerColor),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: const [
-                      _BottomMini(
-                        label: '报告',
-                        icon: Icons.description,
-                        active: true,
-                      ),
-                      _BottomMini(
-                        label: '证据',
-                        icon: Icons.folder_open_outlined,
-                      ),
-                      _BottomMini(label: '法规', icon: Icons.gavel_outlined),
-                      _BottomMini(label: '我的', icon: Icons.person_outline),
-                    ],
-                  ),
-                )
-              : null,
         );
       },
     );
@@ -588,40 +548,6 @@ class _EvidenceTile extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _BottomMini extends StatelessWidget {
-  const _BottomMini({
-    required this.label,
-    required this.icon,
-    this.active = false,
-  });
-
-  final String label;
-  final IconData icon;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: active ? AppColors.primary : AppColors.onSurfaceVariant,
-        ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: active ? AppColors.primary : AppColors.onSurfaceVariant,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

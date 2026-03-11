@@ -7,17 +7,20 @@ import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class LegalArticlePage extends ConsumerWidget {
-  const LegalArticlePage({super.key});
+  const LegalArticlePage({super.key, this.searchItem});
+
+  final LawSearchItem? searchItem;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final detail = ref.watch(articleDetailProvider);
+    final detail = ref.watch(articleDetailByItemProvider(searchItem));
 
     return AppPageScaffold(
-      title: '文章详情',
+      title: searchItem?.articleCode ?? '文章详情',
       actions: [
         IconButton(onPressed: () {}, icon: const Icon(Icons.bookmark_border)),
         IconButton(onPressed: () {}, icon: const Icon(Icons.share_outlined)),
@@ -91,7 +94,18 @@ class _ArticleMain extends StatelessWidget {
                   ],
                 ),
               ),
-              FilledButton(onPressed: () {}, child: const Text('关注')),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 72,
+                child: FilledButton(
+                  onPressed: () {},
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('关注'),
+                ),
+              ),
             ],
           ),
         ),

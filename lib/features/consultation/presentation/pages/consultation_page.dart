@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
 import 'package:lexcore/features/consultation/application/consultation_controller.dart';
@@ -211,6 +213,48 @@ class _ConversationPane extends StatelessWidget {
                                         : AppColors.onSurface,
                                   ),
                                 ),
+                                if (!isUser &&
+                                    item.content.trim().isNotEmpty) ...[
+                                  const SizedBox(height: 8),
+                                  TextButton.icon(
+                                    onPressed: () => context.pushNamed(
+                                      RouteNames.consultationStitchDetail,
+                                      extra: item.content,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.open_in_new_rounded,
+                                      size: 14,
+                                    ),
+                                    label: const Text('查看结果详情'),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      backgroundColor: AppColors.primary
+                                          .withValues(alpha: 0.08),
+                                      textStyle: Theme.of(context)
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                      minimumSize: const Size(0, 32),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 6,
+                                      ),
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      visualDensity: const VisualDensity(
+                                        horizontal: -2,
+                                        vertical: -2,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                                 if (item.references.isNotEmpty) ...[
                                   const SizedBox(height: 10),
                                   Wrap(

@@ -8,9 +8,10 @@ import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
 import 'package:lexcore/features/analysis/domain/entities/analysis_summary.dart';
+import 'package:lexcore/features/analysis/presentation/widgets/analysis_page_header.dart';
 import 'package:lexcore/shared/components/app_primary_button.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
-import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
+import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
 class AnalysisDetailPage extends ConsumerWidget {
   const AnalysisDetailPage({super.key});
@@ -19,26 +20,44 @@ class AnalysisDetailPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(analysisSummaryProvider);
 
-    return AppPageScaffold(
-      title: '分析详情',
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
-          final splitLayout =
-              viewport == AppViewportSize.expanded ||
-              viewport == AppViewportSize.ultra;
+    return Scaffold(
+      body: AppMobileCanvas(
+        child: SafeArea(
+          bottom: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+              final splitLayout =
+                  viewport == AppViewportSize.expanded ||
+                  viewport == AppViewportSize.ultra;
 
-          if (!splitLayout) {
-            return _AnalysisDetailMain(summary: summary, compact: true);
-          }
-
-          return AppAdaptiveSplitView(
-            splitMinWidth: 980,
-            secondaryMaxWidth: 360,
-            primary: _AnalysisDetailMain(summary: summary, compact: false),
-            secondary: _AnalysisDetailSide(summary: summary),
-          );
-        },
+              return Column(
+                children: [
+                  const AnalysisPageHeader(
+                    title: '分析详情',
+                    subtitle: '案件摘要与法条匹配',
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                      child: !splitLayout
+                          ? _AnalysisDetailMain(summary: summary, compact: true)
+                          : AppAdaptiveSplitView(
+                              splitMinWidth: 980,
+                              secondaryMaxWidth: 360,
+                              primary: _AnalysisDetailMain(
+                                summary: summary,
+                                compact: false,
+                              ),
+                              secondary: _AnalysisDetailSide(summary: summary),
+                            ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
+import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
@@ -60,6 +61,8 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                                 Expanded(
                                   flex: 7,
                                   child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       _SearchInputAndFilter(
                                         filters: filters,
@@ -87,6 +90,8 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                                 Expanded(
                                   flex: 4,
                                   child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
                                       _TopicsSection(
                                         hotKeywords: hotKeywords,
@@ -104,6 +109,7 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                               ],
                             )
                           : Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _SearchInputAndFilter(
                                   filters: filters,
@@ -221,37 +227,95 @@ class _TopicsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 90),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '推荐话题',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+      child: SizedBox(
+        width: double.infinity,
+        child: AppSurfaceCard(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+          backgroundColor: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '推荐话题',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: AppColors.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '从高频法律场景快速进入，避免空白搜索。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                alignment: WrapAlignment.start,
+                spacing: 10,
+                runSpacing: 10,
+                children: hotKeywords
+                    .map(
+                      (word) => _TopicPill(
+                        label: word,
+                        onPressed: () => onKeywordPressed(word),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TopicPill extends StatelessWidget {
+  const _TopicPill({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onPressed,
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer.withValues(alpha: 0.72),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.14),
             ),
           ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: hotKeywords
-                .map(
-                  (word) => ActionChip(
-                    label: Text(word),
-                    backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                    side: BorderSide(
-                      color: AppColors.primary.withValues(alpha: 0.18),
-                    ),
-                    labelStyle: const TextStyle(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    onPressed: () => onKeywordPressed(word),
-                  ),
-                )
-                .toList(),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: AppColors.onPrimaryContainer,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -265,32 +329,42 @@ class _ResultsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDefaultRecommendations = keyword.isEmpty;
+    final itemSpacing = isDefaultRecommendations ? 12.0 : 8.0;
+
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 140),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Text(
-                '搜索结果 ${keyword.isEmpty ? '(默认推荐)' : '(关键词: $keyword)'}',
+                '搜索结果 ${isDefaultRecommendations ? '(默认推荐)' : '(关键词: $keyword)'}',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const Spacer(),
               TextButton(onPressed: () {}, child: const Text('清除记录')),
             ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: isDefaultRecommendations ? 10 : 6),
           ...results.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
             return AppFadeSlideIn(
               delay: Duration(milliseconds: 20 + (index * 35)),
               beginOffset: const Offset(0, 0.02),
-              child: AppListTileItem(
-                title: item.title,
-                subtitle: item.snippet,
-                leading: const Icon(Icons.gavel_outlined),
-                onTap: () => context.push(RouteNames.legalArticlePath),
+              child: Padding(
+                padding: EdgeInsets.only(
+                  bottom: index == results.length - 1 ? 0 : itemSpacing,
+                ),
+                child: AppListTileItem(
+                  title: item.title,
+                  subtitle: item.snippet,
+                  leading: const Icon(Icons.gavel_outlined),
+                  onTap: () =>
+                      context.pushNamed(RouteNames.legalArticle, extra: item),
+                ),
               ),
             );
           }),

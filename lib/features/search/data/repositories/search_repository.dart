@@ -20,27 +20,44 @@ class SearchRepository {
         .toList();
   }
 
-  LawArticleDetail articleDetail() {
+  LawArticleDetail articleDetail([LawSearchItem? item]) {
+    if (item == null) {
+      return const LawArticleDetail(
+        title: '法律条文详情',
+        tags: ['法规解读', '默认详情'],
+        author: 'LexCore 法律研究',
+        publishInfo: '2026年3月9日 · 5分钟阅读',
+        summary: '当前未传入具体搜索结果，已为您展示默认法条解读内容。',
+        quote: '准确匹配搜索结果并传递上下文，是详情页稳定渲染的前提。',
+        content: '请选择一条搜索结果查看详细内容。',
+        citations: [
+          LawCitationItem(title: '搜索结果上下文缺失', subtitle: '建议从搜索列表重新进入详情页'),
+        ],
+      );
+    }
+
     return LawArticleDetail(
-      title: '关于数字经济中反垄断法的适用研究：平台经济与数据主权',
-      tags: const ['反垄断法', '深度解析'],
-      author: '陈法官',
-      publishInfo: '2023年10月24日 · 12分钟阅读',
-      summary: '本文讨论数字经济下反垄断的三大焦点：相关市场界定、数据资产支配地位、算法共谋风险。',
-      quote: '数据不仅是数字经济的原油，更是评估企业市场控制力的关键维度。',
-      content: '''
-第一条  为了保护劳动者的合法权益，调整劳动关系，建立和维护适应社会主义市场经济的劳动制度，制定本法。
+      title: item.title,
+      tags: ['法律法规', item.articleCode],
+      author: 'LexCore 法律研究',
+      publishInfo: '2026年3月9日 · 6分钟阅读',
+      summary: '围绕“${item.title}”整理了适用要点、常见争议焦点与维权建议，便于快速查看法条含义。',
+      quote: item.snippet,
+      content:
+          '''
+法条编号：${item.articleCode}
 
-第三十条  用人单位应当按照劳动合同约定和国家规定，向劳动者及时足额支付劳动报酬。
+核心内容：
+${item.snippet}
 
-第八十五条  用人单位有下列情形之一的，由劳动行政部门责令限期支付劳动报酬、加班费或者经济补偿。
+适用说明：
+1. 该条款通常用于判断劳动关系、工资支付或争议处理中的基础义务。
+2. 实务中建议同时结合劳动合同、工资流水、考勤记录等证据综合判断。
+3. 如果进入仲裁或诉讼程序，应进一步核对当地裁审口径与最新规范性文件。
 ''',
-      citations: const [
-        LawCitationItem(
-          title: '《中华人民共和国反垄断法》',
-          subtitle: '第十七条：禁止具有市场支配地位的经营者...',
-        ),
-        LawCitationItem(title: '平台经济领域反垄断指南', subtitle: '2021年发布 · 指导性文件'),
+      citations: [
+        LawCitationItem(title: item.title, subtitle: item.snippet),
+        LawCitationItem(title: '相关条文延伸', subtitle: '可继续结合相邻条款、实施条例与地方裁审意见交叉核对'),
       ],
     );
   }

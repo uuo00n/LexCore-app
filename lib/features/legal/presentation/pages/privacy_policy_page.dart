@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
+import 'package:lexcore/core/constants/app_constants.dart';
 import 'package:lexcore/features/legal/presentation/widgets/legal_markdown_view.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
@@ -15,6 +18,8 @@ class PrivacyPolicyPage extends StatefulWidget {
 }
 
 class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
+  static const _assetPath = 'doc/privacy_policy.md';
+
   final ScrollController _scrollController = ScrollController();
   double _progress = 0;
 
@@ -29,11 +34,31 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
     setState(() => _progress = progress);
   }
 
+  Future<void> _sharePolicy() async {
+    try {
+      final text = await rootBundle.loadString(_assetPath);
+      await SharePlus.instance.share(
+        ShareParams(text: text, subject: '${AppConstants.appName} 隐私政策'),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppPageScaffold(
       title: '隐私政策',
-      actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.share))],
+      actions: [
+        IconButton(
+          onPressed: _sharePolicy,
+          tooltip: '分享',
+          icon: const Icon(Icons.share),
+        ),
+      ],
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -49,7 +74,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
                 child: LegalMarkdownView(
-                  assetPath: 'doc/privacy_policy.md',
+                  assetPath: _assetPath,
                   controller: _scrollController,
                   onProgressChanged: _handleProgressChanged,
                   padding: const EdgeInsets.fromLTRB(

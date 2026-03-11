@@ -21,6 +21,7 @@ dependencies:
   flutter_svg: ^2.2.0
   intl: ^0.20.2
   flutter_markdown: ^0.7.7+1
+  share_plus: ^11.1.0
   shimmer: ^3.0.0
   google_fonts: ^6.3.2
   freezed_annotation: ^3.1.0

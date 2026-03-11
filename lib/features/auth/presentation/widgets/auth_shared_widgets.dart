@@ -63,14 +63,20 @@ class AuthTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xs, 6, 14, 0),
+    final appBarTitleStyle =
+        Theme.of(context).appBarTheme.titleTextStyle ??
+        Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
+
+    return SizedBox(
+      height: kToolbarHeight,
       child: Row(
         children: [
           SizedBox(
-            width: 40,
+            width: kToolbarHeight,
             child: onBack == null
-                ? null
+                ? const SizedBox.shrink()
                 : IconButton(
                     onPressed: onBack,
                     icon: const Icon(Icons.arrow_back),
@@ -81,12 +87,10 @@ class AuthTopBar extends StatelessWidget {
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+              style: appBarTitleStyle,
             ),
           ),
-          const SizedBox(width: 40),
+          const SizedBox(width: kToolbarHeight),
         ],
       ),
     );

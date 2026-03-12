@@ -76,7 +76,7 @@ class AppSidebarNavigation extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         color: selected
                             ? theme.colorScheme.primary.withValues(alpha: 0.14)
-                            : Colors.transparent,
+                            : theme.colorScheme.surface.withValues(alpha: 0),
                       ),
                       child: Row(
                         children: [

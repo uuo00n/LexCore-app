@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:share_plus/share_plus.dart';
 
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
 import 'package:lexcore/core/constants/app_constants.dart';
 import 'package:lexcore/features/legal/presentation/widgets/legal_markdown_view.dart';
@@ -66,29 +65,31 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
     return MarkdownStyleSheet.fromTheme(theme).copyWith(
       h1: theme.textTheme.headlineSmall?.copyWith(
         fontWeight: FontWeight.w800,
-        color: AppColors.onSurface,
+        color: Theme.of(context).colorScheme.onSurface,
         letterSpacing: -0.2,
       ),
       h2: theme.textTheme.titleMedium?.copyWith(
         fontWeight: FontWeight.w800,
-        color: AppColors.onSurface,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
       p: theme.textTheme.bodyMedium?.copyWith(
-        color: AppColors.onSurfaceVariant,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
         height: 1.65,
       ),
       listBullet: theme.textTheme.bodyMedium?.copyWith(
-        color: AppColors.onSurface,
+        color: Theme.of(context).colorScheme.onSurface,
         height: 1.65,
       ),
       strong: theme.textTheme.bodyMedium?.copyWith(
-        color: AppColors.onSurface,
+        color: Theme.of(context).colorScheme.onSurface,
         fontWeight: FontWeight.w700,
       ),
       horizontalRuleDecoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: AppColors.outline.withValues(alpha: 0.25),
+            color: Theme.of(
+              context,
+            ).colorScheme.outline.withValues(alpha: 0.25),
             width: 1,
           ),
         ),

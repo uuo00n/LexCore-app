@@ -3,9 +3,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lexcore/core/constants/app_constants.dart';
+import 'package:lexcore/theme.dart';
 
 import 'router/app_router.dart';
-import 'theme/app_theme.dart';
 
 class LexCoreApp extends ConsumerWidget {
   const LexCoreApp({super.key});
@@ -13,14 +13,15 @@ class LexCoreApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final materialTheme = MaterialTheme(ThemeData.light().textTheme);
 
     return MaterialApp.router(
       title: '${AppConstants.appName} · ${AppConstants.appSubtitle}',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.light,
+      theme: materialTheme.light(),
+      darkTheme: materialTheme.dark(),
+      themeMode: ThemeMode.system,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
           PointerDeviceKind.touch,

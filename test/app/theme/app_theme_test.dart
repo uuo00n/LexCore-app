@@ -1,31 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lexcore/app/theme/app_colors.dart';
-import 'package:lexcore/app/theme/app_theme.dart';
+import 'package:lexcore/app/theme/app_tokens_extension.dart';
+import 'package:lexcore/theme.dart';
 
 void main() {
-  testWidgets('light theme app bar uses high-contrast colors', (tester) async {
-    final appBarTheme = AppTheme.light().appBarTheme;
+  testWidgets('light theme app bar uses color scheme surface colors', (
+    tester,
+  ) async {
+    final theme = MaterialTheme(ThemeData.light().textTheme).light();
+    final appBarTheme = theme.appBarTheme;
+    final colorScheme = theme.colorScheme;
 
-    expect(appBarTheme.backgroundColor, AppColors.surface);
-    expect(appBarTheme.foregroundColor, AppColors.onSurface);
+    expect(appBarTheme.backgroundColor, colorScheme.surface);
+    expect(appBarTheme.foregroundColor, colorScheme.onSurface);
     expect(appBarTheme.scrolledUnderElevation, 0);
-    expect(appBarTheme.surfaceTintColor, Colors.transparent);
-    expect(appBarTheme.iconTheme?.color, AppColors.onSurface);
-    expect(appBarTheme.actionsIconTheme?.color, AppColors.onSurface);
-    expect(appBarTheme.titleTextStyle?.color, AppColors.onSurface);
+    expect(
+      appBarTheme.surfaceTintColor,
+      colorScheme.surface.withValues(alpha: 0),
+    );
+    expect(appBarTheme.iconTheme?.color, colorScheme.onSurface);
+    expect(appBarTheme.actionsIconTheme?.color, colorScheme.onSurface);
+    expect(appBarTheme.titleTextStyle?.color, colorScheme.onSurface);
   });
 
-  testWidgets('dark theme app bar uses high-contrast colors', (tester) async {
-    final appBarTheme = AppTheme.dark().appBarTheme;
+  testWidgets('dark theme app bar uses color scheme surface colors', (
+    tester,
+  ) async {
+    final theme = MaterialTheme(ThemeData.light().textTheme).dark();
+    final appBarTheme = theme.appBarTheme;
+    final colorScheme = theme.colorScheme;
 
-    expect(appBarTheme.backgroundColor, AppColors.backgroundDark);
-    expect(appBarTheme.foregroundColor, Colors.white);
+    expect(appBarTheme.backgroundColor, colorScheme.surface);
+    expect(appBarTheme.foregroundColor, colorScheme.onSurface);
     expect(appBarTheme.scrolledUnderElevation, 0);
-    expect(appBarTheme.surfaceTintColor, Colors.transparent);
-    expect(appBarTheme.iconTheme?.color, Colors.white);
-    expect(appBarTheme.actionsIconTheme?.color, Colors.white);
-    expect(appBarTheme.titleTextStyle?.color, Colors.white);
+    expect(
+      appBarTheme.surfaceTintColor,
+      colorScheme.surface.withValues(alpha: 0),
+    );
+    expect(appBarTheme.iconTheme?.color, colorScheme.onSurface);
+    expect(appBarTheme.actionsIconTheme?.color, colorScheme.onSurface);
+    expect(appBarTheme.titleTextStyle?.color, colorScheme.onSurface);
+  });
+
+  testWidgets('theme provides app tokens extension', (tester) async {
+    final theme = MaterialTheme(ThemeData.light().textTheme).light();
+    final tokens = theme.extension<AppTokensExtension>();
+
+    expect(tokens, isNotNull);
   });
 }

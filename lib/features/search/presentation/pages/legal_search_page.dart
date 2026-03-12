@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -199,9 +198,11 @@ class _SearchInputAndFilter extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  selectedColor: AppColors.primary,
+                  selectedColor: Theme.of(context).colorScheme.primary,
                   labelStyle: TextStyle(
-                    color: selected ? Colors.white : AppColors.onSurfaceVariant,
+                    color: selected
+                        ? Theme.of(context).colorScheme.onPrimary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 );
@@ -231,14 +232,14 @@ class _TopicsSection extends StatelessWidget {
         width: double.infinity,
         child: AppSurfaceCard(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 '推荐话题',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.onSurface,
+                  color: Theme.of(context).colorScheme.onSurface,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -246,7 +247,7 @@ class _TopicsSection extends StatelessWidget {
               Text(
                 '从高频法律场景快速进入，避免空白搜索。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.35,
                 ),
               ),
@@ -281,17 +282,21 @@ class _TopicPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
       child: InkWell(
         borderRadius: BorderRadius.circular(999),
         onTap: onPressed,
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: AppColors.primaryContainer.withValues(alpha: 0.72),
+            color: Theme.of(
+              context,
+            ).colorScheme.primaryContainer.withValues(alpha: 0.72),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: AppColors.primary.withValues(alpha: 0.14),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.14),
             ),
           ),
           child: Row(
@@ -300,8 +305,8 @@ class _TopicPill extends StatelessWidget {
               Container(
                 width: 8,
                 height: 8,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -309,7 +314,7 @@ class _TopicPill extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.onPrimaryContainer,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -385,8 +390,11 @@ class _AssistantCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0B50DA), Color(0xFF1D3DBA)],
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary,
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -397,22 +405,26 @@ class _AssistantCard extends StatelessWidget {
           children: [
             Text(
               'LexiAI 智能助理',
-              style: Theme.of(
-                context,
-              ).textTheme.titleSmall?.copyWith(color: Colors.white),
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               '通过自然语言对话，获取精准法律建议与文书模板。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onPrimary.withValues(alpha: 0.9),
               ),
             ),
             const SizedBox(height: 10),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: AppColors.primary,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerLowest,
+                foregroundColor: Theme.of(context).colorScheme.primary,
               ),
               onPressed: () => context.push(RouteNames.consultationPath),
               child: const Text('开始对话'),

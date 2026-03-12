@@ -15,3 +15,19 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Theme Policy
+
+- The single source of truth for app colors is `lib/theme.dart`.
+- Feature pages and shared widgets must read colors from `Theme.of(context).colorScheme` or `context.tokens`.
+- Do not use `AppColors`, `AppTheme`, `Colors.*`, or direct `Color(...)` literals in `lib/` (except `lib/theme.dart`).
+
+## Pre-commit Checks
+
+Run these checks before opening a PR:
+
+```bash
+flutter analyze
+flutter test
+./tool/check_theme_usage.sh
+```

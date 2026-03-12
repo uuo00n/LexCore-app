@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/shared/components/app_input_field.dart';
 import 'package:lexcore/shared/components/app_primary_button.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -96,9 +95,9 @@ class _GenerateForm extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           '填写以下信息，让 AI 为您生成专业文档。',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariant),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 16),
         AppInputField(
@@ -194,16 +193,20 @@ class _Hint extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 6),
-            child: Icon(Icons.circle, size: 6, color: AppColors.primary),
+            child: Icon(
+              Icons.circle,
+              size: 6,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -222,12 +225,14 @@ class _TemplateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppSurfaceCard(
-      backgroundColor: AppColors.primary.withValues(alpha: 0.07),
+      backgroundColor: Theme.of(
+        context,
+      ).colorScheme.primary.withValues(alpha: 0.07),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: AppColors.primary),
+          Icon(icon, color: Theme.of(context).colorScheme.primary),
           const SizedBox(height: 8),
           Text(
             title,

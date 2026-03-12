@@ -50,7 +50,9 @@ class AppBottomNavigation extends StatelessWidget {
                           ? Theme.of(
                               context,
                             ).colorScheme.primary.withValues(alpha: 0.14)
-                          : Colors.transparent,
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surface.withValues(alpha: 0),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Icon(

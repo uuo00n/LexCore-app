@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
 class ConsultationStitchDetailPage extends StatelessWidget {
@@ -18,7 +17,7 @@ class ConsultationStitchDetailPage extends StatelessWidget {
     return Theme(
       data: Theme.of(context).copyWith(
         textTheme: displayFont,
-        scaffoldBackgroundColor: AppColors.background,
+        scaffoldBackgroundColor: Theme.of(context).colorScheme.surface,
       ),
       child: Scaffold(
         body: AppMobileCanvas(
@@ -48,7 +47,9 @@ class ConsultationStitchDetailPage extends StatelessWidget {
                                 : '根据您的描述，LexiAI 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。',
                             style: displayFont.bodyMedium?.copyWith(
                               height: 1.6,
-                              color: AppColors.onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -113,8 +114,12 @@ class ConsultationStitchDetailPage extends StatelessWidget {
                           child: FilledButton(
                             onPressed: () {},
                             style: FilledButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.primary,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(18),
@@ -124,7 +129,7 @@ class ConsultationStitchDetailPage extends StatelessWidget {
                               '获取更详细的法律意见书',
                               style: displayFont.titleSmall?.copyWith(
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                color: Theme.of(context).colorScheme.onPrimary,
                               ),
                             ),
                           ),
@@ -182,12 +187,17 @@ class _HeroCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 28),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [Color(0xFFEAF0FF), Color(0xFFDCE6FF)],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primaryContainer,
+            Theme.of(context).colorScheme.secondaryContainer,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.10)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+        ),
       ),
       child: Column(
         children: [
@@ -195,12 +205,14 @@ class _HeroCard extends StatelessWidget {
             width: 68,
             height: 68,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.10),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(22),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.gavel_rounded,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 34,
             ),
           ),
@@ -208,7 +220,7 @@ class _HeroCard extends StatelessWidget {
           Text(
             '专业法律智能分析',
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -234,14 +246,16 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
-        boxShadow: const [
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
+        ),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0A0F172A),
+            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.04),
             blurRadius: 18,
-            offset: Offset(0, 8),
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -254,10 +268,12 @@ class _SectionCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.10),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: AppColors.primary),
+                child: Icon(icon, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(width: 12),
               Text(
@@ -269,7 +285,10 @@ class _SectionCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Container(height: 1, color: const Color(0xFFF1F5F9)),
+          Container(
+            height: 1,
+            color: Theme.of(context).colorScheme.surfaceContainerHigh,
+          ),
           const SizedBox(height: 14),
           child,
         ],
@@ -290,10 +309,13 @@ class _LawItem extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(16),
-        border: const Border(
-          left: BorderSide(color: AppColors.primary, width: 4),
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 4,
+          ),
         ),
       ),
       child: Column(
@@ -302,7 +324,7 @@ class _LawItem extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -310,7 +332,7 @@ class _LawItem extends StatelessWidget {
           Text(
             content,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),
@@ -340,14 +362,14 @@ class _AnalysisStep extends StatelessWidget {
           width: 26,
           height: 26,
           alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
             shape: BoxShape.circle,
           ),
           child: Text(
             '$index',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -367,7 +389,7 @@ class _AnalysisStep extends StatelessWidget {
               Text(
                 content,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.55,
                 ),
               ),

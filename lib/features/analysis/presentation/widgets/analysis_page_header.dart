@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:lexcore/app/theme/app_colors.dart';
-
 class AnalysisPageHeader extends StatelessWidget {
   const AnalysisPageHeader({
     super.key,
@@ -23,7 +21,10 @@ class AnalysisPageHeader extends StatelessWidget {
         children: [
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
-            icon: const Icon(Icons.arrow_back, color: AppColors.onSurface),
+            icon: Icon(
+              Icons.arrow_back,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
           const SizedBox(width: 4),
           Expanded(
@@ -43,7 +44,7 @@ class AnalysisPageHeader extends StatelessWidget {
                     Text(
                       subtitle!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

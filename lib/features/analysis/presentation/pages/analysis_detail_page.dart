@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
 import 'package:lexcore/features/analysis/domain/entities/analysis_summary.dart';
 import 'package:lexcore/features/analysis/presentation/widgets/analysis_page_header.dart';
@@ -77,9 +76,9 @@ class _AnalysisDetailMain extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           summary.overview,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: 10),
         AppSurfaceCard(
@@ -119,7 +118,10 @@ class _AnalysisDetailMain extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.gavel_outlined, color: AppColors.primary),
+                  Icon(
+                    Icons.gavel_outlined,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Column(
@@ -133,7 +135,11 @@ class _AnalysisDetailMain extends StatelessWidget {
                         Text(
                           item.detail,
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.onSurfaceVariant),
+                              ?.copyWith(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                         ),
                       ],
                     ),

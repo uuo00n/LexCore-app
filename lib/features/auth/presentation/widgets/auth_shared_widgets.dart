@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
 
 class AuthIconAssets {
@@ -223,7 +222,7 @@ class AuthAccountLegalFooter extends StatelessWidget {
             Text(
               accountPromptText,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             TextButton(
@@ -242,7 +241,7 @@ class AuthAccountLegalFooter extends StatelessWidget {
               child: Text(
                 '·',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -317,7 +316,9 @@ class AuthTextField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: AppColors.primary),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
           ),
         ),
@@ -398,8 +399,8 @@ class AuthPrimaryActionButton extends StatelessWidget {
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
         shape: const StadiumBorder(),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         textStyle: Theme.of(
           context,
         ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
@@ -490,7 +491,9 @@ class AuthSocialButton extends StatelessWidget {
       label: Text(label),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
-        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.24)),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.24),
+        ),
         foregroundColor: Theme.of(context).colorScheme.onSurface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         textStyle: Theme.of(
@@ -502,27 +505,19 @@ class AuthSocialButton extends StatelessWidget {
 }
 
 Color _pageBackground(BuildContext context) {
-  return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFF121212)
-      : Colors.white;
+  return Theme.of(context).colorScheme.surface;
 }
 
 Color _inputFillColor(BuildContext context) {
-  return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0x80111827)
-      : const Color(0xFFF8FAFC);
+  return Theme.of(context).colorScheme.surfaceContainerHighest;
 }
 
 Color _inputBorderColor(BuildContext context) {
-  return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFF1F2937)
-      : const Color(0xFFE2E8F0);
+  return Theme.of(context).colorScheme.outline.withValues(alpha: 0.32);
 }
 
 Color _secondaryTextColor(BuildContext context) {
-  return Theme.of(context).brightness == Brightness.dark
-      ? const Color(0xFF9CA3AF)
-      : const Color(0xFF64748B);
+  return Theme.of(context).colorScheme.onSurfaceVariant;
 }
 
 List<Widget> _optionalWidget(Widget? child) {

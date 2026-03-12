@@ -34,7 +34,9 @@ class _AppSurfaceCardState extends State<AppSurfaceCard> {
         border: Border.all(
           color: Theme.of(context).dividerColor.withValues(alpha: 0.7),
         ),
-        boxShadow: _pressed ? AppShadows.cardPressed : AppShadows.card,
+        boxShadow: _pressed
+            ? AppShadows.cardPressed(context)
+            : AppShadows.card(context),
       ),
       child: Padding(padding: widget.padding, child: widget.child),
     );
@@ -53,7 +55,7 @@ class _AppSurfaceCardState extends State<AppSurfaceCard> {
     if (!canTap) return animatedCard;
 
     return Material(
-      color: Colors.transparent,
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: widget.onTap,

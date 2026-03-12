@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/core/constants/app_constants.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
 import 'package:lexcore/features/auth/application/auth_controller.dart';
 import 'package:lexcore/features/auth/domain/entities/auth_mode.dart';
@@ -99,7 +98,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     final controller = ref.read(authControllerProvider.notifier);
 
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: PopScope<void>(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
@@ -135,7 +134,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   '${AppConstants.appSlogan}',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -169,7 +168,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 20,
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     tooltip: _passwordVisible ? '隐藏密码' : '显示密码',
                   ),
@@ -191,7 +190,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                       size: 20,
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     tooltip: _confirmPasswordVisible ? '隐藏密码' : '显示密码',
                   ),
@@ -224,7 +223,9 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                           '已阅读并同意《服务条款》《隐私政策》',
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(
-                                color: AppColors.onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                                 height: 1.35,
                               ),
                         ),
@@ -246,8 +247,8 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(56),
                     shape: const StadiumBorder(),
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.onPrimary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
                     textStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -299,34 +300,45 @@ class _RegisterInputField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         obscureText: obscureText,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyLarge?.copyWith(color: AppColors.onSurface),
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         decoration: InputDecoration(
           labelText: label,
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           alignLabelWithHint: false,
-          prefixIcon: Icon(icon, size: 20, color: AppColors.onSurfaceVariant),
+          prefixIcon: Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           prefixIconConstraints: const BoxConstraints(minWidth: 48),
           suffixIcon: suffix,
           filled: true,
-          fillColor: AppColors.surfaceVariant,
+          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
           contentPadding: const EdgeInsets.fromLTRB(12, 20, 16, 10),
-          border: const UnderlineInputBorder(
-            borderSide: BorderSide(color: AppColors.outline),
+          border: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
-          enabledBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: AppColors.outline),
+          enabledBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.outline,
+            ),
           ),
-          focusedBorder: const UnderlineInputBorder(
-            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          focusedBorder: UnderlineInputBorder(
+            borderSide: BorderSide(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+            ),
           ),
-          labelStyle: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: AppColors.onSurfaceVariant),
-          floatingLabelStyle: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.primary),
+          labelStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          floatingLabelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Theme.of(context).colorScheme.primary,
+          ),
           floatingLabelAlignment: FloatingLabelAlignment.start,
           isDense: true,
         ),
@@ -342,21 +354,27 @@ class _OrDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Expanded(
-          child: Divider(color: AppColors.surfaceVariant, thickness: 1),
+        Expanded(
+          child: Divider(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            thickness: 1,
+          ),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           child: Text(
             '或',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
         ),
-        const Expanded(
-          child: Divider(color: AppColors.surfaceVariant, thickness: 1),
+        Expanded(
+          child: Divider(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            thickness: 1,
+          ),
         ),
       ],
     );
@@ -403,8 +421,10 @@ class _RegisterSocialButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(56),
         shape: const StadiumBorder(),
-        side: BorderSide(color: AppColors.primary.withValues(alpha: 0.24)),
-        foregroundColor: AppColors.onSurface,
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.24),
+        ),
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         textStyle: Theme.of(
           context,
         ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),

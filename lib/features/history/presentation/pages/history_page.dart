@@ -5,7 +5,6 @@ import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/history/application/history_controller.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -205,7 +204,7 @@ class _HistoryTimeline extends StatelessWidget {
                   child: Text(
                     '当前筛选：${filter!.name}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -301,7 +300,7 @@ class _MetricLine extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -341,7 +340,11 @@ class _TopTab extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: active ? AppColors.primary : Colors.transparent,
+                color: active
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(
+                        context,
+                      ).colorScheme.surface.withValues(alpha: 0),
                 width: 2,
               ),
             ),
@@ -352,8 +355,8 @@ class _TopTab extends StatelessWidget {
             style: (Theme.of(context).textTheme.bodyMedium ?? const TextStyle())
                 .copyWith(
                   color: active
-                      ? AppColors.primary
-                      : AppColors.onSurfaceVariant,
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                 ),
             child: Text(title),
@@ -382,7 +385,7 @@ class _HistorySection extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.5,
             ),
@@ -411,9 +414,14 @@ class _HistorySection extends StatelessWidget {
                       height: 42,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        color: AppColors.primary.withValues(alpha: 0.1),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.1),
                       ),
-                      child: Icon(icon, color: AppColors.primary),
+                      child: Icon(
+                        icon,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -429,14 +437,18 @@ class _HistorySection extends StatelessWidget {
                           Text(
                             DateTimeUtils.relativeFromNow(item.time),
                             style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.onSurfaceVariant),
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right,
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),

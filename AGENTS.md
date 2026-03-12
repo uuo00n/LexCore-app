@@ -28,14 +28,20 @@ Use these commands from repository root:
 - Riverpod providers should end with `Provider` (e.g. `analysisReportProvider`).
 - Page files should end with `_page.dart`; repositories should live in `data/repositories`.
 - Do not scatter mock data in widgets; keep it in repository/mock layers.
-- Reuse theme tokens from `lib/app/theme` instead of hard-coded colors/spacing.
+- Color source of truth: `lib/theme.dart`.
+- In `lib/`, always use `Theme.of(context).colorScheme` and `context.tokens` for colors.
+- In `lib/`, do not use `AppColors`, `AppTheme`, `Colors.*`, or direct `Color(...)` literals (except `lib/theme.dart`).
 
 ## Testing Guidelines
 - Framework: `flutter_test`.
 - Test files must end with `_test.dart`.
 - Add tests for new business logic (controllers/repositories) and key widget flows.
-- Before opening a PR, run: `flutter analyze && flutter test`.
+- Before opening a PR, run: `flutter analyze && flutter test && ./tool/check_theme_usage.sh`.
 - No strict coverage gate yet, but new logic should not be merged without tests.
+
+## MCP Theme Prompt
+- For MCP-generated or MCP-edited pages, include this constraint in prompt:
+  `Use only Theme.of(context).colorScheme and context.tokens for colors. Do not use AppColors, AppTheme, Colors.*, or Color(...).`
 
 ## Commit & Pull Request Guidelines
 - Follow Conventional Commit style seen in history: `type: message` (example: `feat: 初始化项目并完成首次提交`).

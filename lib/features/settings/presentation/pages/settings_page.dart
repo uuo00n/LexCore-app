@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/settings/application/settings_controller.dart';
 import 'package:lexcore/features/settings/domain/entities/settings_state.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -127,10 +126,14 @@ class _SettingsMain extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
             child: Row(
@@ -147,7 +150,7 @@ class _SettingsMain extends StatelessWidget {
                       Text(
                         profileMembership,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -162,10 +165,16 @@ class _SettingsMain extends StatelessWidget {
                     ],
                   ),
                 ),
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 34,
-                  backgroundColor: Color(0x220B50DA),
-                  child: Icon(Icons.person, color: AppColors.primary, size: 34),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.13),
+                  child: Icon(
+                    Icons.person,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 34,
+                  ),
                 ),
               ],
             ),
@@ -174,7 +183,7 @@ class _SettingsMain extends StatelessWidget {
         Text(
           '账户设置',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: AppColors.primary,
+            color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.w700,
             letterSpacing: 0.5,
           ),
@@ -211,8 +220,8 @@ class _SettingsMain extends StatelessWidget {
         FilledButton.icon(
           onPressed: () {},
           style: FilledButton.styleFrom(
-            backgroundColor: const Color(0xFFFEE4E2),
-            foregroundColor: const Color(0xFFB42318),
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+            foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
             minimumSize: const Size.fromHeight(46),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -226,7 +235,7 @@ class _SettingsMain extends StatelessWidget {
           child: Text(
             version,
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -303,7 +312,7 @@ class _SettingsSidePanel extends StatelessWidget {
               Text(
                 version,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -335,7 +344,7 @@ class _SettingRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFD),
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -345,9 +354,11 @@ class _SettingRow extends StatelessWidget {
             height: 40,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
             ),
-            child: Icon(icon, color: AppColors.primary),
+            child: Icon(icon, color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -363,7 +374,7 @@ class _SettingRow extends StatelessWidget {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

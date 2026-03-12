@@ -6,7 +6,6 @@ import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
 import 'package:lexcore/features/consultation/application/consultation_controller.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -123,7 +122,7 @@ class _ConsultationHeader extends StatelessWidget {
               Text(
                 splitLayout ? '桌面协作模式' : '在线咨询中',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -173,9 +172,11 @@ class _ConversationPane extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (!isUser) ...[
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 18,
-                        backgroundColor: AppColors.primaryContainer,
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primaryContainer,
                         child: Icon(Icons.smart_toy_outlined, size: 18),
                       ),
                       const SizedBox(width: 8),
@@ -209,8 +210,12 @@ class _ConversationPane extends StatelessWidget {
                                   item.content,
                                   style: TextStyle(
                                     color: isUser
-                                        ? Colors.white
-                                        : AppColors.onSurface,
+                                        ? Theme.of(
+                                            context,
+                                          ).colorScheme.onPrimary
+                                        : Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
                                   ),
                                 ),
                                 if (!isUser &&
@@ -227,8 +232,12 @@ class _ConversationPane extends StatelessWidget {
                                     ),
                                     label: const Text('查看结果详情'),
                                     style: TextButton.styleFrom(
-                                      foregroundColor: AppColors.primary,
-                                      backgroundColor: AppColors.primary
+                                      foregroundColor: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primary
                                           .withValues(alpha: 0.08),
                                       textStyle: Theme.of(context)
                                           .textTheme
@@ -269,10 +278,13 @@ class _ConversationPane extends StatelessWidget {
                                             ),
                                             decoration: BoxDecoration(
                                               color: isUser
-                                                  ? Colors.white.withValues(
-                                                      alpha: 0.2,
-                                                    )
-                                                  : Colors.white,
+                                                  ? Theme.of(context)
+                                                        .colorScheme
+                                                        .onPrimary
+                                                        .withValues(alpha: 0.2)
+                                                  : Theme.of(context)
+                                                        .colorScheme
+                                                        .surfaceContainerLowest,
                                               borderRadius:
                                                   BorderRadius.circular(999),
                                             ),
@@ -283,8 +295,11 @@ class _ConversationPane extends StatelessWidget {
                                                   .labelMedium
                                                   ?.copyWith(
                                                     color: isUser
-                                                        ? Colors.white
-                                                        : AppColors
+                                                        ? Theme.of(context)
+                                                              .colorScheme
+                                                              .onPrimary
+                                                        : Theme.of(context)
+                                                              .colorScheme
                                                               .onSurfaceVariant,
                                                   ),
                                             ),
@@ -301,9 +316,11 @@ class _ConversationPane extends StatelessWidget {
                     ),
                     if (isUser) ...[
                       const SizedBox(width: 8),
-                      const CircleAvatar(
+                      CircleAvatar(
                         radius: 18,
-                        backgroundColor: Color(0x220B50DA),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.13),
                         child: Icon(Icons.person, size: 18),
                       ),
                     ],
@@ -370,7 +387,7 @@ class _ConsultationSidePanel extends StatelessWidget {
                 Text(
                   '共 ${messages.length} 条对话，建议优先补充关键事实、时间线与证据来源。',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -390,7 +407,7 @@ class _ConsultationSidePanel extends StatelessWidget {
                   Text(
                     '暂无引用，继续提问可自动补全参考法条。',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   )
                 else

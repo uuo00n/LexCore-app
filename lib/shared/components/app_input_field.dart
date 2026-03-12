@@ -53,7 +53,9 @@ class _AppInputFieldState extends State<AppInputField> {
       duration: AppMotion.component,
       curve: AppMotion.easeOut,
       decoration: BoxDecoration(
-        color: Theme.of(context).inputDecorationTheme.fillColor ?? Colors.white,
+        color:
+            Theme.of(context).inputDecorationTheme.fillColor ??
+            Theme.of(context).colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: focused

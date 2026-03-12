@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/dashboard/application/dashboard_provider.dart';
 import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -16,7 +15,7 @@ class CaseDashboardPage extends ConsumerWidget {
     final data = ref.watch(dashboardProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: AppMobileCanvas(
         maxContentWidth: 430,
         child: SafeArea(
@@ -27,26 +26,36 @@ class CaseDashboardPage extends ConsumerWidget {
                 pinned: true,
                 elevation: 0,
                 scrolledUnderElevation: 0,
-                backgroundColor: AppColors.background.withValues(alpha: 0.92),
-                surfaceTintColor: Colors.transparent,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.92),
+                surfaceTintColor: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0),
                 toolbarHeight: 64,
                 titleSpacing: 0,
                 leadingWidth: 56,
                 leading: IconButton(
                   onPressed: () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.menu, color: AppColors.onSurface),
+                  icon: Icon(
+                    Icons.menu,
+                    color: Theme.of(context).colorScheme.onSurface,
+                  ),
                 ),
                 title: Text(
                   'LexiAI 案件分析',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: AppColors.onSurface,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 actions: [
                   IconButton(
                     onPressed: () {},
-                    icon: const Icon(Icons.search, color: AppColors.onSurface),
+                    icon: Icon(
+                      Icons.search,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   Padding(
                     padding: const EdgeInsets.only(right: 16),
@@ -54,16 +63,20 @@ class CaseDashboardPage extends ConsumerWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.16),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.16),
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.primary.withValues(alpha: 0.1),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.1),
                         ),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.account_circle,
                         size: 18,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -105,8 +118,8 @@ class CaseDashboardPage extends ConsumerWidget {
       bottomNavigationBar: const _DashboardBottomBar(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         child: const Icon(Icons.add),
@@ -133,7 +146,7 @@ class _StatsGrid extends StatelessWidget {
           SizedBox(
             width: 168,
             child: AppSurfaceCard(
-              backgroundColor: AppColors.primaryContainer,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               padding: const EdgeInsets.all(18),
               child: _MetricBlock(
                 label: '总案件量',
@@ -141,18 +154,20 @@ class _StatsGrid extends StatelessWidget {
                 icon: Icons.folder_open,
                 caption: '本月 +12%',
                 captionIcon: Icons.trending_up,
-                valueColor: AppColors.onPrimaryContainer,
-                iconColor: AppColors.onPrimaryContainer,
-                captionColor: AppColors.onPrimaryContainer.withValues(
-                  alpha: 0.82,
-                ),
+                valueColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                iconColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                captionColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer.withValues(alpha: 0.82),
               ),
             ),
           ),
           SizedBox(
             width: 168,
             child: AppSurfaceCard(
-              backgroundColor: const Color(0xFFE7E8F2),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.surfaceContainerHighest,
               padding: const EdgeInsets.all(18),
               child: _MetricBlock(
                 label: '分析中',
@@ -173,9 +188,9 @@ class _StatsGrid extends StatelessWidget {
                 icon: Icons.verified,
                 caption: '符合司法标准',
                 captionIcon: Icons.check_circle,
-                captionColor: const Color(0xFF1F8B4C),
-                iconColor: const Color(0xFF1F8B4C),
-                valueColor: AppColors.onSurface,
+                captionColor: Theme.of(context).colorScheme.primaryFixedDim,
+                iconColor: Theme.of(context).colorScheme.primaryFixedDim,
+                valueColor: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ),
@@ -220,7 +235,7 @@ class _TrendSection extends StatelessWidget {
                       Text(
                         '过去7天的案件处理效率',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.onSurfaceVariant,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -229,8 +244,12 @@ class _TrendSection extends StatelessWidget {
                 OutlinedButton.icon(
                   onPressed: () {},
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.onSurfaceVariant,
-                    side: const BorderSide(color: AppColors.outline),
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
                       vertical: 10,
@@ -248,7 +267,12 @@ class _TrendSection extends StatelessWidget {
             SizedBox(
               height: 148,
               width: double.infinity,
-              child: CustomPaint(painter: _TrendPainter(points: points)),
+              child: CustomPaint(
+                painter: _TrendPainter(
+                  points: points,
+                  lineColor: Theme.of(context).colorScheme.primary,
+                ),
+              ),
             ),
             const SizedBox(height: 10),
             Row(
@@ -291,7 +315,7 @@ class _SectionHeader extends StatelessWidget {
           TextButton(
             onPressed: () {},
             style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
+              foregroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -344,10 +368,16 @@ class _QuickActionCard extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.12),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 20, color: AppColors.primary),
+              child: Icon(
+                icon,
+                size: 20,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
@@ -371,8 +401,10 @@ class _DashboardBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomAppBar(
       height: 80,
-      color: Colors.white,
-      surfaceTintColor: Colors.transparent,
+      color: Theme.of(context).colorScheme.surfaceContainerLowest,
+      surfaceTintColor: Theme.of(
+        context,
+      ).colorScheme.surface.withValues(alpha: 0),
       elevation: 8,
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Row(
@@ -402,8 +434,8 @@ class _BottomNavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final foreground = selected
-        ? AppColors.primary
-        : AppColors.onSurfaceVariant;
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Expanded(
       child: InkWell(
@@ -419,8 +451,12 @@ class _BottomNavItem extends StatelessWidget {
                 height: 32,
                 decoration: BoxDecoration(
                   color: selected
-                      ? AppColors.primary.withValues(alpha: 0.16)
-                      : Colors.transparent,
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.16)
+                      : Theme.of(
+                          context,
+                        ).colorScheme.surface.withValues(alpha: 0),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 alignment: Alignment.center,
@@ -465,7 +501,8 @@ class _MetricBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolvedCaptionColor = captionColor ?? AppColors.onSurfaceVariant;
+    final resolvedCaptionColor =
+        captionColor ?? Theme.of(context).colorScheme.onSurfaceVariant;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -477,14 +514,15 @@ class _MetricBlock extends StatelessWidget {
                 label,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   fontWeight: FontWeight.w600,
-                  color: AppColors.onSurfaceVariant,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
             Icon(
               icon,
               size: 20,
-              color: iconColor ?? AppColors.onSurfaceVariant,
+              color:
+                  iconColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ],
         ),
@@ -493,7 +531,7 @@ class _MetricBlock extends StatelessWidget {
           value,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.onSurface,
+            color: valueColor ?? Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
@@ -524,7 +562,10 @@ class _ProgressListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = _CaseVisuals.fromIcon(item.icon);
+    final config = _CaseVisuals.fromIcon(
+      item.icon,
+      Theme.of(context).colorScheme,
+    );
 
     return AppSurfaceCard(
       padding: const EdgeInsets.all(14),
@@ -556,7 +597,7 @@ class _ProgressListItem extends StatelessWidget {
                 Text(
                   _caseSubtitle(item),
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -571,7 +612,7 @@ class _ProgressListItem extends StatelessWidget {
                 Text(
                   '${(item.progress * 100).toStringAsFixed(0)}%',
                   style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -581,8 +622,10 @@ class _ProgressListItem extends StatelessWidget {
                   child: LinearProgressIndicator(
                     minHeight: 6,
                     value: item.progress,
-                    backgroundColor: AppColors.surfaceVariant,
-                    color: AppColors.primary,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
@@ -618,31 +661,31 @@ class _CaseVisuals {
   final Color background;
   final Color foreground;
 
-  factory _CaseVisuals.fromIcon(String icon) {
+  factory _CaseVisuals.fromIcon(String icon, ColorScheme colorScheme) {
     switch (icon) {
       case 'gavel':
-        return const _CaseVisuals(
+        return _CaseVisuals(
           icon: Icons.gavel_outlined,
-          background: Color(0xFFEAF0FF),
-          foreground: Color(0xFF356AE6),
+          background: colorScheme.primaryContainer,
+          foreground: colorScheme.primary,
         );
       case 'description':
-        return const _CaseVisuals(
+        return _CaseVisuals(
           icon: Icons.description_outlined,
-          background: Color(0xFFFFF0E6),
-          foreground: Color(0xFFE56A1F),
+          background: colorScheme.secondaryContainer,
+          foreground: colorScheme.secondary,
         );
       case 'balance':
-        return const _CaseVisuals(
+        return _CaseVisuals(
           icon: Icons.balance_outlined,
-          background: Color(0xFFF2EAFF),
-          foreground: Color(0xFF8A56E8),
+          background: colorScheme.tertiaryContainer,
+          foreground: colorScheme.tertiary,
         );
       default:
-        return const _CaseVisuals(
+        return _CaseVisuals(
           icon: Icons.folder_outlined,
-          background: Color(0xFFEAF0FF),
-          foreground: AppColors.primary,
+          background: colorScheme.surfaceContainerHigh,
+          foreground: colorScheme.primary,
         );
     }
   }
@@ -653,22 +696,24 @@ class _WeekdayLabel extends StatelessWidget {
 
   final String text;
 
-  static final TextStyle _style = TextStyle(
-    fontSize: 11,
-    color: AppColors.onSurfaceVariant,
-    fontWeight: FontWeight.w500,
-  );
-
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: _style);
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        fontSize: 11,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        fontWeight: FontWeight.w500,
+      ),
+    );
   }
 }
 
 class _TrendPainter extends CustomPainter {
-  const _TrendPainter({required this.points});
+  const _TrendPainter({required this.points, required this.lineColor});
 
   final List<double> points;
+  final Color lineColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -706,14 +751,17 @@ class _TrendPainter extends CustomPainter {
       ..close();
 
     final fillPaint = Paint()
-      ..shader = const LinearGradient(
+      ..shader = LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: [Color(0x330B50DA), Color(0x050B50DA)],
+        colors: [
+          lineColor.withValues(alpha: 0.2),
+          lineColor.withValues(alpha: 0.02),
+        ],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     final linePaint = Paint()
-      ..color = AppColors.primary
+      ..color = lineColor
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
@@ -725,6 +773,6 @@ class _TrendPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TrendPainter oldDelegate) {
-    return oldDelegate.points != points;
+    return oldDelegate.points != points || oldDelegate.lineColor != lineColor;
   }
 }

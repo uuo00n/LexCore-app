@@ -2,14 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
-import 'package:lexcore/app/adaptive/app_breakpoints.dart';
-import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/features/profile/domain/entities/profile_summary.dart';
-import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
@@ -20,168 +15,175 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(profileSummaryProvider);
     final menus = ref.watch(profileMenusProvider);
+    final accountMenus = _buildAccountMenus(menus);
+    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: dark
+          ? Theme.of(context).colorScheme.surface
+          : Theme.of(context).colorScheme.surface,
       body: AppMobileCanvas(
+        maxContentWidth: 560,
         child: SafeArea(
           bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
-              final splitLayout =
-                  viewport == AppViewportSize.expanded ||
-                  viewport == AppViewportSize.ultra;
-
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
-                    child: AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 20),
-                      beginOffset: const Offset(0, -0.02),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.menu_rounded),
-                          ),
-                          Expanded(
-                            child: Text(
-                              '个人资料',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () =>
-                                context.push(RouteNames.settingsPath),
-                            icon: const Icon(Icons.settings_outlined),
-                          ),
-                        ],
-                      ),
+          child: Column(
+            children: [
+              _ProfileTopBar(
+                onBackTap: () {
+                  if (Navigator.of(context).canPop()) {
+                    context.pop();
+                  }
+                },
+                onSettingsTap: () => context.push(RouteNames.settingsPath),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 118),
+                  children: [
+                    _ProfileHero(summary: summary),
+                    const SizedBox(height: 20),
+                    _SubscriptionCard(summary: summary),
+                    const SizedBox(height: 20),
+                    _SectionTitle(
+                      text: '账户详情',
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-                      child: splitLayout
-                          ? AppAdaptiveSplitView(
-                              splitMinWidth: 980,
-                              secondaryMaxWidth: 420,
-                              primary: ListView(
-                                children: [
-                                  _ProfileHero(summary: summary),
-                                  const SizedBox(height: 18),
-                                  _SubscriptionCard(summary: summary),
-                                ],
-                              ),
-                              secondary: _ProfileMenuPanel(menus: menus),
-                            )
-                          : ListView(
-                              children: AppStagger.sections([
-                                _ProfileHero(summary: summary),
-                                const SizedBox(height: 18),
-                                _SubscriptionCard(summary: summary),
-                                const SizedBox(height: 18),
-                                _ProfileMenuPanel(menus: menus),
-                              ]),
-                            ),
+                    const SizedBox(height: 8),
+                    _SectionCard(
+                      children: [
+                        for (var i = 0; i < accountMenus.length; i++)
+                          _SectionRow(
+                            title: accountMenus[i].title,
+                            subtitle: accountMenus[i].subtitle,
+                            leading: accountMenus[i].icon,
+                            onTap: () => context.push(accountMenus[i].route),
+                            showDivider: i != accountMenus.length - 1,
+                          ),
+                      ],
                     ),
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(height: 18),
+                    _SectionTitle(
+                      text: '其他',
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(height: 8),
+                    _SectionCard(
+                      children: [
+                        _SectionRow(
+                          title: '帮助与支持',
+                          subtitle: '',
+                          leading: Icons.help_outline,
+                          onTap: () {},
+                          showDivider: true,
+                        ),
+                        _SectionRow(
+                          title: '退出登录',
+                          subtitle: '',
+                          leading: Icons.logout_outlined,
+                          onTap: () {},
+                          titleColor: Theme.of(context).colorScheme.error,
+                          iconColor: Theme.of(context).colorScheme.error,
+                          showChevron: false,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  static IconData _iconFrom(String icon) {
-    switch (icon) {
-      case 'folder_open':
-        return Icons.folder_open_outlined;
-      case 'history':
-        return Icons.history;
-      case 'settings':
-        return Icons.settings_outlined;
-      default:
-        return Icons.person_outline;
-    }
-  }
+  static List<_AccountMenu> _buildAccountMenus(List<ProfileMenuItem> menus) {
+    final fallbackRoutes = [
+      RouteNames.savedDocumentsPath,
+      RouteNames.historyPath,
+      RouteNames.settingsPath,
+    ];
 
-  static String _subtitle(String title) {
-    switch (title) {
-      case '我的文档':
-        return '查看和管理文书资产';
-      case '历史记录':
-        return '咨询、分析与检索轨迹';
-      case '设置':
-        return '账号安全与偏好配置';
-      default:
-        return '';
+    String routeAt(int index) {
+      if (index < menus.length && menus[index].route.isNotEmpty) {
+        return menus[index].route;
+      }
+      return fallbackRoutes[index];
     }
+
+    return [
+      _AccountMenu(
+        title: '个人信息',
+        subtitle: '姓名、头像与基本资料',
+        icon: Icons.person_outline,
+        route: routeAt(0),
+      ),
+      _AccountMenu(
+        title: '账号安全',
+        subtitle: '密码、双重验证',
+        icon: Icons.shield_outlined,
+        route: routeAt(1),
+      ),
+      _AccountMenu(
+        title: '账单与支付',
+        subtitle: '历史订单与支付方式',
+        icon: Icons.payments_outlined,
+        route: routeAt(2),
+      ),
+    ];
   }
 }
 
-class _ProfileMenuPanel extends StatelessWidget {
-  const _ProfileMenuPanel({required this.menus});
+class _ProfileTopBar extends StatelessWidget {
+  const _ProfileTopBar({required this.onBackTap, required this.onSettingsTap});
 
-  final List<ProfileMenuItem> menus;
+  final VoidCallback onBackTap;
+  final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        _SectionTitle(text: '账户详情', color: AppColors.primary),
-        const SizedBox(height: 8),
-        AppSurfaceCard(
-          padding: EdgeInsets.zero,
-          backgroundColor: const Color(0xFFF8FAFD),
-          child: Column(
-            children: [
-              for (var i = 0; i < menus.length; i++)
-                _SectionRow(
-                  title: menus[i].title,
-                  subtitle: ProfilePage._subtitle(menus[i].title),
-                  leading: ProfilePage._iconFrom(menus[i].icon),
-                  onTap: () => context.push(menus[i].route),
-                  showDivider: i != menus.length - 1,
-                ),
-            ],
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: dark
+            ? colorScheme.surfaceContainer
+            : colorScheme.surfaceContainerLowest.withValues(alpha: 0.88),
+        border: Border(
+          bottom: BorderSide(
+            color: dark
+                ? colorScheme.outline.withValues(alpha: 0.28)
+                : colorScheme.outlineVariant,
           ),
         ),
-        const SizedBox(height: 16),
-        _SectionTitle(text: '其他', color: AppColors.onSurfaceVariant),
-        const SizedBox(height: 8),
-        AppSurfaceCard(
-          padding: EdgeInsets.zero,
-          backgroundColor: const Color(0xFFF8FAFD),
-          child: Column(
-            children: [
-              _SectionRow(
-                title: '帮助与支持',
-                subtitle: '常见问题与人工服务',
-                leading: Icons.help_outline,
-                onTap: () {},
-                showDivider: true,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+        child: Row(
+          children: [
+            IconButton(
+              onPressed: onBackTap,
+              icon: const Icon(Icons.arrow_back),
+              tooltip: '返回',
+            ),
+            Expanded(
+              child: Text(
+                '个人资料',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
-              _SectionRow(
-                title: '退出登录',
-                subtitle: '',
-                leading: Icons.logout,
-                onTap: () {},
-                titleColor: const Color(0xFFDC2626),
-                iconColor: const Color(0xFFDC2626),
-                showChevron: false,
-              ),
-            ],
-          ),
+            ),
+            IconButton(
+              onPressed: onSettingsTap,
+              icon: const Icon(Icons.settings_outlined),
+              tooltip: '设置',
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }
@@ -191,8 +193,14 @@ class _ProfileHero extends StatelessWidget {
 
   final ProfileSummary summary;
 
+  static const _avatarUrl =
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuDyKmFYBVM8oWRTG0Q8u1PW6_yLs5OrUx9YcDTUE651ZM3gwL1vh6qDY74nxbnATNwug0EcyB4yxsZZf5hZzkAtzEWWTmi9RMWEwqvnOmCR2o8SSyppIMtMtGwgh7SD8zXR7UNgGbl6pC2uIDAKlarIwpWZzitR8U56VPDkYEVRYaIRxP5YuRRimg6EQR_LQwtIUJMTIn2wAR8OAY9pRFtf5PFzzjChKCEz3C59Awsc46Ogpqh1151wB6-_XMqlnQnTaiogvTX0DOWj';
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+
     return Center(
       child: Column(
         children: [
@@ -203,21 +211,33 @@ class _ProfileHero extends StatelessWidget {
                 height: 112,
                 padding: const EdgeInsets.all(4),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(999),
+                  shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.12),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.14),
                     width: 4,
                   ),
                 ),
-                child: Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFF3F5F9),
-                  ),
-                  child: const Icon(
-                    Icons.person,
-                    size: 50,
-                    color: AppColors.primary,
+                child: ClipOval(
+                  child: Image.network(
+                    _avatarUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: dark
+                            ? Theme.of(context).colorScheme.surfaceContainer
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerLowest,
+                        alignment: Alignment.center,
+                        child: Icon(
+                          Icons.person,
+                          size: 48,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -225,14 +245,25 @@ class _ProfileHero extends StatelessWidget {
                 right: 0,
                 bottom: 0,
                 child: Container(
-                  width: 30,
-                  height: 30,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: Colors.white, width: 2),
+                    color: Theme.of(context).colorScheme.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: dark
+                          ? Theme.of(context).colorScheme.surface
+                          : Theme.of(
+                              context,
+                            ).colorScheme.surfaceContainerLowest,
+                      width: 2,
+                    ),
                   ),
-                  child: const Icon(Icons.edit, color: Colors.white, size: 14),
+                  child: Icon(
+                    Icons.edit,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    size: 15,
+                  ),
                 ),
               ),
             ],
@@ -240,30 +271,33 @@ class _ProfileHero extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             summary.name,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             summary.email,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              color: AppColors.primary.withValues(alpha: 0.12),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.1),
             ),
             child: Text(
               summary.membership,
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: AppColors.primary,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 0.7,
+                letterSpacing: 0.6,
               ),
             ),
           ),
@@ -280,7 +314,22 @@ class _SubscriptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppSurfaceCard(
+    final theme = Theme.of(context);
+    final dark = theme.brightness == Brightness.dark;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: dark
+            ? Theme.of(context).colorScheme.surfaceContainer
+            : Theme.of(context).colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: dark
+              ? Theme.of(context).colorScheme.outline.withValues(alpha: 0.28)
+              : Theme.of(context).colorScheme.outlineVariant,
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -293,32 +342,39 @@ class _SubscriptionCard extends StatelessWidget {
                   children: [
                     Text(
                       '当前订阅计划',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       summary.membership,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.workspace_premium, color: AppColors.primary),
+              Icon(
+                Icons.workspace_premium,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          ...summary.benefits.map((benefit) => _PlanLine(benefit)),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
+          ...summary.benefits.map((benefit) => _PlanLine(text: benefit)),
+          const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.only(top: 10),
+            padding: const EdgeInsets.only(top: 12),
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: Theme.of(context).dividerColor.withValues(alpha: 0.6),
+                  color: dark
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.28)
+                      : Theme.of(context).colorScheme.outlineVariant,
                 ),
               ),
             ),
@@ -327,17 +383,17 @@ class _SubscriptionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '下次计费日期：${summary.nextBillingDate}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.onSurfaceVariant,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
                 FilledButton(
                   onPressed: () {},
                   style: FilledButton.styleFrom(
-                    minimumSize: const Size(84, 34),
+                    minimumSize: const Size(88, 34),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                   child: const Text('管理订阅'),
@@ -352,18 +408,22 @@ class _SubscriptionCard extends StatelessWidget {
 }
 
 class _PlanLine extends StatelessWidget {
-  const _PlanLine(this.text);
+  const _PlanLine({required this.text});
 
   final String text;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          const Icon(Icons.check_circle, size: 16, color: Colors.green),
-          const SizedBox(width: 6),
+          Icon(
+            Icons.check_circle,
+            size: 18,
+            color: Theme.of(context).colorScheme.primaryFixedDim,
+          ),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(text, style: Theme.of(context).textTheme.bodySmall),
           ),
@@ -381,13 +441,37 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-        color: color,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 0.8,
+    return Padding(
+      padding: const EdgeInsets.only(left: 2),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.9,
+        ),
       ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: dark
+            ? Theme.of(context).colorScheme.surfaceContainerHigh
+            : Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(children: children),
     );
   }
 }
@@ -415,18 +499,22 @@ class _SectionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           border: showDivider
               ? Border(
                   bottom: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).dividerColor.withValues(alpha: 0.5),
+                    color: dark
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.outline.withValues(alpha: 0.28)
+                        : Theme.of(context).colorScheme.outlineVariant,
                   ),
                 )
               : null,
@@ -435,8 +523,9 @@ class _SectionRow extends StatelessWidget {
           children: [
             Icon(
               leading,
-              color: iconColor ?? AppColors.onSurfaceVariant,
-              size: 20,
+              color:
+                  iconColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 21,
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -454,21 +543,35 @@ class _SectionRow extends StatelessWidget {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                 ],
               ),
             ),
             if (showChevron)
-              const Icon(
+              Icon(
                 Icons.chevron_right,
                 size: 20,
-                color: AppColors.onSurfaceVariant,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
           ],
         ),
       ),
     );
   }
+}
+
+class _AccountMenu {
+  const _AccountMenu({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.route,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String route;
 }

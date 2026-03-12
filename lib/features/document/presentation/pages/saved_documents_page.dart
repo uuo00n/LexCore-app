@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/document/application/document_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -54,11 +53,11 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
                     return ChoiceChip(
                       label: Text(labels[index]),
                       selected: selected,
-                      selectedColor: AppColors.primary,
+                      selectedColor: Theme.of(context).colorScheme.primary,
                       labelStyle: TextStyle(
                         color: selected
-                            ? Colors.white
-                            : AppColors.onSurfaceVariant,
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w600,
                       ),
                       onSelected: (_) => setState(() => _tab = index),
@@ -83,9 +82,21 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
                 itemBuilder: (context, index) {
                   final item = docs[index];
                   final status = switch (index % 3) {
-                    0 => ('已完成', AppColors.primary),
-                    1 => ('草稿', Colors.orange),
-                    _ => ('已归档', AppColors.onSurfaceVariant),
+                    0 => (
+                      '已完成',
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.onPrimary,
+                    ),
+                    1 => (
+                      '草稿',
+                      Theme.of(context).colorScheme.tertiary,
+                      Theme.of(context).colorScheme.onTertiary,
+                    ),
+                    _ => (
+                      '已归档',
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                      Theme.of(context).colorScheme.surface,
+                    ),
                   };
                   return _DocumentCard(item: item, status: status);
                 },
@@ -103,7 +114,7 @@ class _DocumentCard extends StatelessWidget {
   const _DocumentCard({required this.item, required this.status});
 
   final DocumentItem item;
-  final (String, Color) status;
+  final (String, Color, Color) status;
 
   @override
   Widget build(BuildContext context) {
@@ -120,8 +131,8 @@ class _DocumentCard extends StatelessWidget {
               ),
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.1),
-                  AppColors.primary.withValues(alpha: 0.2),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -143,7 +154,7 @@ class _DocumentCard extends StatelessWidget {
                   child: Text(
                     status.$1,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: Colors.white,
+                      color: status.$3,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -161,7 +172,7 @@ class _DocumentCard extends StatelessWidget {
                 Text(
                   '${item.type} · 更新于 ${DateTimeUtils.relativeFromNow(item.updatedAt)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 10),

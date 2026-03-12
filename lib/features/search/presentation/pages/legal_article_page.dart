@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -88,7 +87,7 @@ class _ArticleMain extends StatelessWidget {
                     Text(
                       detail.publishInfo,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.onSurfaceVariant,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -111,21 +110,23 @@ class _ArticleMain extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         AppSurfaceCard(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.06),
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.06),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.smart_toy_outlined,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     'AI 智能摘要',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -146,7 +147,9 @@ class _ArticleMain extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         AppSurfaceCard(
-          backgroundColor: AppColors.primary.withValues(alpha: 0.05),
+          backgroundColor: Theme.of(
+            context,
+          ).colorScheme.primary.withValues(alpha: 0.05),
           child: Text(
             '“${detail.quote}”',
             style: Theme.of(
@@ -211,13 +214,15 @@ class _TagChip extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(999),
         color: primary
-            ? AppColors.primary.withValues(alpha: 0.12)
-            : const Color(0xFFECEFF4),
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+            : Theme.of(context).colorScheme.surfaceContainerHighest,
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: primary ? AppColors.primary : AppColors.onSurfaceVariant,
+          color: primary
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -251,7 +256,7 @@ class _CitationTile extends StatelessWidget {
                 Text(
                   subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

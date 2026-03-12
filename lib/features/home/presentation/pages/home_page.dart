@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/home/application/home_providers.dart';
 import 'package:lexcore/features/home/domain/entities/home_entity.dart';
@@ -124,22 +123,22 @@ class _CoreSection extends StatelessWidget {
         children: [
           Text(
             '您好, 法律专家',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: AppColors.primary),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             '今天想处理什么法律事务？',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: 18),
           Text(
             '核心服务',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: AppColors.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 0.4,
             ),
           ),
@@ -158,13 +157,15 @@ class _CoreSection extends StatelessWidget {
               final action = homeData.actions[index];
               final highlighted = index == 0;
               final iconColor = highlighted
-                  ? Colors.white
-                  : AppColors.onSurfaceVariant;
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : Theme.of(context).colorScheme.onSurfaceVariant;
 
               return AppSurfaceCard(
                 backgroundColor: highlighted
-                    ? AppColors.primary.withValues(alpha: 0.95)
-                    : Colors.white,
+                    ? Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.95)
+                    : Theme.of(context).colorScheme.surfaceContainerLowest,
                 onTap: () => context.push(action.route),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,8 +175,12 @@ class _CoreSection extends StatelessWidget {
                       height: 44,
                       decoration: BoxDecoration(
                         color: highlighted
-                            ? Colors.white.withValues(alpha: 0.24)
-                            : AppColors.surfaceVariant,
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onPrimary.withValues(alpha: 0.24)
+                            : Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(iconFrom(action.icon), color: iconColor),
@@ -184,7 +189,9 @@ class _CoreSection extends StatelessWidget {
                     Text(
                       action.title,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: highlighted ? Colors.white : AppColors.onSurface,
+                        color: highlighted
+                            ? Theme.of(context).colorScheme.onPrimary
+                            : Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -192,8 +199,10 @@ class _CoreSection extends StatelessWidget {
                       action.subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: highlighted
-                            ? Colors.white.withValues(alpha: 0.86)
-                            : AppColors.onSurfaceVariant,
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.onPrimary.withValues(alpha: 0.86)
+                            : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -212,6 +221,18 @@ class _RecentActivitySection extends StatelessWidget {
 
   final HomeEntity homeData;
 
+  IconData _iconFromTag(String tag) {
+    switch (tag) {
+      case '文档':
+        return Icons.article_outlined;
+      case '分析':
+        return Icons.analytics_outlined;
+      case '咨询':
+      default:
+        return Icons.history;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppFadeSlideIn(
@@ -226,52 +247,120 @@ class _RecentActivitySection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          ...homeData.activities.map<Widget>(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: AppSurfaceCard(
-                onTap: () {},
-                padding: const EdgeInsets.symmetric(
-                  vertical: 10,
-                  horizontal: 12,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: AppColors.surfaceVariant,
+          Column(
+            key: const ValueKey('home_recent_activity_list'),
+            children: List<Widget>.generate(homeData.activities.length, (
+              index,
+            ) {
+              final item = homeData.activities[index];
+              final isLast = index == homeData.activities.length - 1;
+              return Material(
+                key: ValueKey<String>('home_recent_activity_item_$index'),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  overlayColor: WidgetStateProperty.resolveWith<Color?>((
+                    states,
+                  ) {
+                    if (states.contains(WidgetState.pressed)) {
+                      return Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1);
+                    }
+                    if (states.contains(WidgetState.hovered)) {
+                      return Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.05);
+                    }
+                    return null;
+                  }),
+                  onTap: () {},
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isLast
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.surface.withValues(alpha: 0)
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.outline.withValues(alpha: 0.16),
+                        ),
                       ),
-                      child: const Icon(Icons.history, size: 18),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            item.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(999),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest
+                                  .withValues(alpha: 0.7),
+                            ),
+                            child: Icon(
+                              _iconFromTag(item.tag),
+                              size: 20,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                          const SizedBox(height: 3),
-                          Text(
-                            '${DateTimeUtils.relativeFromNow(item.time)} · ${item.tag}',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.onSurfaceVariant),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${DateTimeUtils.relativeFromNow(item.time)} • ${item.tag}',
+                                  key: ValueKey<String>(
+                                    'home_recent_activity_subtitle_$index',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.chevron_right,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            }),
           ),
         ],
       ),
@@ -297,12 +386,20 @@ class _HomeTopBar extends StatelessWidget {
             height: 34,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(999),
-              color: AppColors.primary.withValues(alpha: 0.16),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.16),
               border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.2),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.2),
               ),
             ),
-            child: const Icon(Icons.person, size: 18, color: AppColors.primary),
+            child: Icon(
+              Icons.person,
+              size: 18,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ],
       ),

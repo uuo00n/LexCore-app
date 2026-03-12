@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
-import 'package:lexcore/app/theme/app_colors.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
 import 'package:lexcore/features/analysis/domain/entities/analysis_summary.dart';
 import 'package:lexcore/features/analysis/presentation/widgets/analysis_page_header.dart';
@@ -102,9 +101,9 @@ class _MainContent extends StatelessWidget {
           delay: const Duration(milliseconds: 55),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.auto_awesome,
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 size: 22,
               ),
               const SizedBox(width: 6),
@@ -122,9 +121,9 @@ class _MainContent extends StatelessWidget {
           delay: const Duration(milliseconds: 75),
           child: Text(
             '报告编号: ${report.reportId} • 生成于 ${report.generatedAt}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
         const SizedBox(height: 14),
@@ -208,8 +207,8 @@ class _OverviewCard extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.primary.withValues(alpha: 0.12),
-                  AppColors.primary.withValues(alpha: 0.3),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -220,11 +219,13 @@ class _OverviewCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                const Center(
+                Center(
                   child: Icon(
                     Icons.gavel_outlined,
                     size: 58,
-                    color: Color(0x420B50DA),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.26),
                   ),
                 ),
                 Positioned(
@@ -236,13 +237,13 @@ class _OverviewCard extends StatelessWidget {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
                       '结构化分析已完成',
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.4,
                       ),
@@ -345,7 +346,10 @@ class _RiskSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+              Icon(
+                Icons.warning_amber_rounded,
+                color: Theme.of(context).colorScheme.tertiary,
+              ),
               const SizedBox(width: 6),
               Text('风险指标评估', style: Theme.of(context).textTheme.titleSmall),
             ],
@@ -358,7 +362,7 @@ class _RiskSection extends StatelessWidget {
                 label: risk.label,
                 value: risk.value,
                 levelText: _riskLabel(risk.level),
-                color: _riskColor(risk.level),
+                color: _riskColor(context, risk.level),
               ),
             ),
           ),
@@ -367,14 +371,14 @@ class _RiskSection extends StatelessWidget {
     );
   }
 
-  Color _riskColor(RiskLevel level) {
+  Color _riskColor(BuildContext context, RiskLevel level) {
     switch (level) {
       case RiskLevel.low:
-        return Colors.green;
+        return Theme.of(context).colorScheme.primaryFixedDim;
       case RiskLevel.medium:
-        return Colors.orange;
+        return Theme.of(context).colorScheme.tertiary;
       case RiskLevel.high:
-        return Colors.red;
+        return Theme.of(context).colorScheme.error;
     }
   }
 
@@ -428,7 +432,7 @@ class _RiskBar extends StatelessWidget {
           child: LinearProgressIndicator(
             minHeight: 8,
             value: value,
-            backgroundColor: const Color(0xFFEFF2F6),
+            backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
             valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
@@ -461,9 +465,15 @@ class _SummaryCard extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  color: AppColors.primary.withValues(alpha: 0.12),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.12),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 18),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 18,
+                ),
               ),
               const SizedBox(width: 8),
               Text(title, style: Theme.of(context).textTheme.titleSmall),
@@ -476,12 +486,12 @@ class _SummaryCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 3),
                     child: Icon(
                       Icons.circle,
                       size: 6,
-                      color: AppColors.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                   ),
                   const SizedBox(width: 6),
@@ -520,7 +530,7 @@ class _EvidenceTile extends StatelessWidget {
         children: [
           Icon(
             strong ? Icons.description_outlined : Icons.image_outlined,
-            color: AppColors.onSurfaceVariant,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -536,7 +546,7 @@ class _EvidenceTile extends StatelessWidget {
                 Text(
                   '效力评分: $score',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.onSurfaceVariant,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -544,7 +554,9 @@ class _EvidenceTile extends StatelessWidget {
           ),
           Icon(
             strong ? Icons.check_circle : Icons.info_outline,
-            color: strong ? Colors.green : Colors.orange,
+            color: strong
+                ? Theme.of(context).colorScheme.primaryFixedDim
+                : Theme.of(context).colorScheme.tertiary,
           ),
         ],
       ),

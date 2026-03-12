@@ -20,7 +20,6 @@ class AuthPage extends ConsumerStatefulWidget {
 }
 
 class _AuthPageState extends ConsumerState<AuthPage> {
-  static const _footerReservedHeight = 136.0;
   static const _topAlignmentSpacerHeight = 54.0;
 
   final _accountController = TextEditingController();
@@ -76,213 +75,136 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     final controller = ref.read(authControllerProvider.notifier);
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
       backgroundColor: AppColors.surface,
       body: AppMobileCanvas(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
+        child: AuthFixedBottomLayout(
+          top: const SizedBox(height: _topAlignmentSpacerHeight),
+          contentPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.xl,
+            AppSpacing.xl,
+            AppSpacing.xl,
+            AppSpacing.xl,
+          ),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SizedBox(height: _topAlignmentSpacerHeight),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final bottomSafeArea = MediaQuery.viewPaddingOf(
-                      context,
-                    ).bottom;
-
-                    return Stack(
-                      children: [
-                        SingleChildScrollView(
-                          padding: EdgeInsets.fromLTRB(
-                            AppSpacing.xl,
-                            AppSpacing.xl,
-                            AppSpacing.xl,
-                            AppSpacing.xl +
-                                _footerReservedHeight +
-                                bottomSafeArea,
-                          ),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 420),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const _BrandSection(),
-                                  const SizedBox(height: 44),
-                                  _MinimalInputField(
-                                    label: '电子邮件',
-                                    controller: _accountController,
-                                    icon: Icons.mail_outline_rounded,
-                                    keyboardType: TextInputType.emailAddress,
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  _MinimalInputField(
-                                    label: '密码',
-                                    controller: _credentialController,
-                                    icon: Icons.lock_outline_rounded,
-                                    obscureText: !_passwordVisible,
-                                    suffix: IconButton(
-                                      onPressed: () {
-                                        setState(() {
-                                          _passwordVisible = !_passwordVisible;
-                                        });
-                                      },
-                                      icon: Icon(
-                                        _passwordVisible
-                                            ? Icons.visibility_off_outlined
-                                            : Icons.visibility_outlined,
-                                        size: 20,
-                                        color: AppColors.onSurfaceVariant,
-                                      ),
-                                      tooltip: _passwordVisible
-                                          ? '隐藏密码'
-                                          : '显示密码',
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.xs),
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Checkbox(
-                                          value: state.agreeTerms,
-                                          onChanged: state.loading
-                                              ? null
-                                              : (value) =>
-                                                    controller.toggleAgreement(
-                                                      value ?? false,
-                                                    ),
-                                          visualDensity: const VisualDensity(
-                                            horizontal: -4,
-                                            vertical: -4,
-                                          ),
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                      ),
-                                      const SizedBox(width: AppSpacing.xs),
-                                      Expanded(
-                                        child: Padding(
-                                          padding: const EdgeInsets.only(
-                                            top: 2,
-                                          ),
-                                          child: Text(
-                                            '已阅读并同意《服务条款》《隐私政策》',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: AppColors
-                                                      .onSurfaceVariant,
-                                                  height: 1.35,
-                                                ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: AppSpacing.md),
-                                  FilledButton.icon(
-                                    onPressed: state.loading ? null : _submit,
-                                    icon: state.loading
-                                        ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : const Icon(
-                                            Icons.mail_outline_rounded,
-                                            size: 20,
-                                          ),
-                                    label: const Text('使用邮箱登录'),
-                                    style: FilledButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(56),
-                                      shape: const StadiumBorder(),
-                                      backgroundColor: AppColors.primary,
-                                      foregroundColor: AppColors.onPrimary,
-                                      textStyle: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppSpacing.lg),
-                                  const _OrDivider(),
-                                  const SizedBox(height: AppSpacing.lg),
-                                  OutlinedButton.icon(
-                                    onPressed: () {},
-                                    icon: SvgPicture.asset(
-                                      AuthIconAssets.google,
-                                      width: 20,
-                                      height: 20,
-                                    ),
-                                    label: const Text('使用 Google 账号继续'),
-                                    style: OutlinedButton.styleFrom(
-                                      minimumSize: const Size.fromHeight(56),
-                                      shape: const StadiumBorder(),
-                                      side: BorderSide(
-                                        color: AppColors.primary.withValues(
-                                          alpha: 0.24,
-                                        ),
-                                      ),
-                                      foregroundColor: AppColors.onSurface,
-                                      textStyle: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: Center(
-                            child: Padding(
-                              padding: EdgeInsets.fromLTRB(
-                                AppSpacing.xl,
-                                0,
-                                AppSpacing.xl,
-                                AppSpacing.sm + bottomSafeArea,
-                              ),
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(
-                                  maxWidth: 420,
-                                ),
-                                child: _AuthFooter(
-                                  onRegister: () =>
-                                      context.go(RouteNames.registerPath),
-                                  onTermsOfService: () => context.push(
-                                    RouteNames.termsOfServicePath,
-                                  ),
-                                  onPrivacyPolicy: () => context.push(
-                                    RouteNames.privacyPolicyPath,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
+              const _BrandSection(),
+              const SizedBox(height: 44),
+              _MinimalInputField(
+                label: '电子邮件',
+                controller: _accountController,
+                icon: Icons.mail_outline_rounded,
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _MinimalInputField(
+                label: '密码',
+                controller: _credentialController,
+                icon: Icons.lock_outline_rounded,
+                obscureText: !_passwordVisible,
+                suffix: IconButton(
+                  onPressed: () {
+                    setState(() {
+                      _passwordVisible = !_passwordVisible;
+                    });
                   },
+                  icon: Icon(
+                    _passwordVisible
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    size: 20,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                  tooltip: _passwordVisible ? '隐藏密码' : '显示密码',
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: Checkbox(
+                      value: state.agreeTerms,
+                      onChanged: state.loading
+                          ? null
+                          : (value) =>
+                                controller.toggleAgreement(value ?? false),
+                      visualDensity: const VisualDensity(
+                        horizontal: -4,
+                        vertical: -4,
+                      ),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text(
+                        '已阅读并同意《服务条款》《隐私政策》',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              FilledButton.icon(
+                onPressed: state.loading ? null : _submit,
+                icon: state.loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.mail_outline_rounded, size: 20),
+                label: const Text('使用邮箱登录'),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  shape: const StadiumBorder(),
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: AppColors.onPrimary,
+                  textStyle: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              const _OrDivider(),
+              const SizedBox(height: AppSpacing.lg),
+              OutlinedButton.icon(
+                onPressed: () {},
+                icon: SvgPicture.asset(
+                  AuthIconAssets.google,
+                  width: 20,
+                  height: 20,
+                ),
+                label: const Text('使用 Google 账号继续'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(56),
+                  shape: const StadiumBorder(),
+                  side: BorderSide(
+                    color: AppColors.primary.withValues(alpha: 0.24),
+                  ),
+                  foregroundColor: AppColors.onSurface,
+                  textStyle: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500),
                 ),
               ),
             ],
+          ),
+          footer: AuthAccountLegalFooter(
+            accountPromptText: '还没有账号？',
+            accountActionText: '立即注册',
+            onAccountAction: () => context.push(RouteNames.registerPath),
+            onTermsOfService: () => context.push(RouteNames.termsOfServicePath),
+            onPrivacyPolicy: () => context.push(RouteNames.privacyPolicyPath),
           ),
         ),
       ),
@@ -425,52 +347,6 @@ class _OrDivider extends StatelessWidget {
         ),
         const Expanded(
           child: Divider(color: AppColors.surfaceVariant, thickness: 1),
-        ),
-      ],
-    );
-  }
-}
-
-class _AuthFooter extends StatelessWidget {
-  const _AuthFooter({
-    required this.onRegister,
-    required this.onTermsOfService,
-    required this.onPrivacyPolicy,
-  });
-
-  final VoidCallback onRegister;
-  final VoidCallback onTermsOfService;
-  final VoidCallback onPrivacyPolicy;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '还没有账号？',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            TextButton(onPressed: onRegister, child: const Text('立即注册')),
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton(onPressed: onTermsOfService, child: const Text('服务条款')),
-            Text(
-              '·',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
-            TextButton(onPressed: onPrivacyPolicy, child: const Text('隐私政策')),
-          ],
         ),
       ],
     );

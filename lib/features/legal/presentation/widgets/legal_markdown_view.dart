@@ -6,21 +6,17 @@ class LegalMarkdownView extends StatefulWidget {
   const LegalMarkdownView({
     super.key,
     required this.assetPath,
+    this.markdownData,
     this.padding = EdgeInsets.zero,
-    this.controller,
-    this.onProgressChanged,
     this.styleSheet,
-    this.selectable = true,
-    this.physics,
+    this.selectable = false,
   });
 
   final String assetPath;
+  final String? markdownData;
   final EdgeInsets padding;
-  final ScrollController? controller;
-  final ValueChanged<double>? onProgressChanged;
   final MarkdownStyleSheet? styleSheet;
   final bool selectable;
-  final ScrollPhysics? physics;
 
   @override
   State<LegalMarkdownView> createState() => _LegalMarkdownViewState();
@@ -28,65 +24,28 @@ class LegalMarkdownView extends StatefulWidget {
 
 class _LegalMarkdownViewState extends State<LegalMarkdownView> {
   late Future<String> _markdownFuture;
-  late ScrollController _controller;
-  late bool _ownsController;
-  double _lastReportedProgress = -1;
 
   @override
   void initState() {
     super.initState();
-    _markdownFuture = rootBundle.loadString(widget.assetPath);
-    _setupController();
+    _markdownFuture = _loadMarkdown();
   }
 
   @override
   void didUpdateWidget(covariant LegalMarkdownView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.assetPath != widget.assetPath) {
-      _markdownFuture = rootBundle.loadString(widget.assetPath);
-    }
-    if (oldWidget.controller != widget.controller) {
-      _tearDownController();
-      _setupController();
+    if (oldWidget.assetPath != widget.assetPath ||
+        oldWidget.markdownData != widget.markdownData) {
+      _markdownFuture = _loadMarkdown();
     }
   }
 
-  @override
-  void dispose() {
-    _tearDownController();
-    super.dispose();
-  }
-
-  void _setupController() {
-    _ownsController = widget.controller == null;
-    _controller = widget.controller ?? ScrollController();
-    _controller.addListener(_emitProgress);
-  }
-
-  void _tearDownController() {
-    _controller.removeListener(_emitProgress);
-    if (_ownsController) {
-      _controller.dispose();
+  Future<String> _loadMarkdown() {
+    final markdownData = widget.markdownData;
+    if (markdownData != null) {
+      return Future<String>.value(markdownData);
     }
-  }
-
-  void _emitProgress() {
-    if (widget.onProgressChanged == null) return;
-
-    final progress = _resolveProgress();
-    if ((progress - _lastReportedProgress).abs() <= 0.001) return;
-
-    _lastReportedProgress = progress;
-    widget.onProgressChanged!(progress);
-  }
-
-  double _resolveProgress() {
-    if (!_controller.hasClients) return 0;
-
-    final maxScrollExtent = _controller.position.maxScrollExtent;
-    if (maxScrollExtent <= 0) return 1;
-
-    return (_controller.offset / maxScrollExtent).clamp(0, 1);
+    return rootBundle.loadString(widget.assetPath);
   }
 
   @override
@@ -102,18 +61,11 @@ class _LegalMarkdownViewState extends State<LegalMarkdownView> {
           return const Center(child: Text('条款加载失败，请稍后重试'));
         }
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          _emitProgress();
-        });
-
         return Markdown(
           data: snapshot.data!,
           selectable: widget.selectable,
           padding: widget.padding,
-          controller: _controller,
           styleSheet: widget.styleSheet,
-          physics: widget.physics,
         );
       },
     );

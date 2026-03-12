@@ -27,6 +27,9 @@ dependencies:
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
 
+dependency_overrides:
+  shared_preferences_android: 2.3.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

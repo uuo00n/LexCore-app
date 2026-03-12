@@ -97,6 +97,163 @@ class AuthTopBar extends StatelessWidget {
   }
 }
 
+class AuthFixedBottomLayout extends StatelessWidget {
+  const AuthFixedBottomLayout({
+    super.key,
+    this.top,
+    required this.content,
+    required this.footer,
+    this.contentPadding = const EdgeInsets.fromLTRB(
+      AppSpacing.xl,
+      AppSpacing.lg,
+      AppSpacing.xl,
+      AppSpacing.xl,
+    ),
+    this.maxWidth = 420,
+    this.footerHorizontalPadding = AppSpacing.xl,
+    this.footerTopPadding = AppSpacing.sm,
+    this.footerBottomPadding = AppSpacing.sm,
+    this.designWidth = 390,
+    this.designHeight = 844,
+    this.lockTextScaling = true,
+  });
+
+  final Widget? top;
+  final Widget content;
+  final Widget footer;
+  final EdgeInsetsGeometry contentPadding;
+  final double maxWidth;
+  final double footerHorizontalPadding;
+  final double footerTopPadding;
+  final double footerBottomPadding;
+  final double designWidth;
+  final double designHeight;
+  final bool lockTextScaling;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final effectiveMediaQuery = lockTextScaling
+        ? mediaQuery.copyWith(textScaler: TextScaler.noScaling)
+        : mediaQuery;
+    final keyboardVisible = mediaQuery.viewInsets.bottom > 0;
+
+    return SafeArea(
+      maintainBottomViewPadding: true,
+      child: MediaQuery(
+        data: effectiveMediaQuery,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Column(
+                  mainAxisAlignment: keyboardVisible
+                      ? MainAxisAlignment.start
+                      : MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ..._optionalWidget(top),
+                        Padding(
+                          padding: contentPadding,
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: maxWidth),
+                              child: content,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        footerHorizontalPadding,
+                        footerTopPadding,
+                        footerHorizontalPadding,
+                        footerBottomPadding,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxWidth),
+                          child: footer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class AuthAccountLegalFooter extends StatelessWidget {
+  const AuthAccountLegalFooter({
+    super.key,
+    required this.accountPromptText,
+    required this.accountActionText,
+    required this.onAccountAction,
+    required this.onTermsOfService,
+    required this.onPrivacyPolicy,
+  });
+
+  final String accountPromptText;
+  final String accountActionText;
+  final VoidCallback onAccountAction;
+  final VoidCallback onTermsOfService;
+  final VoidCallback onPrivacyPolicy;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              accountPromptText,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            TextButton(
+              onPressed: onAccountAction,
+              child: Text(accountActionText),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(onPressed: onTermsOfService, child: const Text('服务条款')),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+              child: Text(
+                '·',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.onSurfaceVariant,
+                ),
+              ),
+            ),
+            TextButton(onPressed: onPrivacyPolicy, child: const Text('隐私政策')),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
 class AuthTextField extends StatelessWidget {
   const AuthTextField({
     super.key,

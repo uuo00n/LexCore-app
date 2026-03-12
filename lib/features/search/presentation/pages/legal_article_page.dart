@@ -5,6 +5,7 @@ import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
+import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
@@ -161,13 +162,11 @@ class _ArticleMain extends StatelessWidget {
           const SizedBox(height: 14),
           Text('法律引用与关联', style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
-          ...detail.citations.map(
-            (citation) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _CitationTile(
-                title: citation.title,
-                subtitle: citation.subtitle,
-              ),
+          ...detail.citations.asMap().entries.map(
+            (entry) => _CitationTile(
+              title: entry.value.title,
+              subtitle: entry.value.subtitle,
+              showBottomDivider: entry.key != detail.citations.length - 1,
             ),
           ),
         ],
@@ -187,13 +186,11 @@ class _ArticleSide extends StatelessWidget {
       children: [
         Text('法律引用与关联', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
-        ...detail.citations.map(
-          (citation) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _CitationTile(
-              title: citation.title,
-              subtitle: citation.subtitle,
-            ),
+        ...detail.citations.asMap().entries.map(
+          (entry) => _CitationTile(
+            title: entry.value.title,
+            subtitle: entry.value.subtitle,
+            showBottomDivider: entry.key != detail.citations.length - 1,
           ),
         ),
       ],
@@ -231,40 +228,24 @@ class _TagChip extends StatelessWidget {
 }
 
 class _CitationTile extends StatelessWidget {
-  const _CitationTile({required this.title, required this.subtitle});
+  const _CitationTile({
+    required this.title,
+    required this.subtitle,
+    required this.showBottomDivider,
+  });
 
   final String title;
   final String subtitle;
+  final bool showBottomDivider;
 
   @override
   Widget build(BuildContext context) {
-    return AppSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right),
-        ],
-      ),
+    return AppListTileItem(
+      title: title,
+      subtitle: subtitle,
+      leadingIcon: Icons.gavel_outlined,
+      showBottomDivider: showBottomDivider,
+      onTap: () {},
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class LegalSearchPage extends ConsumerStatefulWidget {
   const LegalSearchPage({super.key});
@@ -42,13 +43,10 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
 
               return Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
-                    child: const AppFadeSlideIn(
-                      delay: Duration(milliseconds: 20),
-                      beginOffset: Offset(0, -0.02),
-                      child: _SearchTopBar(),
-                    ),
+                  const AppFadeSlideIn(
+                    delay: Duration(milliseconds: 20),
+                    beginOffset: Offset(0, -0.02),
+                    child: _SearchTopBar(),
                   ),
                   Expanded(
                     child: SingleChildScrollView(
@@ -335,7 +333,6 @@ class _ResultsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDefaultRecommendations = keyword.isEmpty;
-    final itemSpacing = isDefaultRecommendations ? 12.0 : 8.0;
 
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 140),
@@ -359,17 +356,14 @@ class _ResultsSection extends StatelessWidget {
             return AppFadeSlideIn(
               delay: Duration(milliseconds: 20 + (index * 35)),
               beginOffset: const Offset(0, 0.02),
-              child: Padding(
-                padding: EdgeInsets.only(
-                  bottom: index == results.length - 1 ? 0 : itemSpacing,
-                ),
-                child: AppListTileItem(
-                  title: item.title,
-                  subtitle: item.snippet,
-                  leading: const Icon(Icons.gavel_outlined),
-                  onTap: () =>
-                      context.pushNamed(RouteNames.legalArticle, extra: item),
-                ),
+              child: AppListTileItem(
+                title: item.title,
+                subtitle: item.snippet,
+                leadingIcon: Icons.gavel_outlined,
+                subtitleMaxLines: 2,
+                showBottomDivider: index != results.length - 1,
+                onTap: () =>
+                    context.pushNamed(RouteNames.legalArticle, extra: item),
               ),
             );
           }),
@@ -441,16 +435,9 @@ class _SearchTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.menu)),
-        Expanded(
-          child: Text(
-            'LexiAI 法律搜索',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
+    return AppShellTopBar(
+      title: 'LexiAI 法律搜索',
+      actions: [
         IconButton(
           onPressed: () {},
           icon: const Icon(Icons.account_circle_outlined),

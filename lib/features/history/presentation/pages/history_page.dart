@@ -7,9 +7,11 @@ import 'package:lexcore/app/motion/app_motion.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/history/application/history_controller.dart';
+import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class HistoryPage extends ConsumerStatefulWidget {
   const HistoryPage({super.key});
@@ -64,13 +66,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 
               return Column(
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
-                    child: AppFadeSlideIn(
-                      delay: Duration(milliseconds: 20),
-                      beginOffset: Offset(0, -0.02),
-                      child: _HistoryTopBar(),
-                    ),
+                  const AppFadeSlideIn(
+                    delay: Duration(milliseconds: 20),
+                    beginOffset: Offset(0, -0.02),
+                    child: _HistoryTopBar(),
                   ),
                   AppFadeSlideIn(
                     delay: const Duration(milliseconds: 60),
@@ -161,18 +160,9 @@ class _HistoryTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.menu_rounded)),
-        Expanded(
-          child: Text(
-            '历史记录',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-      ],
+    return AppShellTopBar(
+      title: '历史记录',
+      actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
     );
   }
 }
@@ -402,57 +392,12 @@ class _HistorySection extends StatelessWidget {
           return AppFadeSlideIn(
             delay: Duration(milliseconds: 20 + (index * 35)),
             beginOffset: const Offset(0, 0.02),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: AppSurfaceCard(
-                onTap: () {},
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.1),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            DateTimeUtils.relativeFromNow(item.time),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ],
-                ),
-              ),
+            child: AppListTileItem(
+              title: item.title,
+              subtitle: DateTimeUtils.relativeFromNow(item.time),
+              leadingIcon: icon,
+              showBottomDivider: index != items.length - 1,
+              onTap: () {},
             ),
           );
         }),

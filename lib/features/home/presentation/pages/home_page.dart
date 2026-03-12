@@ -7,8 +7,10 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/home/application/home_providers.dart';
 import 'package:lexcore/features/home/domain/entities/home_entity.dart';
+import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -254,111 +256,17 @@ class _RecentActivitySection extends StatelessWidget {
             ) {
               final item = homeData.activities[index];
               final isLast = index == homeData.activities.length - 1;
-              return Material(
+              return AppListTileItem(
                 key: ValueKey<String>('home_recent_activity_item_$index'),
-                color: Theme.of(
-                  context,
-                ).colorScheme.surface.withValues(alpha: 0),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  overlayColor: WidgetStateProperty.resolveWith<Color?>((
-                    states,
-                  ) {
-                    if (states.contains(WidgetState.pressed)) {
-                      return Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.1);
-                    }
-                    if (states.contains(WidgetState.hovered)) {
-                      return Theme.of(
-                        context,
-                      ).colorScheme.primary.withValues(alpha: 0.05);
-                    }
-                    return null;
-                  }),
-                  onTap: () {},
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border(
-                        bottom: BorderSide(
-                          color: isLast
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.surface.withValues(alpha: 0)
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.outline.withValues(alpha: 0.16),
-                        ),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(999),
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerHighest
-                                  .withValues(alpha: 0.7),
-                            ),
-                            child: Icon(
-                              _iconFromTag(item.tag),
-                              size: 20,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.title,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${DateTimeUtils.relativeFromNow(item.time)} • ${item.tag}',
-                                  key: ValueKey<String>(
-                                    'home_recent_activity_subtitle_$index',
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.onSurfaceVariant,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                title: item.title,
+                subtitle:
+                    '${DateTimeUtils.relativeFromNow(item.time)} • ${item.tag}',
+                subtitleKey: ValueKey<String>(
+                  'home_recent_activity_subtitle_$index',
                 ),
+                leadingIcon: _iconFromTag(item.tag),
+                showBottomDivider: !isLast,
+                onTap: () {},
               );
             }),
           ),
@@ -373,36 +281,32 @@ class _HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 2, 10, 2),
-      child: Row(
-        children: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.menu_rounded)),
-          Text('LexiAI', style: Theme.of(context).textTheme.titleMedium),
-          const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
+    return AppShellTopBar(
+      title: 'LexiAI',
+      sideWidth: 96,
+      actions: [
+        IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.16),
+            border: Border.all(
               color: Theme.of(
                 context,
-              ).colorScheme.primary.withValues(alpha: 0.16),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Icon(
-              Icons.person,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
+              ).colorScheme.primary.withValues(alpha: 0.2),
             ),
           ),
-        ],
-      ),
+          child: Icon(
+            Icons.person,
+            size: 18,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/features/profile/domain/entities/profile_summary.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -16,12 +17,9 @@ class ProfilePage extends ConsumerWidget {
     final summary = ref.watch(profileSummaryProvider);
     final menus = ref.watch(profileMenusProvider);
     final accountMenus = _buildAccountMenus(menus);
-    final dark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: dark
-          ? Theme.of(context).colorScheme.surface
-          : Theme.of(context).colorScheme.surface,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: AppMobileCanvas(
         maxContentWidth: 560,
         child: SafeArea(
@@ -29,11 +27,6 @@ class ProfilePage extends ConsumerWidget {
           child: Column(
             children: [
               _ProfileTopBar(
-                onBackTap: () {
-                  if (Navigator.of(context).canPop()) {
-                    context.pop();
-                  }
-                },
                 onSettingsTap: () => context.push(RouteNames.settingsPath),
               ),
               Expanded(
@@ -135,55 +128,21 @@ class ProfilePage extends ConsumerWidget {
 }
 
 class _ProfileTopBar extends StatelessWidget {
-  const _ProfileTopBar({required this.onBackTap, required this.onSettingsTap});
+  const _ProfileTopBar({required this.onSettingsTap});
 
-  final VoidCallback onBackTap;
   final VoidCallback onSettingsTap;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: dark
-            ? colorScheme.surfaceContainer
-            : colorScheme.surfaceContainerLowest.withValues(alpha: 0.88),
-        border: Border(
-          bottom: BorderSide(
-            color: dark
-                ? colorScheme.outline.withValues(alpha: 0.28)
-                : colorScheme.outlineVariant,
-          ),
+    return AppShellTopBar(
+      title: '个人资料',
+      actions: [
+        IconButton(
+          onPressed: onSettingsTap,
+          icon: const Icon(Icons.settings_outlined),
+          tooltip: '设置',
         ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: onBackTap,
-              icon: const Icon(Icons.arrow_back),
-              tooltip: '返回',
-            ),
-            Expanded(
-              child: Text(
-                '个人资料',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
-            IconButton(
-              onPressed: onSettingsTap,
-              icon: const Icon(Icons.settings_outlined),
-              tooltip: '设置',
-            ),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

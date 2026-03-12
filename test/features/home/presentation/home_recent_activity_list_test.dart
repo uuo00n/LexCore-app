@@ -84,4 +84,13 @@ void main() {
     await tester.pump();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('home quick actions no longer show legal search entry', (
+    tester,
+  ) async {
+    await pumpHomePage(tester);
+
+    expect(find.text('法律搜索'), findsNothing);
+    expect(find.text('法规与案例检索'), findsNothing);
+  });
 }

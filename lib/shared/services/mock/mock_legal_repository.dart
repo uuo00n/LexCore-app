@@ -24,12 +24,6 @@ class MockLegalRepository {
         icon: 'analytics',
         route: RouteNames.analysisDetailPath,
       ),
-      QuickAction(
-        title: '法律搜索',
-        subtitle: '法规与案例检索',
-        icon: 'gavel',
-        route: RouteNames.legalSearchPath,
-      ),
     ];
   }
 

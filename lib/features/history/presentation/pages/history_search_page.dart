@@ -224,9 +224,9 @@ class _HistoryCategoryFilters extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labels = <({String text, HistoryCategory? value})>[
+      (text: '全部', value: null),
       (text: '咨询记录', value: HistoryCategory.consultation),
       (text: '法条检索', value: HistoryCategory.analysis),
-      (text: '全部', value: null),
     ];
 
     return SizedBox(

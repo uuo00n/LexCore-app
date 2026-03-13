@@ -24,9 +24,10 @@ dependencies:
   share_plus: ^11.1.0
   shimmer: ^3.0.0
   google_fonts: ^6.3.2
+  tdesign_flutter: ^0.2.7
   freezed_annotation: ^3.1.0
   json_annotation: ^4.9.0
-  image_picker: ^1.2.0
+  image_picker: ^1.1.2
   path_provider: ^2.1.5
   intl_phone_number_input:
     path: third_party/intl_phone_number_input

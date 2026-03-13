@@ -88,6 +88,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                       child: Row(
                         children: [
                           _TopTab(
+                            title: '全部',
+                            active: filter == null,
+                            onTap: () =>
+                                ref.read(historyFilterProvider.notifier).state =
+                                    null,
+                          ),
+                          _TopTab(
                             title: '咨询记录',
                             active: filter == HistoryCategory.consultation,
                             onTap: () =>
@@ -100,13 +107,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             onTap: () =>
                                 ref.read(historyFilterProvider.notifier).state =
                                     HistoryCategory.analysis,
-                          ),
-                          _TopTab(
-                            title: '全部',
-                            active: filter == null,
-                            onTap: () =>
-                                ref.read(historyFilterProvider.notifier).state =
-                                    null,
                           ),
                         ],
                       ),

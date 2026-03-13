@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:tdesign_flutter/tdesign_flutter.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
-import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
@@ -22,6 +22,8 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
   int _selectedFilter = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  String? _selectedScenarioId;
+  bool _isApplyingScenarioSelection = false;
 
   @override
   void initState() {
@@ -50,7 +52,9 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
       key: _scaffoldKey,
       endDrawer: _SearchScenarioDrawer(
         groups: scenarioGroups,
+        selectedScenarioId: _selectedScenarioId,
         onScenarioSelected: _applyScenarioKeyword,
+        onResetSelection: _resetScenarioSelection,
       ),
       body: AppMobileCanvas(
         child: SafeArea(
@@ -77,7 +81,11 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      _ResultsSection(results: hotArticles, keyword: keyword),
+                      _ResultsSection(
+                        results: hotArticles,
+                        keyword: keyword,
+                        hasScenarioSelected: _selectedScenarioId != null,
+                      ),
                     ],
                   ),
                 ),
@@ -90,6 +98,13 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
   }
 
   void _onQueryChanged() {
+    if (_isApplyingScenarioSelection) {
+      _isApplyingScenarioSelection = false;
+    } else if (_selectedScenarioId != null) {
+      setState(() {
+        _selectedScenarioId = null;
+      });
+    }
     ref
         .read(searchControllerProvider.notifier)
         .updateKeyword(_searchController.text);
@@ -99,12 +114,28 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
     _scaffoldKey.currentState?.openEndDrawer();
   }
 
-  void _applyScenarioKeyword(String keyword) {
+  void _applyScenarioKeyword({
+    required String scenarioId,
+    required String keyword,
+  }) {
+    setState(() {
+      _selectedScenarioId = scenarioId;
+    });
+    _isApplyingScenarioSelection = true;
     _searchController.value = TextEditingValue(
       text: keyword,
       selection: TextSelection.collapsed(offset: keyword.length),
     );
     ref.read(searchControllerProvider.notifier).updateKeyword(keyword);
+  }
+
+  void _resetScenarioSelection() {
+    setState(() {
+      _selectedScenarioId = null;
+    });
+    _isApplyingScenarioSelection = true;
+    _searchController.clear();
+    ref.read(searchControllerProvider.notifier).updateKeyword('');
   }
 }
 
@@ -175,14 +206,26 @@ class _SearchInputAndFilter extends StatelessWidget {
   }
 }
 
-class _SearchScenarioDrawer extends StatelessWidget {
+class _SearchScenarioDrawer extends StatefulWidget {
   const _SearchScenarioDrawer({
     required this.groups,
+    required this.selectedScenarioId,
     required this.onScenarioSelected,
+    required this.onResetSelection,
   });
 
   final List<SearchScenarioGroup> groups;
-  final ValueChanged<String> onScenarioSelected;
+  final String? selectedScenarioId;
+  final void Function({required String scenarioId, required String keyword})
+  onScenarioSelected;
+  final VoidCallback onResetSelection;
+
+  @override
+  State<_SearchScenarioDrawer> createState() => _SearchScenarioDrawerState();
+}
+
+class _SearchScenarioDrawerState extends State<_SearchScenarioDrawer> {
+  int _selectedGroupIndex = 0;
 
   IconData _scenarioIconFor(String text) {
     if (text.contains('劳动') || text.contains('仲裁')) {
@@ -214,6 +257,31 @@ class _SearchScenarioDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.groups.isEmpty) {
+      return Drawer(
+        key: const ValueKey<String>('legal_search_scenario_drawer'),
+        child: SafeArea(
+          child: Center(
+            child: Text(
+              '暂无场景配置',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final maxIndex = widget.groups.length - 1;
+    final currentIndex = _selectedGroupIndex > maxIndex
+        ? maxIndex
+        : _selectedGroupIndex;
+    final activeGroup = widget.groups[currentIndex];
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final selectedPaneBackgroundColor = colorScheme.surfaceContainerLowest;
+
     return Drawer(
       key: const ValueKey<String>('legal_search_scenario_drawer'),
       child: SafeArea(
@@ -243,62 +311,121 @@ class _SearchScenarioDrawer extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Text(
-                '选择高频法律场景，自动触发热门法条筛选。',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '选择高频法律场景，自动触发热门法条筛选。',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  TextButton.icon(
+                    key: const ValueKey<String>('search_scenario_reset_button'),
+                    onPressed: () {
+                      widget.onResetSelection();
+                      setState(() {
+                        _selectedGroupIndex = 0;
+                      });
+                    },
+                    icon: const Icon(Icons.restart_alt_rounded, size: 16),
+                    label: const Text('重置'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
             ),
             const Divider(height: 1),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
-                itemCount: groups.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final group = groups[index];
-                  return AppSurfaceCard(
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerLowest,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          group.title,
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 112,
+                    child: TDSideBar(
+                      value: currentIndex,
+                      height: MediaQuery.of(context).size.height,
+                      style: TDSideBarStyle.normal,
+                      selectedColor: colorScheme.primary,
+                      unSelectedColor: colorScheme.onSurfaceVariant,
+                      selectedBgColor: selectedPaneBackgroundColor,
+                      unSelectedBgColor: colorScheme.surfaceContainerLow,
+                      selectedTextStyle: textTheme.labelLarge?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      onChanged: _handleGroupChanged,
+                      onSelected: _handleGroupChanged,
+                      children: List<TDSideBarItem>.generate(
+                        widget.groups.length,
+                        (index) => TDSideBarItem(
+                          value: index,
+                          label: widget.groups[index].title,
                         ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: group.items
-                              .map(
-                                (item) => ActionChip(
-                                  key: ValueKey<String>(
-                                    'search_scenario_${item.id}',
-                                  ),
-                                  avatar: Icon(
-                                    _scenarioIconFor(item.label),
-                                    size: 18,
-                                  ),
-                                  label: Text(item.label),
-                                  onPressed: () {
-                                    onScenarioSelected(item.keyword);
-                                    Navigator.of(context).maybePop();
-                                  },
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ],
+                      ),
                     ),
-                  );
-                },
+                  ),
+                  VerticalDivider(width: 1, color: colorScheme.outlineVariant),
+                  Expanded(
+                    child: ColoredBox(
+                      key: const ValueKey<String>('search_scenario_chip_pane'),
+                      color: selectedPaneBackgroundColor,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+                        itemCount: activeGroup.items.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final item = activeGroup.items[index];
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: FilterChip(
+                              key: ValueKey<String>(
+                                'search_scenario_${item.id}',
+                              ),
+                              selected: widget.selectedScenarioId == item.id,
+                              showCheckmark: true,
+                              checkmarkColor: colorScheme.primary,
+                              avatar: Icon(
+                                _scenarioIconFor(item.label),
+                                size: 18,
+                                color: widget.selectedScenarioId == item.id
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
+                              ),
+                              label: Text(item.label),
+                              labelStyle: textTheme.labelLarge?.copyWith(
+                                color: widget.selectedScenarioId == item.id
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurface,
+                                fontWeight: widget.selectedScenarioId == item.id
+                                    ? FontWeight.w700
+                                    : FontWeight.w600,
+                              ),
+                              backgroundColor: colorScheme.surfaceContainerHigh,
+                              selectedColor: colorScheme.primaryContainer
+                                  .withValues(alpha: 0.48),
+                              side: BorderSide(
+                                color: colorScheme.outline.withValues(
+                                  alpha: 0.26,
+                                ),
+                              ),
+                              onSelected: (_) {
+                                widget.onScenarioSelected(
+                                  scenarioId: item.id,
+                                  keyword: item.keyword,
+                                );
+                                Navigator.of(context).maybePop();
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -306,22 +433,41 @@ class _SearchScenarioDrawer extends StatelessWidget {
       ),
     );
   }
+
+  void _handleGroupChanged(int index) {
+    if (index < 0 || index >= widget.groups.length) {
+      return;
+    }
+    setState(() {
+      _selectedGroupIndex = index;
+    });
+  }
 }
 
 class _ResultsSection extends StatelessWidget {
-  const _ResultsSection({required this.results, required this.keyword});
+  const _ResultsSection({
+    required this.results,
+    required this.keyword,
+    required this.hasScenarioSelected,
+  });
 
   final List<LawSearchItem> results;
   final String keyword;
+  final bool hasScenarioSelected;
 
   @override
   Widget build(BuildContext context) {
+    final isSearchMode = keyword.trim().isNotEmpty || hasScenarioSelected;
+
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('热门搜索', style: Theme.of(context).textTheme.titleSmall),
+          Text(
+            isSearchMode ? '搜索结果' : '热门搜索',
+            style: Theme.of(context).textTheme.titleSmall,
+          ),
           const SizedBox(height: 10),
           if (results.isEmpty) _EmptyResultState(keyword: keyword),
           ...results.asMap().entries.map((entry) {
@@ -358,27 +504,32 @@ class _EmptyResultState extends StatelessWidget {
     final message = trimmedKeyword.isEmpty
         ? '请选择场景或输入关键词开始查询。'
         : '未找到与“$trimmedKeyword”相关的法条，请更换场景。';
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
-    return AppSurfaceCard(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.search_off_rounded,
-            size: 30,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 8),
-          Text('暂无匹配法条', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 220),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.search_off_rounded,
+              size: 30,
+              color: colorScheme.onSurfaceVariant,
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text('暂无匹配法条', style: textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

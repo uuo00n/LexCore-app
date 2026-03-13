@@ -22,7 +22,7 @@ void main() {
   }
 
   void expectAuthPageVisible() {
-    expect(find.text('衡法智核 LexCore——智能法律服务平台'), findsOneWidget);
+    expect(find.text('LexCore'), findsOneWidget);
     expect(find.text('使用邮箱登录'), findsOneWidget);
     expect(find.text('创建衡法智核账户'), findsNothing);
   }

@@ -4,7 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/features/dashboard/application/dashboard_provider.dart';
 import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart';
+import 'package:lexcore/features/dashboard/presentation/widgets/dashboard_module_navigation.dart';
+import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/widgets/app_bottom_navigation.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
 class CaseDashboardPage extends ConsumerWidget {
@@ -20,102 +23,66 @@ class CaseDashboardPage extends ConsumerWidget {
         maxContentWidth: 430,
         child: SafeArea(
           bottom: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surface.withValues(alpha: 0.92),
-                surfaceTintColor: Theme.of(
-                  context,
-                ).colorScheme.surface.withValues(alpha: 0),
-                toolbarHeight: 64,
-                titleSpacing: 0,
-                leadingWidth: 56,
-                leading: IconButton(
-                  onPressed: () => Navigator.of(context).maybePop(),
-                  icon: Icon(
-                    Icons.menu,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                title: Text(
-                  'LexCore 案件分析',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(
-                      Icons.search,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 16),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.16),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.account_circle,
-                        size: 18,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ),
-                ],
+          child: Column(
+            children: [
+              const AppFadeSlideIn(
+                delay: Duration(milliseconds: 20),
+                beginOffset: Offset(0, -0.02),
+                child: DashboardModuleTopBar(title: 'LexCore 案件分析'),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate.fixed([
-                    _StatsGrid(data: data),
-                    const SizedBox(height: 24),
-                    _TrendSection(points: data.trendPoints),
-                    const SizedBox(height: 24),
-                    _SectionHeader(title: '进行中的案件分析', actionLabel: '查看全部'),
-                    const SizedBox(height: 12),
-                    ...data.cases.asMap().entries.map((entry) {
-                      final item = entry.value;
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: AppFadeSlideIn(
-                          delay: Duration(milliseconds: 80 + (entry.key * 35)),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _StatsGrid(data: data),
+                      const SizedBox(height: 24),
+                      _TrendSection(points: data.trendPoints),
+                      const SizedBox(height: 24),
+                      const _SectionHeader(
+                        title: '进行中的案件分析',
+                        actionLabel: '查看全部',
+                      ),
+                      const SizedBox(height: 6),
+                      ...data.cases.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+                        final isLast = index == data.cases.length - 1;
+                        return AppFadeSlideIn(
+                          delay: Duration(milliseconds: 80 + (index * 35)),
                           beginOffset: const Offset(0, 0.02),
-                          child: _ProgressListItem(item: item),
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 18),
-                    const _SectionHeader(title: '快速操作'),
-                    const SizedBox(height: 12),
-                    const _QuickActionsRow(),
-                    const SizedBox(height: 112),
-                  ]),
+                          child: _ProgressListItem(
+                            item: item,
+                            index: index,
+                            showBottomDivider: !isLast,
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 18),
+                      const _SectionHeader(title: '快速操作'),
+                      const SizedBox(height: 12),
+                      const _QuickActionsRow(),
+                      const SizedBox(height: 112),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: const _DashboardBottomBar(),
+      bottomNavigationBar: AppMobileCanvas(
+        maxContentWidth: 430,
+        child: SafeArea(
+          top: false,
+          child: AppBottomNavigation(
+            currentIndex: 0,
+            items: dashboardModuleDestinations,
+            onTap: (index) => onDashboardModuleTap(context, index),
+          ),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -139,45 +106,53 @@ class _StatsGrid extends StatelessWidget {
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 30),
       beginOffset: const Offset(0, 0.02),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
+      child: Column(
         children: [
-          SizedBox(
-            width: 168,
-            child: AppSurfaceCard(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              padding: const EdgeInsets.all(18),
-              child: _MetricBlock(
-                label: '总案件量',
-                value: _formatCount(data.totalCases),
-                icon: Icons.folder_open,
-                caption: '本月 +12%',
-                captionIcon: Icons.trending_up,
-                valueColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                iconColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                captionColor: Theme.of(
-                  context,
-                ).colorScheme.onPrimaryContainer.withValues(alpha: 0.82),
+          Row(
+            children: [
+              Expanded(
+                child: AppSurfaceCard(
+                  key: const ValueKey<String>('dashboard_metric_total_cases'),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  padding: const EdgeInsets.all(18),
+                  child: _MetricBlock(
+                    label: '总案件量',
+                    value: _formatCount(data.totalCases),
+                    icon: Icons.folder_open,
+                    caption: '本月 +12%',
+                    captionIcon: Icons.trending_up,
+                    valueColor: Theme.of(
+                      context,
+                    ).colorScheme.onPrimaryContainer,
+                    iconColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                    captionColor: Theme.of(
+                      context,
+                    ).colorScheme.onPrimaryContainer.withValues(alpha: 0.82),
+                  ),
+                ),
               ),
-            ),
-          ),
-          SizedBox(
-            width: 168,
-            child: AppSurfaceCard(
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHighest,
-              padding: const EdgeInsets.all(18),
-              child: _MetricBlock(
-                label: '分析中',
-                value: '${data.inProgress}',
-                icon: Icons.auto_graph,
-                caption: '平均用时 4h',
-                captionIcon: Icons.schedule,
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppSurfaceCard(
+                  key: const ValueKey<String>('dashboard_metric_in_progress'),
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest,
+                  padding: const EdgeInsets.all(18),
+                  child: _MetricBlock(
+                    label: '分析中',
+                    value: '${data.inProgress}',
+                    icon: Icons.auto_graph,
+                    caption: '平均用时 4h',
+                    captionIcon: Icons.schedule,
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: AppSurfaceCard(
@@ -394,90 +369,6 @@ class _QuickActionCard extends StatelessWidget {
   }
 }
 
-class _DashboardBottomBar extends StatelessWidget {
-  const _DashboardBottomBar();
-
-  @override
-  Widget build(BuildContext context) {
-    return BottomAppBar(
-      height: 80,
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      surfaceTintColor: Theme.of(
-        context,
-      ).colorScheme.surface.withValues(alpha: 0),
-      elevation: 8,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          _BottomNavItem(icon: Icons.dashboard, label: '概览', selected: true),
-          _BottomNavItem(icon: Icons.folder_open, label: '案件'),
-          _BottomNavItem(icon: Icons.summarize, label: '报告'),
-          _BottomNavItem(icon: Icons.settings, label: '设置'),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({
-    required this.icon,
-    required this.label,
-    this.selected = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool selected;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = selected
-        ? Theme.of(context).colorScheme.primary
-        : Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () {},
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 56,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: selected
-                      ? Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.16)
-                      : Theme.of(
-                          context,
-                        ).colorScheme.surface.withValues(alpha: 0),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                alignment: Alignment.center,
-                child: Icon(icon, size: 20, color: foreground),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: foreground,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _MetricBlock extends StatelessWidget {
   const _MetricBlock({
     required this.label,
@@ -556,82 +447,54 @@ class _MetricBlock extends StatelessWidget {
 }
 
 class _ProgressListItem extends StatelessWidget {
-  const _ProgressListItem({required this.item});
+  const _ProgressListItem({
+    required this.item,
+    required this.index,
+    required this.showBottomDivider,
+  });
 
   final DashboardCaseItem item;
+  final int index;
+  final bool showBottomDivider;
 
   @override
   Widget build(BuildContext context) {
-    final config = _CaseVisuals.fromIcon(
-      item.icon,
-      Theme.of(context).colorScheme,
-    );
-
-    return AppSurfaceCard(
-      padding: const EdgeInsets.all(14),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: config.background,
-              borderRadius: BorderRadius.circular(14),
+    return AppListTileItem(
+      key: ValueKey<String>('dashboard_case_item_$index'),
+      title: item.title,
+      subtitle: _caseSubtitle(item),
+      leadingIcon: _CaseVisuals.iconFrom(item.icon),
+      showBottomDivider: showBottomDivider,
+      onTap: () {},
+      trailing: SizedBox(
+        width: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${(item.progress * 100).toStringAsFixed(0)}%',
+              key: ValueKey<String>('dashboard_case_progress_text_$index'),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-            child: Icon(config.icon, color: config.foreground, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _caseSubtitle(item),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                key: ValueKey<String>('dashboard_case_progress_bar_$index'),
+                minHeight: 6,
+                value: item.progress,
+                backgroundColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest,
+                color: Theme.of(context).colorScheme.primary,
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          SizedBox(
-            width: 56,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '${(item.progress * 100).toStringAsFixed(0)}%',
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(999),
-                  child: LinearProgressIndicator(
-                    minHeight: 6,
-                    value: item.progress,
-                    backgroundColor: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -651,42 +514,18 @@ class _ProgressListItem extends StatelessWidget {
 }
 
 class _CaseVisuals {
-  const _CaseVisuals({
-    required this.icon,
-    required this.background,
-    required this.foreground,
-  });
+  const _CaseVisuals._();
 
-  final IconData icon;
-  final Color background;
-  final Color foreground;
-
-  factory _CaseVisuals.fromIcon(String icon, ColorScheme colorScheme) {
+  static IconData iconFrom(String icon) {
     switch (icon) {
       case 'gavel':
-        return _CaseVisuals(
-          icon: Icons.gavel_outlined,
-          background: colorScheme.primaryContainer,
-          foreground: colorScheme.primary,
-        );
+        return Icons.gavel_outlined;
       case 'description':
-        return _CaseVisuals(
-          icon: Icons.description_outlined,
-          background: colorScheme.secondaryContainer,
-          foreground: colorScheme.secondary,
-        );
+        return Icons.description_outlined;
       case 'balance':
-        return _CaseVisuals(
-          icon: Icons.balance_outlined,
-          background: colorScheme.tertiaryContainer,
-          foreground: colorScheme.tertiary,
-        );
+        return Icons.balance_outlined;
       default:
-        return _CaseVisuals(
-          icon: Icons.folder_outlined,
-          background: colorScheme.surfaceContainerHigh,
-          foreground: colorScheme.primary,
-        );
+        return Icons.folder_outlined;
     }
   }
 }

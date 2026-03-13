@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lexcore/app/theme/theme_mode_controller.dart';
 import 'package:lexcore/core/constants/app_constants.dart';
 import 'package:lexcore/theme.dart';
 
@@ -13,6 +14,7 @@ class LexCoreApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeControllerProvider);
     final materialTheme = MaterialTheme(ThemeData.light().textTheme);
 
     return MaterialApp.router(
@@ -21,7 +23,7 @@ class LexCoreApp extends ConsumerWidget {
       routerConfig: router,
       theme: materialTheme.light(),
       darkTheme: materialTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       scrollBehavior: const MaterialScrollBehavior().copyWith(
         dragDevices: {
           PointerDeviceKind.touch,

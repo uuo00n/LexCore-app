@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/features/history/presentation/pages/history_page.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
@@ -8,6 +9,10 @@ import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   Future<void> pumpShellPage(WidgetTester tester, Widget page) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {

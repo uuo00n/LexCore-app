@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/app/theme/theme_mode_controller.dart';
 import 'package:lexcore/features/settings/application/settings_controller.dart';
 import 'package:lexcore/features/settings/domain/entities/settings_state.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -14,8 +15,11 @@ import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
-  void _handleSettingTap(BuildContext context, SettingItem item) {
+  void _handleSettingTap(BuildContext context, WidgetRef ref, SettingItem item) {
     switch (item.icon) {
+      case 'dark_mode':
+        _showThemeModeSheet(context, ref);
+        return;
       case 'policy':
         context.push(RouteNames.privacyPolicyPath);
         return;
@@ -33,11 +37,70 @@ class SettingsPage extends ConsumerWidget {
     ).showSnackBar(const SnackBar(content: Text('帮助中心建设中，敬请期待')));
   }
 
+  Future<void> _showThemeModeSheet(BuildContext context, WidgetRef ref) async {
+    final currentMode = ref.read(themeModeControllerProvider);
+    final controller = ref.read(themeModeControllerProvider.notifier);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _ThemeModeOption(
+                icon: Icons.brightness_auto_outlined,
+                title: '跟随系统',
+                selected: currentMode == ThemeMode.system,
+                onTap: () {
+                  controller.setThemeMode(ThemeMode.system);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              _ThemeModeOption(
+                icon: Icons.light_mode_outlined,
+                title: '浅色模式',
+                selected: currentMode == ThemeMode.light,
+                onTap: () {
+                  controller.setThemeMode(ThemeMode.light);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              _ThemeModeOption(
+                icon: Icons.dark_mode_outlined,
+                title: '深色模式',
+                selected: currentMode == ThemeMode.dark,
+                onTap: () {
+                  controller.setThemeMode(ThemeMode.dark);
+                  Navigator.of(sheetContext).pop();
+                },
+              ),
+              const SizedBox(height: 6),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static String _themeModeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.system:
+        return '跟随系统';
+      case ThemeMode.light:
+        return '浅色模式';
+      case ThemeMode.dark:
+        return '深色模式';
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
     final items = ref.watch(settingsItemsProvider);
     final version = ref.watch(settingsVersionProvider);
+    final themeMode = ref.watch(themeModeControllerProvider);
 
     return AppPageScaffold(
       title: '设置',
@@ -53,6 +116,7 @@ class SettingsPage extends ConsumerWidget {
               state: state,
               items: items,
               version: version,
+              themeMode: themeMode,
               showHelpEntry: true,
               showVersionInMain: true,
               onNotificationChanged: (value) => ref
@@ -61,7 +125,7 @@ class SettingsPage extends ConsumerWidget {
               onBiometricChanged: (value) => ref
                   .read(settingsControllerProvider.notifier)
                   .setBiometric(value),
-              onSettingTap: (item) => _handleSettingTap(context, item),
+              onSettingTap: (item) => _handleSettingTap(context, ref, item),
               onHelpTap: () => _showHelpSupport(context),
             );
           }
@@ -73,6 +137,7 @@ class SettingsPage extends ConsumerWidget {
               state: state,
               items: items,
               version: version,
+              themeMode: themeMode,
               showHelpEntry: false,
               showVersionInMain: false,
               onNotificationChanged: (value) => ref
@@ -81,7 +146,7 @@ class SettingsPage extends ConsumerWidget {
               onBiometricChanged: (value) => ref
                   .read(settingsControllerProvider.notifier)
                   .setBiometric(value),
-              onSettingTap: (item) => _handleSettingTap(context, item),
+              onSettingTap: (item) => _handleSettingTap(context, ref, item),
               onHelpTap: () => _showHelpSupport(context),
             ),
             secondary: _SettingsSidePanel(
@@ -100,6 +165,7 @@ class _SettingsMain extends StatelessWidget {
     required this.state,
     required this.items,
     required this.version,
+    required this.themeMode,
     required this.showHelpEntry,
     required this.showVersionInMain,
     required this.onNotificationChanged,
@@ -111,6 +177,7 @@ class _SettingsMain extends StatelessWidget {
   final SettingsState state;
   final List<SettingItem> items;
   final String version;
+  final ThemeMode themeMode;
   final bool showHelpEntry;
   final bool showVersionInMain;
   final ValueChanged<bool> onNotificationChanged;
@@ -150,13 +217,18 @@ class _SettingsMain extends StatelessWidget {
           ),
         ),
         ...items.map(
-          (item) => _SettingRow(
-            icon: _iconFrom(item.icon),
-            title: item.title,
-            subtitle: item.subtitle,
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => onSettingTap(item),
-          ),
+          (item) {
+            final subtitle = item.icon == 'dark_mode'
+                ? SettingsPage._themeModeLabel(themeMode)
+                : item.subtitle;
+            return _SettingRow(
+              icon: _iconFrom(item.icon),
+              title: item.title,
+              subtitle: subtitle,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => onSettingTap(item),
+            );
+          },
         ),
         if (showHelpEntry)
           _SettingRow(
@@ -325,5 +397,31 @@ class _SettingRow extends StatelessWidget {
     }
 
     return GestureDetector(onTap: onTap, child: content);
+  }
+}
+
+class _ThemeModeOption extends StatelessWidget {
+  const _ThemeModeOption({
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+      title: Text(title),
+      trailing: selected
+          ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary)
+          : null,
+      onTap: onTap,
+    );
   }
 }

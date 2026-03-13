@@ -22,7 +22,7 @@ class MockLegalRepository {
         title: '案件分析',
         subtitle: '风险与胜诉要点',
         icon: 'analytics',
-        route: RouteNames.analysisDetailPath,
+        route: RouteNames.dashboardPath,
       ),
     ];
   }
@@ -194,7 +194,7 @@ class MockLegalRepository {
 
   List<SettingItem> settings() {
     return const [
-      SettingItem(title: '主题模式', subtitle: '预留暗色主题能力', icon: 'dark_mode'),
+      SettingItem(title: '主题模式', subtitle: '跟随系统', icon: 'dark_mode'),
       SettingItem(
         title: '缓存管理',
         subtitle: '查看与清理本地缓存',

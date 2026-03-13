@@ -6,6 +6,7 @@ import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/router_navigation_extensions.dart';
 import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/features/profile/domain/entities/profile_summary.dart';
+import 'package:lexcore/features/profile/presentation/widgets/profile_avatar.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
@@ -16,6 +17,7 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(profileSummaryProvider);
+    final personalInfo = ref.watch(profilePersonalInfoControllerProvider).info;
     final menus = ref.watch(profileMenusProvider);
     final accountMenus = _buildAccountMenus();
     final contentMenus = _buildContentMenus(menus);
@@ -35,7 +37,12 @@ class ProfilePage extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 6, 16, 118),
                   children: [
-                    _ProfileHero(summary: summary),
+                    _ProfileHero(
+                      summary: summary,
+                      name: personalInfo.name,
+                      email: personalInfo.email,
+                      avatarPath: personalInfo.avatarPath,
+                    ),
                     const SizedBox(height: 20),
                     _SectionTitle(
                       text: '账号与订阅',
@@ -188,95 +195,41 @@ class _ProfileTopBar extends StatelessWidget {
 }
 
 class _ProfileHero extends StatelessWidget {
-  const _ProfileHero({required this.summary});
+  const _ProfileHero({
+    required this.summary,
+    required this.name,
+    required this.email,
+    required this.avatarPath,
+  });
 
   final ProfileSummary summary;
-
-  static const _avatarUrl =
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDyKmFYBVM8oWRTG0Q8u1PW6_yLs5OrUx9YcDTUE651ZM3gwL1vh6qDY74nxbnATNwug0EcyB4yxsZZf5hZzkAtzEWWTmi9RMWEwqvnOmCR2o8SSyppIMtMtGwgh7SD8zXR7UNgGbl6pC2uIDAKlarIwpWZzitR8U56VPDkYEVRYaIRxP5YuRRimg6EQR_LQwtIUJMTIn2wAR8OAY9pRFtf5PFzzjChKCEz3C59Awsc46Ogpqh1151wB6-_XMqlnQnTaiogvTX0DOWj';
+  final String name;
+  final String email;
+  final String? avatarPath;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dark = theme.brightness == Brightness.dark;
 
     return Center(
       child: Column(
         children: [
-          Stack(
-            children: [
-              Container(
-                width: 112,
-                height: 112,
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.14),
-                    width: 4,
-                  ),
-                ),
-                child: ClipOval(
-                  child: Image.network(
-                    _avatarUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: dark
-                            ? Theme.of(context).colorScheme.surfaceContainer
-                            : Theme.of(
-                                context,
-                              ).colorScheme.surfaceContainerLowest,
-                        alignment: Alignment.center,
-                        child: Icon(
-                          Icons.person,
-                          size: 48,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: dark
-                          ? Theme.of(context).colorScheme.surface
-                          : Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerLowest,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.edit,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    size: 15,
-                  ),
-                ),
-              ),
-            ],
+          ProfileAvatar(
+            size: 112,
+            borderWidth: 4,
+            iconSize: 48,
+            avatarPath: avatarPath,
           ),
           const SizedBox(height: 12),
           Text(
-            summary.name,
+            name,
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
           Text(
-            summary.email,
+            email,
             style: theme.textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,

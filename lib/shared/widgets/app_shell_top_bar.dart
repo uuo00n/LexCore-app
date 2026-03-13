@@ -5,11 +5,13 @@ class AppShellTopBar extends StatelessWidget {
     super.key,
     required this.title,
     this.actions = const [],
+    this.leading,
     this.sideWidth = 56,
   });
 
   final String title;
   final List<Widget> actions;
+  final Widget? leading;
   final double sideWidth;
 
   @override
@@ -45,7 +47,7 @@ class AppShellTopBar extends StatelessWidget {
             ),
             Align(
               alignment: Alignment.centerLeft,
-              child: SizedBox(width: sideWidth),
+              child: SizedBox(width: sideWidth, child: leading),
             ),
           ],
         ),

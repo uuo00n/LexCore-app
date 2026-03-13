@@ -9,6 +9,8 @@ class RouteNames {
   static const analysisDetail = 'analysis_detail';
   static const analysisResult = 'analysis_result';
   static const dashboard = 'dashboard';
+  static const dashboardCases = 'dashboard_cases';
+  static const dashboardReports = 'dashboard_reports';
   static const documentGenerate = 'document_generate';
   static const documentPreview = 'document_preview';
   static const savedDocuments = 'saved_documents';
@@ -31,6 +33,8 @@ class RouteNames {
   static const analysisDetailPath = '/analysis/detail';
   static const analysisResultPath = '/analysis/result';
   static const dashboardPath = '/dashboard';
+  static const dashboardCasesPath = '/dashboard/cases';
+  static const dashboardReportsPath = '/dashboard/reports';
   static const documentGeneratePath = '/document/generate';
   static const documentPreviewPath = '/document/preview';
   static const savedDocumentsPath = '/document/saved';

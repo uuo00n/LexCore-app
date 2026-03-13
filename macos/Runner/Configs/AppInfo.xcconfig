@@ -11,4 +11,4 @@ PRODUCT_NAME = lexcore
 PRODUCT_BUNDLE_IDENTIFIER = com.dnui.huangjunbo.lexcore
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.dnui.huangjunbo. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 LexCore Team (uuo). All rights reserved.

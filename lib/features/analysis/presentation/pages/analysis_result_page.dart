@@ -108,7 +108,7 @@ class _MainContent extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(
-                'LexiAI 智能分析报告',
+                'LexCore 案件分析报告',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),

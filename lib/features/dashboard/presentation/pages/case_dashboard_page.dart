@@ -43,7 +43,7 @@ class CaseDashboardPage extends ConsumerWidget {
                   ),
                 ),
                 title: Text(
-                  'LexiAI 案件分析',
+                  'LexCore 案件分析',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: Theme.of(context).colorScheme.onSurface,

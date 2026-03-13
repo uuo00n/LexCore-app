@@ -23,7 +23,7 @@ void main() {
   ) async {
     await pumpShellPage(tester, const HomePage());
 
-    expect(find.text('LexiAI'), findsOneWidget);
+    expect(find.text('LexCore'), findsOneWidget);
     expect(find.byIcon(Icons.menu_rounded), findsNothing);
   });
 
@@ -32,7 +32,7 @@ void main() {
   ) async {
     await pumpShellPage(tester, const LegalSearchPage());
 
-    expect(find.text('LexiAI 法律搜索'), findsOneWidget);
+    expect(find.text('LexCore 法条检索'), findsOneWidget);
     expect(find.byIcon(Icons.menu), findsNothing);
   });
 

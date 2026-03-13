@@ -121,7 +121,7 @@ class _GenerateTopBar extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              'LexiAI 文档生成器',
+              'LexCore 文书生成',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
@@ -158,7 +158,7 @@ class _GenerateForm extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 18, 0, 28),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
       children: [
         Text(
           '创建新文档',
@@ -169,7 +169,7 @@ class _GenerateForm extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          '填写以下信息，让 AI 为您生成专业文档。',
+          '填写以下信息，由智能引擎生成结构化法律文档。',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: colorScheme.onSurfaceVariant),
@@ -240,7 +240,7 @@ class _GenerateSidePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(0, 18, 0, 28),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
       children: const [
         _TemplateSection(),
         SizedBox(height: 16),

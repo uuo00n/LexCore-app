@@ -8,7 +8,7 @@ class MockLegalRepository {
     return const [
       QuickAction(
         title: '法律咨询',
-        subtitle: '即时 AI 对话建议',
+        subtitle: '即时智能对话建议',
         icon: 'chat_bubble',
         route: RouteNames.consultationPath,
       ),
@@ -188,11 +188,6 @@ class MockLegalRepository {
         title: '历史记录',
         icon: 'history',
         route: RouteNames.historyPath,
-      ),
-      ProfileMenuItem(
-        title: '设置',
-        icon: 'settings',
-        route: RouteNames.settingsPath,
       ),
     ];
   }

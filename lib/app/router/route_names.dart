@@ -16,6 +16,9 @@ class RouteNames {
   static const legalArticle = 'legal_article';
   static const history = 'history';
   static const profile = 'profile';
+  static const profilePersonalInfo = 'profile_personal_info';
+  static const profileSecurity = 'profile_security';
+  static const profileBilling = 'profile_billing';
   static const settings = 'settings';
   static const privacyPolicy = 'privacy_policy';
   static const termsOfService = 'terms_of_service';
@@ -35,6 +38,9 @@ class RouteNames {
   static const legalArticlePath = '/search/article';
   static const historyPath = '/history';
   static const profilePath = '/profile';
+  static const profilePersonalInfoPath = '/profile/personal-info';
+  static const profileSecurityPath = '/profile/security';
+  static const profileBillingPath = '/profile/billing';
   static const settingsPath = '/settings';
   static const privacyPolicyPath = '/legal/privacy-policy';
   static const termsOfServicePath = '/legal/terms-of-service';

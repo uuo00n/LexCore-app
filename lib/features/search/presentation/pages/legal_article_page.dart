@@ -125,7 +125,7 @@ class _ArticleMain extends StatelessWidget {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    'AI 智能摘要',
+                    '智能摘要',
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w700,

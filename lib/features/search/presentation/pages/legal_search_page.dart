@@ -398,14 +398,14 @@ class _AssistantCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'LexiAI 智能助理',
+              'LexCore 智能法律助手',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 color: Theme.of(context).colorScheme.onPrimary,
               ),
             ),
             const SizedBox(height: 6),
             Text(
-              '通过自然语言对话，获取精准法律建议与文书模板。',
+              '通过自然语言对话，获取结构化法律建议与文书模板。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(
                   context,
@@ -436,7 +436,7 @@ class _SearchTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppShellTopBar(
-      title: 'LexiAI 法律搜索',
+      title: 'LexCore 法条检索',
       actions: [
         IconButton(
           onPressed: () {},

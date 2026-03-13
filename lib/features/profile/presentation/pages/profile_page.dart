@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/core/extensions/router_navigation_extensions.dart';
 import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/features/profile/domain/entities/profile_summary.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
@@ -16,7 +17,8 @@ class ProfilePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(profileSummaryProvider);
     final menus = ref.watch(profileMenusProvider);
-    final accountMenus = _buildAccountMenus(menus);
+    final accountMenus = _buildAccountMenus();
+    final contentMenus = _buildContentMenus(menus);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -35,10 +37,8 @@ class ProfilePage extends ConsumerWidget {
                   children: [
                     _ProfileHero(summary: summary),
                     const SizedBox(height: 20),
-                    _SubscriptionCard(summary: summary),
-                    const SizedBox(height: 20),
                     _SectionTitle(
-                      text: '账户详情',
+                      text: '账号与订阅',
                       color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 8),
@@ -49,35 +49,31 @@ class ProfilePage extends ConsumerWidget {
                             title: accountMenus[i].title,
                             subtitle: accountMenus[i].subtitle,
                             leading: accountMenus[i].icon,
-                            onTap: () => context.push(accountMenus[i].route),
+                            onTap: () =>
+                                context.navigateByRoute(accountMenus[i].route),
                             showDivider: i != accountMenus.length - 1,
                           ),
                       ],
                     ),
                     const SizedBox(height: 18),
+                    _SubscriptionCard(summary: summary),
+                    const SizedBox(height: 20),
                     _SectionTitle(
-                      text: '其他',
+                      text: '内容与记录',
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 8),
                     _SectionCard(
                       children: [
-                        _SectionRow(
-                          title: '帮助与支持',
-                          subtitle: '',
-                          leading: Icons.help_outline,
-                          onTap: () {},
-                          showDivider: true,
-                        ),
-                        _SectionRow(
-                          title: '退出登录',
-                          subtitle: '',
-                          leading: Icons.logout_outlined,
-                          onTap: () {},
-                          titleColor: Theme.of(context).colorScheme.error,
-                          iconColor: Theme.of(context).colorScheme.error,
-                          showChevron: false,
-                        ),
+                        for (var i = 0; i < contentMenus.length; i++)
+                          _SectionRow(
+                            title: contentMenus[i].title,
+                            subtitle: contentMenus[i].subtitle,
+                            leading: contentMenus[i].icon,
+                            onTap: () =>
+                                context.navigateByRoute(contentMenus[i].route),
+                            showDivider: i != contentMenus.length - 1,
+                          ),
                       ],
                     ),
                   ],
@@ -90,40 +86,84 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  static List<_AccountMenu> _buildAccountMenus(List<ProfileMenuItem> menus) {
-    final fallbackRoutes = [
-      RouteNames.savedDocumentsPath,
-      RouteNames.historyPath,
-      RouteNames.settingsPath,
-    ];
-
-    String routeAt(int index) {
-      if (index < menus.length && menus[index].route.isNotEmpty) {
-        return menus[index].route;
-      }
-      return fallbackRoutes[index];
-    }
-
-    return [
-      _AccountMenu(
+  static List<_ProfileEntry> _buildAccountMenus() {
+    return const [
+      _ProfileEntry(
         title: '个人信息',
         subtitle: '姓名、头像与基本资料',
         icon: Icons.person_outline,
-        route: routeAt(0),
+        route: RouteNames.profilePersonalInfoPath,
       ),
-      _AccountMenu(
+      _ProfileEntry(
         title: '账号安全',
         subtitle: '密码、双重验证',
         icon: Icons.shield_outlined,
-        route: routeAt(1),
+        route: RouteNames.profileSecurityPath,
       ),
-      _AccountMenu(
-        title: '账单与支付',
+      _ProfileEntry(
+        title: '账单与订阅',
         subtitle: '历史订单与支付方式',
         icon: Icons.payments_outlined,
-        route: routeAt(2),
+        route: RouteNames.profileBillingPath,
       ),
     ];
+  }
+
+  static List<_ProfileEntry> _buildContentMenus(List<ProfileMenuItem> menus) {
+    if (menus.isNotEmpty) {
+      return menus
+          .map(
+            (item) => _ProfileEntry(
+              title: item.title,
+              subtitle: _contentSubtitleFor(item.title),
+              icon: _iconFromMenu(item.icon),
+              route: item.route,
+            ),
+          )
+          .toList();
+    }
+
+    final fallbackRoutes = [
+      RouteNames.savedDocumentsPath,
+      RouteNames.historyPath,
+    ];
+
+    return [
+      _ProfileEntry(
+        title: '我的文档',
+        subtitle: _contentSubtitleFor('我的文档'),
+        icon: _iconFromMenu('folder_open'),
+        route: fallbackRoutes[0],
+      ),
+      _ProfileEntry(
+        title: '历史记录',
+        subtitle: _contentSubtitleFor('历史记录'),
+        icon: _iconFromMenu('history'),
+        route: fallbackRoutes[1],
+      ),
+    ];
+  }
+
+  static String _contentSubtitleFor(String title) {
+    switch (title) {
+      case '我的文档':
+        return '查看保存的法律文档';
+      case '历史记录':
+        return '查看咨询与分析历史';
+      default:
+        return '';
+    }
+  }
+
+  static IconData _iconFromMenu(String icon) {
+    switch (icon) {
+      case 'folder_open':
+        return Icons.folder_open_outlined;
+      case 'history':
+        return Icons.history;
+      default:
+        return Icons.menu_book_outlined;
+    }
   }
 }
 
@@ -442,9 +482,6 @@ class _SectionRow extends StatelessWidget {
     required this.leading,
     required this.onTap,
     this.showDivider = false,
-    this.showChevron = true,
-    this.titleColor,
-    this.iconColor,
   });
 
   final String title;
@@ -452,9 +489,6 @@ class _SectionRow extends StatelessWidget {
   final IconData leading;
   final VoidCallback onTap;
   final bool showDivider;
-  final bool showChevron;
-  final Color? titleColor;
-  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -482,8 +516,7 @@ class _SectionRow extends StatelessWidget {
           children: [
             Icon(
               leading,
-              color:
-                  iconColor ?? Theme.of(context).colorScheme.onSurfaceVariant,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 21,
             ),
             const SizedBox(width: 10),
@@ -495,7 +528,6 @@ class _SectionRow extends StatelessWidget {
                     title,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: titleColor,
                     ),
                   ),
                   if (subtitle.isNotEmpty)
@@ -508,12 +540,11 @@ class _SectionRow extends StatelessWidget {
                 ],
               ),
             ),
-            if (showChevron)
-              Icon(
-                Icons.chevron_right,
-                size: 20,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            Icon(
+              Icons.chevron_right,
+              size: 20,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -521,8 +552,8 @@ class _SectionRow extends StatelessWidget {
   }
 }
 
-class _AccountMenu {
-  const _AccountMenu({
+class _ProfileEntry {
+  const _ProfileEntry({
     required this.title,
     required this.subtitle,
     required this.icon,

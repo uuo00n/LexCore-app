@@ -31,10 +31,7 @@ class AppBottomNavigation extends StatelessWidget {
           return Expanded(
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: () {
-                if (selected) return;
-                onTap(index);
-              },
+              onTap: () => onTap(index),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

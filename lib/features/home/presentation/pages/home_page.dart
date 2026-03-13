@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/core/extensions/router_navigation_extensions.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/home/application/home_providers.dart';
 import 'package:lexcore/features/home/domain/entities/home_entity.dart';
@@ -168,7 +168,7 @@ class _CoreSection extends StatelessWidget {
                         context,
                       ).colorScheme.primary.withValues(alpha: 0.95)
                     : Theme.of(context).colorScheme.surfaceContainerLowest,
-                onTap: () => context.push(action.route),
+                onTap: () => context.navigateByRoute(action.route),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -282,7 +282,7 @@ class _HomeTopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppShellTopBar(
-      title: 'LexiAI',
+      title: 'LexCore',
       sideWidth: 96,
       actions: [
         IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),

@@ -248,7 +248,7 @@ class _BrandSection extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Text(
-          AppConstants.appName,
+          AppConstants.appPrimaryBrandLine,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurface,
@@ -258,7 +258,7 @@ class _BrandSection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
-          '${AppConstants.appSubtitle}\n${AppConstants.appSlogan}',
+          AppConstants.appSlogan,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: Theme.of(context).colorScheme.onSurfaceVariant,

@@ -37,6 +37,12 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
             AppViewportSize.expanded => 2,
             AppViewportSize.ultra => 3,
           };
+          final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+          final mainAxisExtentBase = viewport == AppViewportSize.compact
+              ? 256.0
+              : 242.0;
+          final scaleDelta = (textScale - 1).clamp(0.0, 0.6).toDouble();
+          final mainAxisExtent = mainAxisExtentBase + (scaleDelta * 90.0);
 
           return ListView(
             children: [
@@ -76,7 +82,7 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
                   crossAxisCount: gridColumns,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: gridColumns == 1 ? 1.45 : 1.25,
+                  mainAxisExtent: mainAxisExtent,
                 ),
                 itemCount: docs.length,
                 itemBuilder: (context, index) {
@@ -167,20 +173,37 @@ class _DocumentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name, style: Theme.of(context).textTheme.titleSmall),
+                Text(
+                  item.name,
+                  style: Theme.of(context).textTheme.titleSmall,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 4),
                 Text(
                   '${item.type} · 更新于 ${DateTimeUtils.relativeFromNow(item.updatedAt)}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    OutlinedButton(onPressed: () {}, child: const Text('查看')),
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {},
+                        child: const Text('查看'),
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    FilledButton(onPressed: () {}, child: const Text('编辑')),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {},
+                        child: const Text('编辑'),
+                      ),
+                    ),
                   ],
                 ),
               ],

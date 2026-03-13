@@ -130,8 +130,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '${AppConstants.appName}——${AppConstants.appSubtitle}\n'
-                  '${AppConstants.appSlogan}',
+                  '${AppConstants.appPrimaryBrandLine}\n${AppConstants.appSlogan}',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,

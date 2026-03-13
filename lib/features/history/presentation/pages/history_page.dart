@@ -94,7 +94,7 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                             }),
                           ),
                           _TopTab(
-                            title: '法律搜索',
+                            title: '法条检索',
                             active: _tabIndex == 1,
                             onTap: () => setState(() {
                               _tabIndex = 1;

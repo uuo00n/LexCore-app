@@ -64,9 +64,9 @@ class MainShellPage extends StatelessWidget {
   }
 
   void _onDestinationTap(int index) {
-    if (index == navigationShell.currentIndex) {
-      return;
-    }
-    navigationShell.goBranch(index);
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
   }
 }

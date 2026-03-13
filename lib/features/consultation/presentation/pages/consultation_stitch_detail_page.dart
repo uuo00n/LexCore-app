@@ -44,7 +44,7 @@ class ConsultationStitchDetailPage extends StatelessWidget {
                           child: Text(
                             summary?.trim().isNotEmpty == true
                                 ? summary!
-                                : '根据您的描述，LexiAI 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。',
+                                : '根据您的描述，LexCore 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。',
                             style: displayFont.bodyMedium?.copyWith(
                               height: 1.6,
                               color: Theme.of(
@@ -164,7 +164,7 @@ class _DetailHeader extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              'LexiAI 解答详情',
+              'LexCore 解答详情',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

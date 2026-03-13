@@ -12,8 +12,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('衡法智核 LexCore'), findsOneWidget);
-    expect(find.text('智能法律服务平台\n以智能内核重塑法律服务效率'), findsOneWidget);
+    expect(find.text('衡法智核 LexCore——智能法律服务平台'), findsOneWidget);
+    expect(find.text('以智能内核重塑法律服务效率'), findsOneWidget);
     expect(find.text('已阅读并同意《服务条款》《隐私政策》'), findsOneWidget);
 
     expect(find.text('LexiAI'), findsNothing);

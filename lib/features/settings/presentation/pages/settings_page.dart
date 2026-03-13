@@ -27,18 +27,20 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
+  void _showHelpSupport(BuildContext context) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('帮助中心建设中，敬请期待')));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(settingsControllerProvider);
     final items = ref.watch(settingsItemsProvider);
-    final profile = ref.watch(settingsProfileProvider);
     final version = ref.watch(settingsVersionProvider);
 
     return AppPageScaffold(
       title: '设置',
-      actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
-      ],
       body: LayoutBuilder(
         builder: (context, constraints) {
           final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
@@ -50,9 +52,9 @@ class SettingsPage extends ConsumerWidget {
             return _SettingsMain(
               state: state,
               items: items,
-              profileName: profile.name,
-              profileMembership: profile.membership,
               version: version,
+              showHelpEntry: true,
+              showVersionInMain: true,
               onNotificationChanged: (value) => ref
                   .read(settingsControllerProvider.notifier)
                   .setNotifications(value),
@@ -60,6 +62,7 @@ class SettingsPage extends ConsumerWidget {
                   .read(settingsControllerProvider.notifier)
                   .setBiometric(value),
               onSettingTap: (item) => _handleSettingTap(context, item),
+              onHelpTap: () => _showHelpSupport(context),
             );
           }
 
@@ -69,10 +72,9 @@ class SettingsPage extends ConsumerWidget {
             primary: _SettingsMain(
               state: state,
               items: items,
-              profileName: profile.name,
-              profileMembership: profile.membership,
               version: version,
-              showAccountHeader: true,
+              showHelpEntry: false,
+              showVersionInMain: false,
               onNotificationChanged: (value) => ref
                   .read(settingsControllerProvider.notifier)
                   .setNotifications(value),
@@ -80,13 +82,11 @@ class SettingsPage extends ConsumerWidget {
                   .read(settingsControllerProvider.notifier)
                   .setBiometric(value),
               onSettingTap: (item) => _handleSettingTap(context, item),
+              onHelpTap: () => _showHelpSupport(context),
             ),
             secondary: _SettingsSidePanel(
               version: version,
-              onOpenPrivacyPolicy: () =>
-                  context.push(RouteNames.privacyPolicyPath),
-              onOpenTermsOfService: () =>
-                  context.push(RouteNames.termsOfServicePath),
+              onHelpTap: () => _showHelpSupport(context),
             ),
           );
         },
@@ -99,89 +99,31 @@ class _SettingsMain extends StatelessWidget {
   const _SettingsMain({
     required this.state,
     required this.items,
-    required this.profileName,
-    required this.profileMembership,
     required this.version,
+    required this.showHelpEntry,
+    required this.showVersionInMain,
     required this.onNotificationChanged,
     required this.onBiometricChanged,
     required this.onSettingTap,
-    this.showAccountHeader = true,
+    required this.onHelpTap,
   });
 
   final SettingsState state;
   final List<SettingItem> items;
-  final String profileName;
-  final String profileMembership;
   final String version;
+  final bool showHelpEntry;
+  final bool showVersionInMain;
   final ValueChanged<bool> onNotificationChanged;
   final ValueChanged<bool> onBiometricChanged;
   final ValueChanged<SettingItem> onSettingTap;
-  final bool showAccountHeader;
+  final VoidCallback onHelpTap;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       children: [
-        if (showAccountHeader)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        profileName,
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        profileMembership,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      FilledButton(
-                        onPressed: () {},
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(86, 36),
-                          shape: const StadiumBorder(),
-                        ),
-                        child: const Text('编辑资料'),
-                      ),
-                    ],
-                  ),
-                ),
-                CircleAvatar(
-                  radius: 34,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.13),
-                  child: Icon(
-                    Icons.person,
-                    color: Theme.of(context).colorScheme.primary,
-                    size: 34,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 16),
         Text(
-          '账户设置',
+          '系统与偏好',
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
             color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.w700,
@@ -216,6 +158,14 @@ class _SettingsMain extends StatelessWidget {
             onTap: () => onSettingTap(item),
           ),
         ),
+        if (showHelpEntry)
+          _SettingRow(
+            icon: Icons.help_outline,
+            title: '帮助与支持',
+            subtitle: '查看常见问题与联系支持',
+            trailing: const Icon(Icons.chevron_right),
+            onTap: onHelpTap,
+          ),
         const SizedBox(height: 18),
         FilledButton.icon(
           onPressed: () {},
@@ -230,15 +180,17 @@ class _SettingsMain extends StatelessWidget {
           icon: const Icon(Icons.logout),
           label: const Text('退出登录'),
         ),
-        const SizedBox(height: 12),
-        Center(
-          child: Text(
-            version,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+        if (showVersionInMain) ...[
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              version,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -262,15 +214,10 @@ class _SettingsMain extends StatelessWidget {
 }
 
 class _SettingsSidePanel extends StatelessWidget {
-  const _SettingsSidePanel({
-    required this.version,
-    required this.onOpenPrivacyPolicy,
-    required this.onOpenTermsOfService,
-  });
+  const _SettingsSidePanel({required this.version, required this.onHelpTap});
 
   final String version;
-  final VoidCallback onOpenPrivacyPolicy;
-  final VoidCallback onOpenTermsOfService;
+  final VoidCallback onHelpTap;
 
   @override
   Widget build(BuildContext context) {
@@ -280,24 +227,12 @@ class _SettingsSidePanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('桌面端快捷操作', style: Theme.of(context).textTheme.titleSmall),
+              Text('帮助与支持', style: Theme.of(context).textTheme.titleSmall),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
-                onPressed: () {},
-                icon: const Icon(Icons.cleaning_services_outlined),
-                label: const Text('清理缓存'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: onOpenPrivacyPolicy,
-                icon: const Icon(Icons.policy_outlined),
-                label: const Text('查看隐私政策'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: onOpenTermsOfService,
-                icon: const Icon(Icons.description_outlined),
-                label: const Text('查看服务条款'),
+                onPressed: onHelpTap,
+                icon: const Icon(Icons.help_outline),
+                label: const Text('打开帮助中心'),
               ),
             ],
           ),

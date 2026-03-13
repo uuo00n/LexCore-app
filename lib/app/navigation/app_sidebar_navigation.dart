@@ -48,7 +48,7 @@ class AppSidebarNavigation extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text('LexiAI', style: theme.textTheme.titleSmall),
+                    Text('LexCore', style: theme.textTheme.titleSmall),
                   ],
                 ),
               ),
@@ -60,11 +60,7 @@ class AppSidebarNavigation extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
-                    onTap: () {
-                      if (!selected) {
-                        onSelect(index);
-                      }
-                    },
+                    onTap: () => onSelect(index),
                     child: AnimatedContainer(
                       duration: AppMotion.navItem,
                       curve: AppMotion.easeInOut,

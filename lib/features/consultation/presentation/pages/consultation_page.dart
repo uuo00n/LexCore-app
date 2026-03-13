@@ -116,7 +116,7 @@ class _ConsultationHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'LexiAI 智能咨询',
+                'LexCore 法律咨询',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               Text(

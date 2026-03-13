@@ -10,8 +10,8 @@ class SettingsRepository {
   List<SettingItem> items() => _mock.settings();
 
   SettingsProfile profile() {
-    return const SettingsProfile(name: 'LexiAI 用户', membership: 'PRO 会员');
+    return const SettingsProfile(name: 'LexCore 用户', membership: 'PRO 会员');
   }
 
-  String version() => 'LexiAI 版本 2.4.0 (2024)';
+  String version() => 'LexCore 版本 2.4.0 (2024)';
 }

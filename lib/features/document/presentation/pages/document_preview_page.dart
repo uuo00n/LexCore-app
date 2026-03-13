@@ -163,7 +163,7 @@ class _DocumentBody extends StatelessWidget {
                         ).colorScheme.onPrimary.withValues(alpha: 0.2),
                       ),
                       child: Text(
-                        'AI 智能分析',
+                        '智能分析',
                         style: Theme.of(context).textTheme.labelMedium
                             ?.copyWith(
                               color: Theme.of(context).colorScheme.onPrimary,
@@ -188,7 +188,7 @@ class _DocumentBody extends StatelessWidget {
                 Text(title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 4),
                 Text(
-                  '由 LexiAI 生成 · 2024年5月20日',
+                  '由 LexCore 智能引擎生成 · 2024年5月20日',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -225,7 +225,7 @@ class _DocumentSidePanel extends StatelessWidget {
                 const SizedBox(height: 8),
                 const _InfoRow(label: '版本', value: 'v1.0 草稿'),
                 const SizedBox(height: 8),
-                const _InfoRow(label: '来源', value: 'LexiAI 智能生成'),
+                const _InfoRow(label: '来源', value: 'LexCore 智能引擎'),
                 const SizedBox(height: 8),
                 const _InfoRow(label: '更新时间', value: '2024-05-20 14:08'),
               ],

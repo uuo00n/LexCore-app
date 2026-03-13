@@ -19,7 +19,10 @@ import 'package:lexcore/features/history/presentation/pages/history_page.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/privacy_policy_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/terms_of_service_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_billing_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_personal_info_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_security_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
@@ -240,6 +243,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: const SavedDocumentsPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profilePersonalInfoPath,
+        name: RouteNames.profilePersonalInfo,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfilePersonalInfoPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profileSecurityPath,
+        name: RouteNames.profileSecurity,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileSecurityPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profileBillingPath,
+        name: RouteNames.profileBilling,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileBillingPage(),
         ),
       ),
       GoRoute(

@@ -184,12 +184,7 @@ class _GenerateForm extends StatelessWidget {
         _Md3DropdownField(
           label: '文档类型',
           value: documentType,
-          items: const [
-            DropdownMenuItem(value: '劳动仲裁申请书', child: Text('劳动仲裁申请书')),
-            DropdownMenuItem(value: '律师函', child: Text('律师函')),
-            DropdownMenuItem(value: '合同审查意见', child: Text('合同审查意见')),
-            DropdownMenuItem(value: '企业合规报告', child: Text('企业合规报告')),
-          ],
+          options: const ['劳动仲裁申请书', '律师函', '合同审查意见', '企业合规报告'],
           onChanged: onTypeChanged,
         ),
         const SizedBox(height: 14),
@@ -419,26 +414,138 @@ class _Md3TextField extends StatelessWidget {
   }
 }
 
-class _Md3DropdownField extends StatelessWidget {
+class _Md3DropdownField extends StatefulWidget {
   const _Md3DropdownField({
     required this.label,
     required this.value,
-    required this.items,
+    required this.options,
     required this.onChanged,
   });
 
   final String label;
   final String value;
-  final List<DropdownMenuItem<String>> items;
+  final List<String> options;
   final ValueChanged<String?> onChanged;
 
   @override
+  State<_Md3DropdownField> createState() => _Md3DropdownFieldState();
+}
+
+class _Md3DropdownFieldState extends State<_Md3DropdownField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _focusNode = FocusNode()..addListener(_handleFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _Md3DropdownField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && _controller.text != widget.value) {
+      _controller.text = widget.value;
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_handleFocusChange);
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleFocusChange() {
+    if (!_focusNode.hasFocus && _controller.text != widget.value) {
+      _controller.text = widget.value;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      items: items,
-      onChanged: onChanged,
-      decoration: _md3Decoration(context, label: label),
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return DropdownMenu<String>(
+      controller: _controller,
+      focusNode: _focusNode,
+      initialSelection: widget.value,
+      dropdownMenuEntries: widget.options
+          .map(
+            (option) => DropdownMenuEntry<String>(
+              value: option,
+              label: option,
+              trailingIcon: option == widget.value
+                  ? Icon(
+                      Icons.check_rounded,
+                      size: 18,
+                      color: colorScheme.primary,
+                    )
+                  : null,
+              style: ButtonStyle(
+                padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+                textStyle: WidgetStatePropertyAll<TextStyle?>(
+                  textTheme.labelLarge?.copyWith(
+                    fontWeight: option == widget.value
+                        ? FontWeight.w700
+                        : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+      onSelected: (selection) {
+        if (selection == null) {
+          return;
+        }
+        _controller.text = selection;
+        widget.onChanged(selection);
+      },
+      enableFilter: true,
+      enableSearch: true,
+      requestFocusOnTap: true,
+      menuHeight: 280,
+      textStyle: textTheme.bodyMedium,
+      expandedInsets: EdgeInsets.zero,
+      trailingIcon: Icon(
+        Icons.keyboard_arrow_down_rounded,
+        color: colorScheme.onSurfaceVariant,
+      ),
+      selectedTrailingIcon: Icon(
+        Icons.keyboard_arrow_up_rounded,
+        color: colorScheme.primary,
+      ),
+      menuStyle: MenuStyle(
+        backgroundColor: WidgetStatePropertyAll<Color>(
+          colorScheme.surfaceContainerHighest,
+        ),
+        surfaceTintColor: WidgetStatePropertyAll<Color>(
+          colorScheme.surfaceTint.withValues(alpha: 0),
+        ),
+        shadowColor: WidgetStatePropertyAll<Color>(
+          colorScheme.shadow.withValues(alpha: 0.2),
+        ),
+        elevation: const WidgetStatePropertyAll<double>(8),
+        padding: const WidgetStatePropertyAll<EdgeInsetsGeometry>(
+          EdgeInsets.symmetric(vertical: 8),
+        ),
+        side: WidgetStatePropertyAll<BorderSide>(
+          BorderSide(color: colorScheme.outlineVariant),
+        ),
+        shape: const WidgetStatePropertyAll<RoundedRectangleBorder>(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+          ),
+        ),
+      ),
+      decorationBuilder: (context, controller) =>
+          _md3Decoration(context, label: widget.label),
     );
   }
 }

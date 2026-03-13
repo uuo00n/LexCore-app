@@ -1,55 +1,49 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository is a Flutter app (`lexcore`) with a feature-first layered architecture.
+This repository is a Flutter app (`lexcore`) using a feature-first layered architecture.
 
-- `lib/app`: app bootstrap (`app.dart`), routing (`app_router.dart`), DI, and theme tokens.
-- `lib/core`: cross-cutting utilities (constants, network, storage, errors, extensions).
-- `lib/shared`: reusable UI components, shared models, and mock services.
-- `lib/features/<feature>`: each feature is split into `presentation`, `application`, `data`, and `domain`.
-- `test/`: widget/unit tests.
-- `android/`, `ios/`, `web/`, `macos/`, `linux/`, `windows/`: platform runners.
+- `lib/app`: app bootstrap, routing, adaptive layout, motion, theme tokens.
+- `lib/core`: constants, network/storage utilities, error handling, context extensions.
+- `lib/shared`: reusable widgets/components, shared models, mock services.
+- `lib/features/<feature>`: split into `presentation`, `application`, `data`, `domain`.
+- `test/`: unit and widget tests, generally mirroring app structure.
+- `assets/`: icons/images; platform runners are under `android/`, `ios/`, `web/`, `macos/`, `linux/`, `windows/`.
 
 Example feature path: `lib/features/analysis/presentation/pages/analysis_result_page.dart`.
 
 ## Build, Test, and Development Commands
-Use these commands from repository root:
+Run from repo root:
 
 - `flutter pub get`: install dependencies.
-- `flutter run -d <device>`: run locally (e.g. `chrome`, `ios`, emulator id).
-- `flutter analyze`: static analysis with lint rules.
+- `flutter run -d <device>`: run locally (`chrome`, emulator id, etc.).
+- `flutter analyze`: static analysis and lint checks.
 - `flutter test`: run all tests.
-- `dart format lib test`: format source and tests.
-- `flutter pub run build_runner build --delete-conflicting-outputs`: generate `freezed`/JSON code.
+- `dart format lib test`: format source code.
+- `flutter pub run build_runner build --delete-conflicting-outputs`: regenerate code when using builders.
+- `./tool/check_theme_usage.sh`: enforce theme/color usage rules.
 
 ## Coding Style & Naming Conventions
-- Follow `flutter_lints` and keep 2-space indentation.
-- File names: `snake_case.dart`; classes/types: `UpperCamelCase`; variables/methods: `lowerCamelCase`.
-- Riverpod providers should end with `Provider` (e.g. `analysisReportProvider`).
-- Page files should end with `_page.dart`; repositories should live in `data/repositories`.
-- Do not scatter mock data in widgets; keep it in repository/mock layers.
-- Color source of truth: `lib/theme.dart`.
-- In `lib/`, always use `Theme.of(context).colorScheme` and `context.tokens` for colors.
-- In `lib/`, do not use `AppColors`, `AppTheme`, `Colors.*`, or direct `Color(...)` literals (except `lib/theme.dart`).
+- Follow `flutter_lints`; use 2-space indentation.
+- File names: `snake_case.dart`; classes/types: `UpperCamelCase`; members: `lowerCamelCase`.
+- Riverpod providers should end with `Provider`.
+- Page files should end with `_page.dart`.
+- Keep mock/sample data in repository/mock layers, not UI widgets.
+- In `lib/`, use only `Theme.of(context).colorScheme` and `context.tokens` for colors.
+- Do not use `AppColors`, `AppTheme`, `Colors.*`, or `Color(...)` in `lib/` (except `lib/theme.dart`).
 
 ## Testing Guidelines
 - Framework: `flutter_test`.
 - Test files must end with `_test.dart`.
 - Add tests for new business logic (controllers/repositories) and key widget flows.
 - Before opening a PR, run: `flutter analyze && flutter test && ./tool/check_theme_usage.sh`.
-- No strict coverage gate yet, but new logic should not be merged without tests.
-
-## MCP Theme Prompt
-- For MCP-generated or MCP-edited pages, include this constraint in prompt:
-  `Use only Theme.of(context).colorScheme and context.tokens for colors. Do not use AppColors, AppTheme, Colors.*, or Color(...).`
 
 ## Commit & Pull Request Guidelines
-- Follow Conventional Commit style seen in history: `type: message` (example: `feat: 初始化项目并完成首次提交`).
-- Recommended types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`.
-- Keep commits focused and atomic by module/feature.
+- Use Conventional Commits, e.g. `feat(auth): 优化登录流程`, `refactor(ui): 统一列表样式`.
+- Keep commits focused and scoped to one concern.
 - PRs should include:
-  - change summary,
+  - concise change summary,
   - affected modules/routes,
   - screenshots for UI changes (mobile-first),
-  - `flutter analyze` and `flutter test` results,
-  - linked issue/task when available.
+  - verification results (`analyze`, `test`, theme check),
+  - linked issue/task if available.

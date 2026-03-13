@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0b50da",
+                        "background-light": "#f5f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<title>案件列表 (Material 3)</title>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<!-- Top App Bar / Search Header -->
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-4 pt-4 pb-2">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">menu</span>
+<h1 class="text-xl font-semibold tracking-tight">案件列表</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<div class="size-8 rounded-full bg-primary/20 flex items-center justify-center border border-primary/10 overflow-hidden">
+<span class="material-symbols-outlined text-primary text-xl">account_circle</span>
+</div>
+</div>
+</div>
+<!-- Search Bar MD3 Style -->
+<div class="relative group">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-slate-500">search</span>
+</div>
+<input class="block w-full pl-12 pr-4 py-3 bg-white dark:bg-slate-800 border-none rounded-full shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-primary placeholder-slate-500 text-sm transition-all" placeholder="搜索案件、当事人或案号..." type="text"/>
+</div>
+<!-- Filter Chips MD3 Style -->
+<div class="flex gap-2 mt-4 pb-2 overflow-x-auto no-scrollbar">
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-primary text-white px-4 text-sm font-medium">
+                全部
+            </button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                进行中
+            </button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                已结案
+            </button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+                草稿
+            </button>
+<button class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 text-sm font-medium text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                更多
+            </button>
+</div>
+</header>
+<!-- Case List Content -->
+<main class="px-4 pb-24 space-y-4">
+<!-- Case Card 1 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-primary/80 tracking-widest uppercase">案号: (2023) 沪01民初1024号</span>
+<span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">进行中</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">张三与李四房屋所有权纠纷案</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+                立案日期: 2023-11-15
+            </p>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-medium mb-1">
+<span class="text-slate-600 dark:text-slate-400">诉讼进度: 证据交换</span>
+<span class="text-primary">65%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 65%"></div>
+</div>
+</div>
+</div>
+<!-- Case Card 2 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-primary/80 tracking-widest uppercase">案号: (2023) 浙02知民初256号</span>
+<span class="bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">已结案</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">某科技公司专利侵权损害赔偿案</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+                结案日期: 2023-12-01
+            </p>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-medium mb-1">
+<span class="text-slate-600 dark:text-slate-400">诉讼进度: 案件执行完毕</span>
+<span class="text-green-600">100%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+<div class="bg-green-500 h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</div>
+<!-- Case Card 3 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-primary/80 tracking-widest uppercase">案号: (2024) 京01刑初002号</span>
+<span class="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">等待开庭</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">王五职务侵占刑事辩护案</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+                开庭日期: 2024-02-10
+            </p>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-medium mb-1">
+<span class="text-slate-600 dark:text-slate-400">诉讼进度: 审判阶段</span>
+<span class="text-primary">30%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 30%"></div>
+</div>
+</div>
+</div>
+<!-- Case Card 4 -->
+<div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start mb-2">
+<span class="text-xs font-bold text-primary/80 tracking-widest uppercase">案号: (2024) 粤03民特18号</span>
+<span class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">进行中</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white mb-1">跨境电商劳动合同仲裁案件</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+                立案日期: 2024-01-05
+            </p>
+<div class="space-y-2">
+<div class="flex justify-between text-xs font-medium mb-1">
+<span class="text-slate-600 dark:text-slate-400">诉讼进度: 调解中</span>
+<span class="text-primary">45%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5">
+<div class="bg-primary h-1.5 rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed right-6 bottom-24 size-14 bg-primary text-white rounded-2xl shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<!-- Bottom Navigation Bar (MD3 Style) -->
+<nav class="fixed bottom-0 w-full bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 px-2 pb-6 pt-3 flex justify-around items-center z-20">
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 group" href="#">
+<div class="h-8 w-16 flex items-center justify-center rounded-full group-hover:bg-slate-100 dark:group-hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">home</span>
+</div>
+<span class="text-xs font-medium">首页</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary group" href="#">
+<div class="h-8 w-16 flex items-center justify-center rounded-full bg-primary/15">
+<span class="material-symbols-outlined fill-icon">gavel</span>
+</div>
+<span class="text-xs font-bold">案件</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 group" href="#">
+<div class="h-8 w-16 flex items-center justify-center rounded-full group-hover:bg-slate-100 dark:group-hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">description</span>
+</div>
+<span class="text-xs font-medium">文书</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-500 dark:text-slate-400 group" href="#">
+<div class="h-8 w-16 flex items-center justify-center rounded-full group-hover:bg-slate-100 dark:group-hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</div>
+<span class="text-xs font-medium">设置</span>
+</a>
+</nav>
+</body></html>

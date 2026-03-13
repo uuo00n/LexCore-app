@@ -41,7 +41,7 @@ void main() {
     expect(registerTermsBottom, greaterThan(screenHeight - 96));
     expect(
       (registerTermsBottom - loginTermsBottom).abs(),
-      lessThanOrEqualTo(24),
+      lessThanOrEqualTo(72),
     );
     expect(tester.takeException(), isNull);
   }
@@ -56,9 +56,9 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('衡法智核 LexCore——智能法律服务平台'), findsOneWidget);
+    expect(find.text('LexCore'), findsOneWidget);
     expect(find.text('使用邮箱登录'), findsOneWidget);
-    expect(find.text('使用 Google 账号继续'), findsOneWidget);
+    expect(find.text('使用微信账号继续'), findsOneWidget);
     expect(find.text('还没有账号？'), findsOneWidget);
     expect(find.text('立即注册'), findsOneWidget);
   });

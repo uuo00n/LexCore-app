@@ -179,11 +179,11 @@ class _AuthPageState extends ConsumerState<AuthPage> {
               OutlinedButton.icon(
                 onPressed: () {},
                 icon: SvgPicture.asset(
-                  AuthIconAssets.google,
+                  AuthIconAssets.wechat,
                   width: 20,
                   height: 20,
                 ),
-                label: const Text('使用 Google 账号继续'),
+                label: const Text('使用微信账号继续'),
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(56),
                   shape: const StadiumBorder(),
@@ -248,7 +248,7 @@ class _BrandSection extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         Text(
-          AppConstants.appPrimaryBrandLine,
+          'LexCore',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.displaySmall?.copyWith(
             color: Theme.of(context).colorScheme.onSurface,

@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
-import 'package:lexcore/shared/widgets/app_bottom_navigation.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
@@ -28,12 +27,10 @@ void main() {
     expect(find.byIcon(Icons.search_rounded), findsOneWidget);
   });
 
-  testWidgets('uses bottom navigation style aligned with app shell', (
-    tester,
-  ) async {
+  testWidgets('uses segmented button for tab navigation', (tester) async {
     await pumpDashboardPage(tester);
 
-    expect(find.byType(AppBottomNavigation), findsOneWidget);
+    expect(find.byType(SegmentedButton<int>), findsOneWidget);
     expect(find.text('概览'), findsOneWidget);
     expect(find.text('案件'), findsOneWidget);
     expect(find.text('报告'), findsOneWidget);

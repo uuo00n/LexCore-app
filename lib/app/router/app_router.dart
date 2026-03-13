@@ -11,9 +11,7 @@ import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_stitch_detail_page.dart';
-import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_cases_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
-import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_reports_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
 import 'package:lexcore/features/document/presentation/pages/saved_documents_page.dart';
@@ -212,28 +210,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: const CaseDashboardPage(),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.dashboardCasesPath,
-        name: RouteNames.dashboardCases,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => AppPageTransitions.build(
-          context: context,
-          state: state,
-          kind: AppRouteTransitionKind.detail,
-          child: const CaseDashboardCasesPage(),
-        ),
-      ),
-      GoRoute(
-        path: RouteNames.dashboardReportsPath,
-        name: RouteNames.dashboardReports,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => AppPageTransitions.build(
-          context: context,
-          state: state,
-          kind: AppRouteTransitionKind.detail,
-          child: const CaseDashboardReportsPage(),
         ),
       ),
       GoRoute(

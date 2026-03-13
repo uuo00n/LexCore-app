@@ -4,10 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_cases_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
-import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_reports_page.dart';
-import 'package:lexcore/shared/widgets/app_bottom_navigation.dart';
 
 void main() {
   Future<void> setPhoneViewport(WidgetTester tester) async {
@@ -15,13 +12,6 @@ void main() {
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
-  }
-
-  Finder bottomNavItem(String label) {
-    return find.descendant(
-      of: find.byType(AppBottomNavigation),
-      matching: find.text(label),
-    );
   }
 
   GoRouter buildDashboardRouter() {
@@ -32,48 +22,158 @@ void main() {
           path: RouteNames.dashboardPath,
           builder: (context, state) => const CaseDashboardPage(),
         ),
+      ],
+    );
+  }
+
+  GoRouter buildDashboardEntryRouter() {
+    return GoRouter(
+      initialLocation: '/source',
+      routes: [
         GoRoute(
-          path: RouteNames.dashboardCasesPath,
-          builder: (context, state) => const CaseDashboardCasesPage(),
+          path: '/source',
+          builder: (context, state) => const _LabelPage(
+            title: 'Source Page',
+            buttonLabel: '进入案件分析',
+            targetPath: RouteNames.dashboardPath,
+          ),
         ),
         GoRoute(
-          path: RouteNames.dashboardReportsPath,
-          builder: (context, state) => const CaseDashboardReportsPage(),
+          path: RouteNames.dashboardPath,
+          builder: (context, state) => const CaseDashboardPage(),
+        ),
+        GoRoute(
+          path: RouteNames.homePath,
+          builder: (context, state) => const _LabelPage(title: 'Home Page'),
         ),
       ],
     );
   }
 
-  testWidgets('dashboard module tabs switch among overview/cases/reports', (
+  GoRouter buildDashboardFallbackRouter() {
+    return GoRouter(
+      initialLocation: RouteNames.dashboardPath,
+      routes: [
+        GoRoute(
+          path: RouteNames.dashboardPath,
+          builder: (context, state) => const CaseDashboardPage(),
+        ),
+        GoRoute(
+          path: RouteNames.homePath,
+          builder: (context, state) => const _LabelPage(title: 'Home Page'),
+        ),
+      ],
+    );
+  }
+
+  Finder segmentButton(String label) {
+    return find.descendant(
+      of: find.byType(SegmentedButton<int>),
+      matching: find.text(label),
+    );
+  }
+
+  testWidgets(
+    'dashboard segmented tabs switch among overview/cases/reports',
+    (tester) async {
+      await setPhoneViewport(tester);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp.router(routerConfig: buildDashboardRouter()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('进行中的案件分析'), findsOneWidget);
+
+      await tester.tap(segmentButton('案件'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('dashboard_cases_page_title')),
+        findsOneWidget,
+      );
+
+      await tester.tap(segmentButton('报告'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byKey(const ValueKey<String>('dashboard_reports_page_title')),
+        findsOneWidget,
+      );
+
+      await tester.tap(segmentButton('概览'));
+      await tester.pumpAndSettle();
+      expect(find.text('进行中的案件分析'), findsOneWidget);
+    },
+  );
+
+  testWidgets('back button returns to source page', (tester) async {
+    await setPhoneViewport(tester);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: buildDashboardEntryRouter()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Source Page'), findsOneWidget);
+    await tester.tap(find.text('进入案件分析'));
+    await tester.pumpAndSettle();
+    expect(find.text('进行中的案件分析'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Source Page'), findsOneWidget);
+  });
+
+  testWidgets('back button falls back to home when stack cannot pop', (
     tester,
   ) async {
     await setPhoneViewport(tester);
 
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp.router(routerConfig: buildDashboardRouter()),
+        child: MaterialApp.router(
+          routerConfig: buildDashboardFallbackRouter(),
+        ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('进行中的案件分析'), findsOneWidget);
 
-    await tester.tap(bottomNavItem('案件'));
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey<String>('dashboard_cases_page_title')),
-      findsOneWidget,
-    );
-
-    await tester.tap(bottomNavItem('报告'));
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey<String>('dashboard_reports_page_title')),
-      findsOneWidget,
-    );
-
-    await tester.tap(bottomNavItem('概览'));
-    await tester.pumpAndSettle();
-    expect(find.text('进行中的案件分析'), findsOneWidget);
+    expect(find.text('Home Page'), findsOneWidget);
   });
+}
+
+class _LabelPage extends StatelessWidget {
+  const _LabelPage({required this.title, this.buttonLabel, this.targetPath});
+
+  final String title;
+  final String? buttonLabel;
+  final String? targetPath;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(title),
+            if (buttonLabel != null && targetPath != null) ...[
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => context.push(targetPath!),
+                child: Text(buttonLabel!),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }

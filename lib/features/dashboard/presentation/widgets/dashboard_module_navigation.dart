@@ -1,41 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:lexcore/app/navigation/app_shell_destinations.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
-const dashboardModuleDestinations = <AppShellDestination>[
-  AppShellDestination(
-    label: '概览',
-    icon: Icons.dashboard_outlined,
-    selectedIcon: Icons.dashboard,
-  ),
-  AppShellDestination(
-    label: '案件',
-    icon: Icons.folder_open_outlined,
-    selectedIcon: Icons.folder_open,
-  ),
-  AppShellDestination(
-    label: '报告',
-    icon: Icons.summarize_outlined,
-    selectedIcon: Icons.summarize,
-  ),
-];
+class DashboardSegmentedTabs extends StatelessWidget {
+  const DashboardSegmentedTabs({
+    super.key,
+    required this.selectedIndex,
+    required this.onSelectionChanged,
+  });
 
-void onDashboardModuleTap(BuildContext context, int index) {
-  final targetPath = switch (index) {
-    0 => RouteNames.dashboardPath,
-    1 => RouteNames.dashboardCasesPath,
-    2 => RouteNames.dashboardReportsPath,
-    _ => RouteNames.dashboardPath,
-  };
+  final int selectedIndex;
+  final ValueChanged<int> onSelectionChanged;
 
-  if (GoRouterState.of(context).uri.path == targetPath) {
-    return;
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: SegmentedButton<int>(
+          segments: const [
+            ButtonSegment<int>(value: 0, label: Text('概览')),
+            ButtonSegment<int>(value: 1, label: Text('案件')),
+            ButtonSegment<int>(value: 2, label: Text('报告')),
+          ],
+          selected: {selectedIndex},
+          onSelectionChanged: (selected) {
+            onSelectionChanged(selected.first);
+          },
+          showSelectedIcon: false,
+        ),
+      ),
+    );
   }
-
-  context.go(targetPath);
 }
 
 class DashboardModuleTopBar extends StatelessWidget {
@@ -51,7 +50,13 @@ class DashboardModuleTopBar extends StatelessWidget {
       leading: Align(
         alignment: Alignment.centerLeft,
         child: IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+              return;
+            }
+            context.go(RouteNames.homePath);
+          },
           padding: EdgeInsets.zero,
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints.tightFor(width: 40, height: 40),

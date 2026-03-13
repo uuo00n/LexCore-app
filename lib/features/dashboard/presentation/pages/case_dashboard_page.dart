@@ -4,17 +4,44 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/features/dashboard/application/dashboard_provider.dart';
 import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart';
+import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_cases_page.dart';
+import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_reports_page.dart';
 import 'package:lexcore/features/dashboard/presentation/widgets/dashboard_module_navigation.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
-import 'package:lexcore/shared/widgets/app_bottom_navigation.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
-class CaseDashboardPage extends ConsumerWidget {
+class CaseDashboardPage extends ConsumerStatefulWidget {
   const CaseDashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CaseDashboardPage> createState() => _CaseDashboardPageState();
+}
+
+class _CaseDashboardPageState extends ConsumerState<CaseDashboardPage>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final data = ref.watch(dashboardProvider);
 
     return Scaffold(
@@ -30,56 +57,27 @@ class CaseDashboardPage extends ConsumerWidget {
                 beginOffset: Offset(0, -0.02),
                 child: DashboardModuleTopBar(title: 'LexCore 案件分析'),
               ),
+              AppFadeSlideIn(
+                delay: const Duration(milliseconds: 40),
+                beginOffset: const Offset(0, -0.02),
+                child: DashboardSegmentedTabs(
+                  selectedIndex: _tabController.index,
+                  onSelectionChanged: (index) {
+                    _tabController.animateTo(index);
+                  },
+                ),
+              ),
               Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _StatsGrid(data: data),
-                      const SizedBox(height: 24),
-                      _TrendSection(points: data.trendPoints),
-                      const SizedBox(height: 24),
-                      const _SectionHeader(
-                        title: '进行中的案件分析',
-                        actionLabel: '查看全部',
-                      ),
-                      const SizedBox(height: 6),
-                      ...data.cases.asMap().entries.map((entry) {
-                        final index = entry.key;
-                        final item = entry.value;
-                        final isLast = index == data.cases.length - 1;
-                        return AppFadeSlideIn(
-                          delay: Duration(milliseconds: 80 + (index * 35)),
-                          beginOffset: const Offset(0, 0.02),
-                          child: _ProgressListItem(
-                            item: item,
-                            index: index,
-                            showBottomDivider: !isLast,
-                          ),
-                        );
-                      }),
-                      const SizedBox(height: 18),
-                      const _SectionHeader(title: '快速操作'),
-                      const SizedBox(height: 12),
-                      const _QuickActionsRow(),
-                      const SizedBox(height: 112),
-                    ],
-                  ),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _OverviewContent(data: data),
+                    const CaseDashboardCasesContent(),
+                    const CaseDashboardReportsContent(),
+                  ],
                 ),
               ),
             ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: AppMobileCanvas(
-        maxContentWidth: 430,
-        child: SafeArea(
-          top: false,
-          child: AppBottomNavigation(
-            currentIndex: 0,
-            items: dashboardModuleDestinations,
-            onTap: (index) => onDashboardModuleTap(context, index),
           ),
         ),
       ),
@@ -92,6 +90,52 @@ class CaseDashboardPage extends ConsumerWidget {
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _OverviewContent extends StatelessWidget {
+  const _OverviewContent({required this.data});
+
+  final DashboardEntity data;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StatsGrid(data: data),
+          const SizedBox(height: 24),
+          _TrendSection(points: data.trendPoints),
+          const SizedBox(height: 24),
+          const _SectionHeader(
+            title: '进行中的案件分析',
+            actionLabel: '查看全部',
+          ),
+          const SizedBox(height: 6),
+          ...data.cases.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isLast = index == data.cases.length - 1;
+            return AppFadeSlideIn(
+              delay: Duration(milliseconds: 80 + (index * 35)),
+              beginOffset: const Offset(0, 0.02),
+              child: _ProgressListItem(
+                item: item,
+                index: index,
+                showBottomDivider: !isLast,
+              ),
+            );
+          }),
+          const SizedBox(height: 18),
+          const _SectionHeader(title: '快速操作'),
+          const SizedBox(height: 12),
+          const _QuickActionsRow(),
+          const SizedBox(height: 80),
+        ],
+      ),
     );
   }
 }

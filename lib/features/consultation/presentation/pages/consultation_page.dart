@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
@@ -13,7 +14,10 @@ import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
 class ConsultationPage extends ConsumerStatefulWidget {
-  const ConsultationPage({super.key});
+  const ConsultationPage({super.key, required this.threadId, this.threadTitle});
+
+  final String threadId;
+  final String? threadTitle;
 
   @override
   ConsumerState<ConsultationPage> createState() => _ConsultationPageState();
@@ -23,6 +27,17 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
   final TextEditingController _textController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = ref.read(consultationStateControllerProvider.notifier);
+      controller.ensureThread(widget.threadId, title: widget.threadTitle);
+      controller.selectThread(widget.threadId);
+    });
+  }
+
+  @override
   void dispose() {
     _textController.dispose();
     super.dispose();
@@ -30,7 +45,8 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final messages = ref.watch(consultationControllerProvider);
+    final thread = ref.watch(consultationThreadProvider(widget.threadId));
+    final messages = ref.watch(consultationMessagesProvider(widget.threadId));
 
     return Scaffold(
       body: AppMobileCanvas(
@@ -46,8 +62,10 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
               return Column(
                 children: [
                   _ConsultationHeader(
+                    title: thread.title,
                     splitLayout: splitLayout,
                     onBack: () => Navigator.of(context).maybePop(),
+                    onMoreTap: _openThreadMenu,
                   ),
                   Expanded(
                     child: Padding(
@@ -85,17 +103,279 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
 
   void _sendMessage() {
     ref
-        .read(consultationControllerProvider.notifier)
-        .send(_textController.text);
+        .read(consultationStateControllerProvider.notifier)
+        .send(widget.threadId, _textController.text);
     _textController.clear();
+  }
+
+  Future<void> _openThreadMenu() async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final action = await showGeneralDialog<_ThreadMenuAction>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: '关闭菜单',
+      barrierColor: colorScheme.scrim.withValues(alpha: 0.32),
+      transitionDuration: const Duration(milliseconds: 220),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        final screenWidth = MediaQuery.of(dialogContext).size.width;
+        final panelWidth = screenWidth > 540 ? 340.0 : screenWidth * 0.82;
+
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Material(
+              color: colorScheme.surface,
+              elevation: 6,
+              borderRadius: const BorderRadius.horizontal(
+                left: Radius.circular(24),
+              ),
+              child: SizedBox(
+                width: panelWidth,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '对话操作',
+                              style: Theme.of(dialogContext)
+                                  .textTheme
+                                  .titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: '关闭',
+                            onPressed: () => Navigator.of(dialogContext).pop(),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                        ],
+                      ),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.edit_outlined),
+                      title: const Text('重命名对话'),
+                      onTap: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_ThreadMenuAction.rename),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.share_outlined),
+                      title: const Text('分享对话'),
+                      onTap: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_ThreadMenuAction.share),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.cleaning_services_outlined),
+                      title: const Text('清空当前对话'),
+                      onTap: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_ThreadMenuAction.clear),
+                    ),
+                    ListTile(
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: colorScheme.error,
+                      ),
+                      title: Text(
+                        '删除对话',
+                        style: Theme.of(dialogContext).textTheme.bodyLarge
+                            ?.copyWith(color: colorScheme.error),
+                      ),
+                      onTap: () => Navigator.of(
+                        dialogContext,
+                      ).pop(_ThreadMenuAction.delete),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        final curve = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curve,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.12, 0),
+              end: Offset.zero,
+            ).animate(curve),
+            child: child,
+          ),
+        );
+      },
+    );
+    if (!mounted || action == null) return;
+
+    switch (action) {
+      case _ThreadMenuAction.rename:
+        await _renameThread();
+        break;
+      case _ThreadMenuAction.share:
+        await _shareThread();
+        break;
+      case _ThreadMenuAction.clear:
+        await _clearThread();
+        break;
+      case _ThreadMenuAction.delete:
+        await _deleteThread();
+        break;
+    }
+  }
+
+  Future<void> _renameThread() async {
+    final currentTitle = ref
+        .read(consultationThreadProvider(widget.threadId))
+        .title;
+    final controller = TextEditingController(text: currentTitle);
+    final renamed = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('重命名对话'),
+          content: TextField(
+            key: const ValueKey('consultation_rename_input'),
+            controller: controller,
+            autofocus: true,
+            maxLength: 30,
+            decoration: const InputDecoration(hintText: '请输入新标题'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              key: const ValueKey('consultation_rename_confirm'),
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || renamed == null) return;
+
+    final normalized = renamed.trim();
+    if (normalized.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('标题不能为空')));
+      return;
+    }
+
+    ref
+        .read(consultationStateControllerProvider.notifier)
+        .renameThread(widget.threadId, normalized);
+  }
+
+  Future<void> _shareThread() async {
+    final thread = ref.read(consultationThreadProvider(widget.threadId));
+    final text = ref
+        .read(consultationStateControllerProvider.notifier)
+        .buildShareText(widget.threadId);
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: text, subject: thread.title),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+    }
+  }
+
+  Future<void> _clearThread() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('清空当前对话'),
+          content: const Text('清空后将仅保留欢迎消息，是否继续？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              key: const ValueKey('consultation_clear_confirm'),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('确认清空'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    ref
+        .read(consultationStateControllerProvider.notifier)
+        .clearThread(widget.threadId);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已清空当前对话')));
+  }
+
+  Future<void> _deleteThread() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('删除对话'),
+          content: const Text('删除后不可恢复，是否继续？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              key: const ValueKey('consultation_delete_confirm'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('确认删除'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+    final deleted = ref
+        .read(consultationStateControllerProvider.notifier)
+        .deleteThread(widget.threadId);
+    if (!deleted || !mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('对话已删除')));
+    context.pop();
   }
 }
 
 class _ConsultationHeader extends StatelessWidget {
-  const _ConsultationHeader({required this.splitLayout, required this.onBack});
+  const _ConsultationHeader({
+    required this.title,
+    required this.splitLayout,
+    required this.onBack,
+    required this.onMoreTap,
+  });
 
+  final String title;
   final bool splitLayout;
   final VoidCallback onBack;
+  final VoidCallback onMoreTap;
 
   @override
   Widget build(BuildContext context) {
@@ -115,10 +395,7 @@ class _ConsultationHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'LexCore 法律咨询',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
+              Text(title, style: Theme.of(context).textTheme.titleSmall),
               Text(
                 splitLayout ? '桌面协作模式' : '在线咨询中',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -129,12 +406,18 @@ class _ConsultationHeader extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+          IconButton(
+            key: const ValueKey('consultation_more_button'),
+            onPressed: onMoreTap,
+            icon: const Icon(Icons.more_vert),
+          ),
         ],
       ),
     );
   }
 }
+
+enum _ThreadMenuAction { rename, share, clear, delete }
 
 class _ConversationPane extends StatelessWidget {
   const _ConversationPane({

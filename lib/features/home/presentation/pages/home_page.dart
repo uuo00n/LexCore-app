@@ -281,32 +281,6 @@ class _HomeTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShellTopBar(
-      title: 'LexCore',
-      sideWidth: 96,
-      actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: 0.16),
-            border: Border.all(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Icon(
-            Icons.person,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      ],
-    );
+    return AppShellTopBar(title: 'LexCore');
   }
 }

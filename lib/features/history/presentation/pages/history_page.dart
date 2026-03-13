@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/history/application/history_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
@@ -21,8 +23,6 @@ class HistoryPage extends ConsumerStatefulWidget {
 }
 
 class _HistoryPageState extends ConsumerState<HistoryPage> {
-  int _tabIndex = 0;
-
   @override
   Widget build(BuildContext context) {
     final filter = ref.watch(historyFilterProvider);
@@ -66,10 +66,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 
               return Column(
                 children: [
-                  const AppFadeSlideIn(
+                  AppFadeSlideIn(
                     delay: Duration(milliseconds: 20),
                     beginOffset: Offset(0, -0.02),
-                    child: _HistoryTopBar(),
+                    child: _HistoryTopBar(
+                      onSearchTap: () =>
+                          context.pushNamed(RouteNames.historySearch),
+                    ),
                   ),
                   AppFadeSlideIn(
                     delay: const Duration(milliseconds: 60),
@@ -86,30 +89,24 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                         children: [
                           _TopTab(
                             title: '咨询记录',
-                            active: _tabIndex == 0,
-                            onTap: () => setState(() {
-                              _tabIndex = 0;
-                              ref.read(historyFilterProvider.notifier).state =
-                                  HistoryCategory.consultation;
-                            }),
+                            active: filter == HistoryCategory.consultation,
+                            onTap: () =>
+                                ref.read(historyFilterProvider.notifier).state =
+                                    HistoryCategory.consultation,
                           ),
                           _TopTab(
                             title: '法条检索',
-                            active: _tabIndex == 1,
-                            onTap: () => setState(() {
-                              _tabIndex = 1;
-                              ref.read(historyFilterProvider.notifier).state =
-                                  HistoryCategory.analysis;
-                            }),
+                            active: filter == HistoryCategory.analysis,
+                            onTap: () =>
+                                ref.read(historyFilterProvider.notifier).state =
+                                    HistoryCategory.analysis,
                           ),
                           _TopTab(
                             title: '全部',
-                            active: _tabIndex == 2,
-                            onTap: () => setState(() {
-                              _tabIndex = 2;
-                              ref.read(historyFilterProvider.notifier).state =
-                                  null;
-                            }),
+                            active: filter == null,
+                            onTap: () =>
+                                ref.read(historyFilterProvider.notifier).state =
+                                    null,
                           ),
                         ],
                       ),
@@ -127,7 +124,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 today: today,
                                 yesterday: yesterday,
                                 older: older,
-                                filter: filter,
                               ),
                               secondary: _HistoryInsights(
                                 total: items.length,
@@ -141,7 +137,6 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                               today: today,
                               yesterday: yesterday,
                               older: older,
-                              filter: filter,
                             ),
                     ),
                   ),
@@ -156,13 +151,21 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 }
 
 class _HistoryTopBar extends StatelessWidget {
-  const _HistoryTopBar();
+  const _HistoryTopBar({required this.onSearchTap});
+
+  final VoidCallback onSearchTap;
 
   @override
   Widget build(BuildContext context) {
     return AppShellTopBar(
       title: '历史记录',
-      actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.search))],
+      actions: [
+        IconButton(
+          key: const ValueKey<String>('history_page_open_search_button'),
+          onPressed: onSearchTap,
+          icon: const Icon(Icons.search),
+        ),
+      ],
     );
   }
 }
@@ -172,13 +175,11 @@ class _HistoryTimeline extends StatelessWidget {
     required this.today,
     required this.yesterday,
     required this.older,
-    required this.filter,
   });
 
   final List<HistoryItem> today;
   final List<HistoryItem> yesterday;
   final List<HistoryItem> older;
-  final HistoryCategory? filter;
 
   @override
   Widget build(BuildContext context) {
@@ -188,16 +189,6 @@ class _HistoryTimeline extends StatelessWidget {
           delay: const Duration(milliseconds: 100),
           child: Column(
             children: [
-              if (filter != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    '当前筛选：${filter!.name}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
               _HistorySection(title: '今天', items: today),
               _HistorySection(title: '昨天', items: yesterday),
               _HistorySection(title: '更早以前', items: older),

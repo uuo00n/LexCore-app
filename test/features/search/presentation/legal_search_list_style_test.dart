@@ -21,8 +21,44 @@ void main() {
   testWidgets('search results use unified list tile style', (tester) async {
     await pumpLegalSearchPage(tester);
 
-    expect(find.byType(AppListTileItem), findsNWidgets(2));
+    expect(find.text('热门搜索'), findsOneWidget);
+    expect(find.byType(AppListTileItem), findsNWidgets(10));
     expect(find.text('中华人民共和国劳动合同法 第三十条'), findsOneWidget);
     expect(find.byIcon(Icons.gavel_outlined), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('legal_search_scenario_button')),
+      findsOneWidget,
+    );
+    expect(find.text('推荐话题'), findsNothing);
+  });
+
+  testWidgets('scenario drawer filters hot articles inside top-right entry', (
+    tester,
+  ) async {
+    await pumpLegalSearchPage(tester);
+
+    await tester.tap(
+      find.byKey(const ValueKey('legal_search_scenario_button')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('预设场景'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('legal_search_scenario_drawer')),
+      findsOneWidget,
+    );
+    expect(find.byType(ActionChip), findsNWidgets(12));
+    expect(find.byIcon(Icons.balance_rounded), findsWidgets);
+    expect(find.byIcon(Icons.description_outlined), findsWidgets);
+    expect(find.byIcon(Icons.home_work_outlined), findsWidgets);
+
+    await tester.tap(
+      find.byKey(const ValueKey('search_scenario_labor_contract')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('预设场景'), findsNothing);
+    expect(find.byType(AppListTileItem), findsNWidgets(2));
+    expect(find.text('中华人民共和国劳动合同法 第三十条'), findsOneWidget);
+    expect(find.text('中华人民共和国劳动合同法 第四十七条'), findsOneWidget);
   });
 }

@@ -9,6 +9,11 @@ class SearchRepository {
 
   List<String> hotKeywords() => _mock.hotKeywords();
 
+  List<LawSearchItem> hotSearchArticles() => _mock.searchResults();
+
+  List<SearchScenarioGroup> searchScenarioGroups() =>
+      _mock.searchScenarioGroups();
+
   List<LawSearchItem> search(String keyword) {
     final all = _mock.searchResults();
     if (keyword.trim().isEmpty) return all;

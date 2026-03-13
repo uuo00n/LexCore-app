@@ -5,6 +5,7 @@ class RouteNames {
   static const register = 'register';
   static const home = 'home';
   static const consultation = 'consultation';
+  static const consultationChat = 'consultation_chat';
   static const consultationStitchDetail = 'consultation_stitch_detail';
   static const analysisDetail = 'analysis_detail';
   static const analysisResult = 'analysis_result';
@@ -15,6 +16,7 @@ class RouteNames {
   static const legalSearch = 'legal_search';
   static const legalArticle = 'legal_article';
   static const history = 'history';
+  static const historySearch = 'history_search';
   static const profile = 'profile';
   static const profilePersonalInfo = 'profile_personal_info';
   static const profileSecurity = 'profile_security';
@@ -27,6 +29,9 @@ class RouteNames {
   static const registerPath = '/register';
   static const homePath = '/home';
   static const consultationPath = '/consultation';
+  static const consultationChatThreadIdParam = 'threadId';
+  static const consultationChatPath =
+      '/consultation/chat/:$consultationChatThreadIdParam';
   static const consultationStitchDetailPath = '/consultation/stitch-detail';
   static const analysisDetailPath = '/analysis/detail';
   static const analysisResultPath = '/analysis/result';
@@ -37,6 +42,7 @@ class RouteNames {
   static const legalSearchPath = '/search';
   static const legalArticlePath = '/search/article';
   static const historyPath = '/history';
+  static const historySearchPath = '/history/search';
   static const profilePath = '/profile';
   static const profilePersonalInfoPath = '/profile/personal-info';
   static const profileSecurityPath = '/profile/security';

@@ -9,6 +9,7 @@ import 'package:lexcore/features/analysis/presentation/pages/analysis_detail_pag
 import 'package:lexcore/features/analysis/presentation/pages/analysis_result_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
+import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_stitch_detail_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
@@ -16,6 +17,7 @@ import 'package:lexcore/features/document/presentation/pages/document_generate_p
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
 import 'package:lexcore/features/document/presentation/pages/saved_documents_page.dart';
 import 'package:lexcore/features/history/presentation/pages/history_page.dart';
+import 'package:lexcore/features/history/presentation/pages/history_search_page.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/privacy_policy_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/terms_of_service_page.dart';
@@ -156,6 +158,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: RouteNames.historySearchPath,
+        name: RouteNames.historySearch,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const HistorySearchPage(),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.consultationPath,
         name: RouteNames.consultation,
         parentNavigatorKey: _rootNavigatorKey,
@@ -163,7 +176,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           context: context,
           state: state,
           kind: AppRouteTransitionKind.modal,
-          child: const ConsultationPage(),
+          child: const ConsultationListPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.consultationChatPath,
+        name: RouteNames.consultationChat,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: ConsultationPage(
+            threadId:
+                state.pathParameters[RouteNames
+                    .consultationChatThreadIdParam] ??
+                'thread_new',
+            threadTitle: state.extra is String ? state.extra! as String : null,
+          ),
         ),
       ),
       GoRoute(

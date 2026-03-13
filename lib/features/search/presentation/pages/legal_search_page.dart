@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
@@ -21,143 +20,106 @@ class LegalSearchPage extends ConsumerStatefulWidget {
 
 class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
   int _selectedFilter = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.text = ref.read(searchControllerProvider);
+    _searchController.addListener(_onQueryChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_onQueryChanged)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final keyword = ref.watch(searchControllerProvider);
-    final hotKeywords = ref.watch(hotKeywordsProvider);
-    final results = ref.watch(searchResultsProvider);
+    final hotArticles = ref.watch(filteredHotSearchArticlesProvider);
+    final scenarioGroups = ref.watch(searchScenarioGroupsProvider);
 
     const filters = ['全部', '法律法规', '裁判文书', '行政执法'];
 
     return Scaffold(
+      key: _scaffoldKey,
+      endDrawer: _SearchScenarioDrawer(
+        groups: scenarioGroups,
+        onScenarioSelected: _applyScenarioKeyword,
+      ),
       body: AppMobileCanvas(
         child: SafeArea(
           bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
-              final useSplitLayout =
-                  viewport == AppViewportSize.expanded ||
-                  viewport == AppViewportSize.ultra;
-
-              return Column(
-                children: [
-                  const AppFadeSlideIn(
-                    delay: Duration(milliseconds: 20),
-                    beginOffset: Offset(0, -0.02),
-                    child: _SearchTopBar(),
+          child: Column(
+            children: [
+              AppFadeSlideIn(
+                delay: const Duration(milliseconds: 20),
+                beginOffset: const Offset(0, -0.02),
+                child: _SearchTopBar(onScenarioTap: _openScenarioDrawer),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SearchInputAndFilter(
+                        controller: _searchController,
+                        filters: filters,
+                        selectedFilter: _selectedFilter,
+                        onFilterChanged: (index) {
+                          setState(() => _selectedFilter = index);
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      _ResultsSection(results: hotArticles, keyword: keyword),
+                    ],
                   ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: useSplitLayout
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(
-                                  flex: 7,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      _SearchInputAndFilter(
-                                        filters: filters,
-                                        selectedFilter: _selectedFilter,
-                                        onFilterChanged: (index) {
-                                          setState(
-                                            () => _selectedFilter = index,
-                                          );
-                                        },
-                                        onKeywordChanged: (value) => ref
-                                            .read(
-                                              searchControllerProvider.notifier,
-                                            )
-                                            .updateKeyword(value),
-                                      ),
-                                      const SizedBox(height: 18),
-                                      _ResultsSection(
-                                        keyword: keyword,
-                                        results: results,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  flex: 4,
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      _TopicsSection(
-                                        hotKeywords: hotKeywords,
-                                        onKeywordPressed: (word) => ref
-                                            .read(
-                                              searchControllerProvider.notifier,
-                                            )
-                                            .updateKeyword(word),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      const _AssistantCard(),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                _SearchInputAndFilter(
-                                  filters: filters,
-                                  selectedFilter: _selectedFilter,
-                                  onFilterChanged: (index) {
-                                    setState(() => _selectedFilter = index);
-                                  },
-                                  onKeywordChanged: (value) => ref
-                                      .read(searchControllerProvider.notifier)
-                                      .updateKeyword(value),
-                                ),
-                                const SizedBox(height: 18),
-                                _TopicsSection(
-                                  hotKeywords: hotKeywords,
-                                  onKeywordPressed: (word) => ref
-                                      .read(searchControllerProvider.notifier)
-                                      .updateKeyword(word),
-                                ),
-                                const SizedBox(height: 20),
-                                _ResultsSection(
-                                  keyword: keyword,
-                                  results: results,
-                                ),
-                                const SizedBox(height: 16),
-                                const _AssistantCard(),
-                              ],
-                            ),
-                    ),
-                  ),
-                ],
-              );
-            },
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
+  void _onQueryChanged() {
+    ref
+        .read(searchControllerProvider.notifier)
+        .updateKeyword(_searchController.text);
+  }
+
+  void _openScenarioDrawer() {
+    _scaffoldKey.currentState?.openEndDrawer();
+  }
+
+  void _applyScenarioKeyword(String keyword) {
+    _searchController.value = TextEditingValue(
+      text: keyword,
+      selection: TextSelection.collapsed(offset: keyword.length),
+    );
+    ref.read(searchControllerProvider.notifier).updateKeyword(keyword);
+  }
 }
 
 class _SearchInputAndFilter extends StatelessWidget {
   const _SearchInputAndFilter({
+    required this.controller,
     required this.filters,
     required this.selectedFilter,
     required this.onFilterChanged,
-    required this.onKeywordChanged,
   });
 
+  final TextEditingController controller;
   final List<String> filters;
   final int selectedFilter;
   final ValueChanged<int> onFilterChanged;
-  final ValueChanged<String> onKeywordChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +128,7 @@ class _SearchInputAndFilter extends StatelessWidget {
       child: Column(
         children: [
           TextField(
+            controller: controller,
             decoration: InputDecoration(
               hintText: '搜索法律、案例、法规...',
               prefixIcon: const Icon(Icons.search),
@@ -178,7 +141,6 @@ class _SearchInputAndFilter extends StatelessWidget {
                 borderSide: BorderSide.none,
               ),
             ),
-            onChanged: onKeywordChanged,
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -213,111 +175,133 @@ class _SearchInputAndFilter extends StatelessWidget {
   }
 }
 
-class _TopicsSection extends StatelessWidget {
-  const _TopicsSection({
-    required this.hotKeywords,
-    required this.onKeywordPressed,
+class _SearchScenarioDrawer extends StatelessWidget {
+  const _SearchScenarioDrawer({
+    required this.groups,
+    required this.onScenarioSelected,
   });
 
-  final List<String> hotKeywords;
-  final ValueChanged<String> onKeywordPressed;
+  final List<SearchScenarioGroup> groups;
+  final ValueChanged<String> onScenarioSelected;
+
+  IconData _scenarioIconFor(String text) {
+    if (text.contains('劳动') || text.contains('仲裁')) {
+      return Icons.balance_rounded;
+    }
+    if (text.contains('合同') || text.contains('违约')) {
+      return Icons.description_outlined;
+    }
+    if (text.contains('借款')) {
+      return Icons.account_balance_wallet_outlined;
+    }
+    if (text.contains('婚姻') || text.contains('离婚') || text.contains('抚养')) {
+      return Icons.family_restroom_outlined;
+    }
+    if (text.contains('交通')) {
+      return Icons.directions_car_outlined;
+    }
+    if (text.contains('损害')) {
+      return Icons.healing_outlined;
+    }
+    if (text.contains('股权') || text.contains('公司')) {
+      return Icons.business_center_outlined;
+    }
+    if (text.contains('房屋') || text.contains('租赁') || text.contains('物业')) {
+      return Icons.home_work_outlined;
+    }
+    return Icons.rule_folder_outlined;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AppFadeSlideIn(
-      delay: const Duration(milliseconds: 90),
-      child: SizedBox(
-        width: double.infinity,
-        child: AppSurfaceCard(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-          backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '推荐话题',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                  fontWeight: FontWeight.w700,
-                ),
+    return Drawer(
+      key: const ValueKey<String>('legal_search_scenario_drawer'),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '预设场景',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.close_rounded),
+                    tooltip: '关闭',
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                '从高频法律场景快速进入，避免空白搜索。',
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Text(
+                '选择高频法律场景，自动触发热门法条筛选。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.35,
                 ),
               ),
-              const SizedBox(height: 14),
-              Wrap(
-                alignment: WrapAlignment.start,
-                spacing: 10,
-                runSpacing: 10,
-                children: hotKeywords
-                    .map(
-                      (word) => _TopicPill(
-                        label: word,
-                        onPressed: () => onKeywordPressed(word),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TopicPill extends StatelessWidget {
-  const _TopicPill({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(999),
-        onTap: onPressed,
-        child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: Theme.of(
-              context,
-            ).colorScheme.primaryContainer.withValues(alpha: 0.72),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.14),
             ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 24),
+                itemCount: groups.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final group = groups[index];
+                  return AppSurfaceCard(
+                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerLowest,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          group.title,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: group.items
+                              .map(
+                                (item) => ActionChip(
+                                  key: ValueKey<String>(
+                                    'search_scenario_${item.id}',
+                                  ),
+                                  avatar: Icon(
+                                    _scenarioIconFor(item.label),
+                                    size: 18,
+                                  ),
+                                  label: Text(item.label),
+                                  onPressed: () {
+                                    onScenarioSelected(item.keyword);
+                                    Navigator.of(context).maybePop();
+                                  },
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -325,31 +309,21 @@ class _TopicPill extends StatelessWidget {
 }
 
 class _ResultsSection extends StatelessWidget {
-  const _ResultsSection({required this.keyword, required this.results});
+  const _ResultsSection({required this.results, required this.keyword});
 
-  final String keyword;
   final List<LawSearchItem> results;
+  final String keyword;
 
   @override
   Widget build(BuildContext context) {
-    final isDefaultRecommendations = keyword.isEmpty;
-
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 140),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Text(
-                '搜索结果 ${isDefaultRecommendations ? '(默认推荐)' : '(关键词: $keyword)'}',
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const Spacer(),
-              TextButton(onPressed: () {}, child: const Text('清除记录')),
-            ],
-          ),
-          SizedBox(height: isDefaultRecommendations ? 10 : 6),
+          Text('热门搜索', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 10),
+          if (results.isEmpty) _EmptyResultState(keyword: keyword),
           ...results.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
@@ -373,65 +347,47 @@ class _ResultsSection extends StatelessWidget {
   }
 }
 
-class _AssistantCard extends StatelessWidget {
-  const _AssistantCard();
+class _EmptyResultState extends StatelessWidget {
+  const _EmptyResultState({required this.keyword});
+
+  final String keyword;
 
   @override
   Widget build(BuildContext context) {
-    return AppFadeSlideIn(
-      delay: const Duration(milliseconds: 200),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    final trimmedKeyword = keyword.trim();
+    final message = trimmedKeyword.isEmpty
+        ? '请选择场景或输入关键词开始查询。'
+        : '未找到与“$trimmedKeyword”相关的法条，请更换场景。';
+
+    return AppSurfaceCard(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.search_off_rounded,
+            size: 30,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'LexCore 智能法律助手',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onPrimary,
-              ),
+          const SizedBox(height: 8),
+          Text('暂无匹配法条', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 4),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 6),
-            Text(
-              '通过自然语言对话，获取结构化法律建议与文书模板。',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onPrimary.withValues(alpha: 0.9),
-              ),
-            ),
-            const SizedBox(height: 10),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerLowest,
-                foregroundColor: Theme.of(context).colorScheme.primary,
-              ),
-              onPressed: () => context.push(RouteNames.consultationPath),
-              child: const Text('开始对话'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _SearchTopBar extends StatelessWidget {
-  const _SearchTopBar();
+  const _SearchTopBar({required this.onScenarioTap});
+
+  final VoidCallback onScenarioTap;
 
   @override
   Widget build(BuildContext context) {
@@ -439,8 +395,10 @@ class _SearchTopBar extends StatelessWidget {
       title: 'LexCore 法条检索',
       actions: [
         IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.account_circle_outlined),
+          key: const ValueKey<String>('legal_search_scenario_button'),
+          onPressed: onScenarioTap,
+          icon: const Icon(Icons.tune_rounded),
+          tooltip: '预设场景',
         ),
       ],
     );

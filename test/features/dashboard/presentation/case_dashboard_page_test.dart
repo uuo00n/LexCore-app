@@ -19,12 +19,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
   }
 
-  testWidgets('uses shell top bar style with back arrow', (tester) async {
+  testWidgets('uses shell top bar style with back arrow only', (tester) async {
     await pumpDashboardPage(tester);
 
     expect(find.byType(AppShellTopBar), findsOneWidget);
     expect(find.byIcon(Icons.arrow_back_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.search_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.search_rounded), findsNothing);
+    expect(find.byIcon(Icons.person), findsNothing);
   });
 
   testWidgets('uses segmented button for tab navigation', (tester) async {
@@ -33,7 +34,7 @@ void main() {
     expect(find.byType(SegmentedButton<int>), findsOneWidget);
     expect(find.text('概览'), findsOneWidget);
     expect(find.text('案件'), findsOneWidget);
-    expect(find.text('报告'), findsOneWidget);
+    expect(find.text('报告'), findsNothing);
     expect(find.text('设置'), findsNothing);
   });
 

@@ -12,6 +12,7 @@ import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_stitch_detail_page.dart';
+import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
@@ -206,6 +207,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           kind: AppRouteTransitionKind.detail,
           child: ConsultationStitchDetailPage(
             summary: state.extra is String ? state.extra! as String : null,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.caseDetailPath,
+        name: RouteNames.caseDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: CaseDetailPage(
+            detail: state.extra is CaseDetailData
+                ? state.extra! as CaseDetailData
+                : CaseDetailData.demo(),
           ),
         ),
       ),

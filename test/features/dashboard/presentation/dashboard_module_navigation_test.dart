@@ -73,39 +73,32 @@ void main() {
     );
   }
 
-  testWidgets(
-    'dashboard segmented tabs switch among overview/cases/reports',
-    (tester) async {
-      await setPhoneViewport(tester);
+  testWidgets('dashboard segmented tabs switch between overview and cases', (
+    tester,
+  ) async {
+    await setPhoneViewport(tester);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp.router(routerConfig: buildDashboardRouter()),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: buildDashboardRouter()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      expect(find.text('进行中的案件分析'), findsOneWidget);
+    expect(find.text('进行中的案件分析'), findsOneWidget);
 
-      await tester.tap(segmentButton('案件'));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey<String>('dashboard_cases_page_title')),
-        findsOneWidget,
-      );
+    await tester.tap(segmentButton('案件'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('dashboard_cases_page_title')),
+      findsOneWidget,
+    );
+    expect(segmentButton('报告'), findsNothing);
 
-      await tester.tap(segmentButton('报告'));
-      await tester.pumpAndSettle();
-      expect(
-        find.byKey(const ValueKey<String>('dashboard_reports_page_title')),
-        findsOneWidget,
-      );
-
-      await tester.tap(segmentButton('概览'));
-      await tester.pumpAndSettle();
-      expect(find.text('进行中的案件分析'), findsOneWidget);
-    },
-  );
+    await tester.tap(segmentButton('概览'));
+    await tester.pumpAndSettle();
+    expect(find.text('进行中的案件分析'), findsOneWidget);
+  });
 
   testWidgets('back button returns to source page', (tester) async {
     await setPhoneViewport(tester);
@@ -134,9 +127,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        child: MaterialApp.router(
-          routerConfig: buildDashboardFallbackRouter(),
-        ),
+        child: MaterialApp.router(routerConfig: buildDashboardFallbackRouter()),
       ),
     );
     await tester.pumpAndSettle();

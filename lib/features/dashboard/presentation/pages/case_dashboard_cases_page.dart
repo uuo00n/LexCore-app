@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
 
-class CaseDashboardCasesContent extends StatelessWidget {
+class CaseDashboardCasesContent extends StatefulWidget {
   const CaseDashboardCasesContent({super.key});
+
+  @override
+  State<CaseDashboardCasesContent> createState() =>
+      _CaseDashboardCasesContentState();
+}
+
+class _CaseDashboardCasesContentState extends State<CaseDashboardCasesContent> {
+  _DashboardCaseListFilter _selectedFilter = _DashboardCaseListFilter.all;
 
   static const List<_DashboardCaseItem> _cases = [
     _DashboardCaseItem(
@@ -44,8 +55,79 @@ class CaseDashboardCasesContent extends StatelessWidget {
     ),
   ];
 
+  List<_DashboardCaseItem> get _filteredCases {
+    switch (_selectedFilter) {
+      case _DashboardCaseListFilter.all:
+        return _cases;
+      case _DashboardCaseListFilter.inProgress:
+        return _cases
+            .where((item) => item.status == _DashboardCaseStatus.inProgress)
+            .toList(growable: false);
+      case _DashboardCaseListFilter.closed:
+        return _cases
+            .where((item) => item.status == _DashboardCaseStatus.closed)
+            .toList(growable: false);
+      case _DashboardCaseListFilter.waiting:
+        return _cases
+            .where((item) => item.status == _DashboardCaseStatus.waiting)
+            .toList(growable: false);
+      case _DashboardCaseListFilter.draft:
+        return const [];
+    }
+  }
+
+  void _selectFilter(_DashboardCaseListFilter filter) {
+    if (_selectedFilter == filter) return;
+    setState(() {
+      _selectedFilter = filter;
+    });
+  }
+
+  Future<void> _showMoreFiltersSheet() async {
+    final selectedFilter = await showModalBottomSheet<_DashboardCaseListFilter>(
+      context: context,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _DashboardCaseSheetOption(
+                key: const ValueKey<String>(
+                  'dashboard_cases_more_waiting_option',
+                ),
+                icon: Icons.hourglass_top_rounded,
+                title: '等待开庭',
+                selected: _selectedFilter == _DashboardCaseListFilter.waiting,
+                onTap: () => Navigator.of(
+                  sheetContext,
+                ).pop(_DashboardCaseListFilter.waiting),
+              ),
+              _DashboardCaseSheetOption(
+                key: const ValueKey<String>(
+                  'dashboard_cases_more_draft_option',
+                ),
+                icon: Icons.edit_note_rounded,
+                title: '草稿',
+                selected: _selectedFilter == _DashboardCaseListFilter.draft,
+                onTap: () => Navigator.of(
+                  sheetContext,
+                ).pop(_DashboardCaseListFilter.draft),
+              ),
+              const SizedBox(height: 6),
+            ],
+          ),
+        );
+      },
+    );
+    if (!mounted || selectedFilter == null) return;
+    _selectFilter(selectedFilter);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filteredCases = _filteredCases;
+
     return Column(
       key: const ValueKey<String>('dashboard_cases_page_title'),
       children: [
@@ -89,58 +171,246 @@ class CaseDashboardCasesContent extends StatelessWidget {
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: const [
-                _DashboardCaseFilterChip(label: '全部', selected: true),
-                SizedBox(width: 8),
-                _DashboardCaseFilterChip(label: '进行中'),
-                SizedBox(width: 8),
-                _DashboardCaseFilterChip(label: '已结案'),
-                SizedBox(width: 8),
-                _DashboardCaseFilterChip(label: '草稿'),
-                SizedBox(width: 8),
+              children: [
                 _DashboardCaseFilterChip(
+                  key: const ValueKey<String>('dashboard_cases_filter_all'),
+                  label: '全部',
+                  selected: _selectedFilter == _DashboardCaseListFilter.all,
+                  onTap: () => _selectFilter(_DashboardCaseListFilter.all),
+                ),
+                const SizedBox(width: 8),
+                _DashboardCaseFilterChip(
+                  key: const ValueKey<String>(
+                    'dashboard_cases_filter_in_progress',
+                  ),
+                  label: '进行中',
+                  selected:
+                      _selectedFilter == _DashboardCaseListFilter.inProgress,
+                  onTap: () =>
+                      _selectFilter(_DashboardCaseListFilter.inProgress),
+                ),
+                const SizedBox(width: 8),
+                _DashboardCaseFilterChip(
+                  key: const ValueKey<String>('dashboard_cases_filter_closed'),
+                  label: '已结案',
+                  selected: _selectedFilter == _DashboardCaseListFilter.closed,
+                  onTap: () => _selectFilter(_DashboardCaseListFilter.closed),
+                ),
+                const SizedBox(width: 8),
+                _DashboardCaseFilterChip(
+                  key: const ValueKey<String>('dashboard_cases_filter_more'),
                   label: '更多',
                   icon: Icons.filter_list,
+                  selected:
+                      _selectedFilter == _DashboardCaseListFilter.waiting ||
+                      _selectedFilter == _DashboardCaseListFilter.draft,
+                  onTap: _showMoreFiltersSheet,
                 ),
               ],
             ),
           ),
         ),
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            itemCount: _cases.length + 1,
-            itemBuilder: (context, index) {
-              if (index == _cases.length) {
-                return const SizedBox(height: 80);
-              }
-              final item = _cases[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: AppFadeSlideIn(
-                  delay: Duration(milliseconds: 30 + (index * 30)),
-                  beginOffset: const Offset(0, 0.02),
-                  child: _DashboardCaseCard(item: item, index: index),
+          child: filteredCases.isEmpty
+              ? _DashboardCaseEmptyState(filter: _selectedFilter)
+              : ListView.builder(
+                  key: const ValueKey<String>('dashboard_cases_page_list'),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                  itemCount: filteredCases.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == filteredCases.length) {
+                      return const SizedBox(height: 80);
+                    }
+                    final item = filteredCases[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: AppFadeSlideIn(
+                        delay: Duration(milliseconds: 30 + (index * 30)),
+                        beginOffset: const Offset(0, 0.02),
+                        child: _DashboardCaseCard(
+                          item: item,
+                          index: index,
+                          onOpenDetail: () => context.push(
+                            RouteNames.caseDetailPath,
+                            extra: _detailDataFor(item),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
+  }
+
+  CaseDetailData _detailDataFor(_DashboardCaseItem item) {
+    switch (item.caseNumber) {
+      case '(2023) 沪01民初1024号':
+        return CaseDetailData(
+          status: _toDetailStatus(item.status),
+          statusLabel: _DashboardCaseStatusStyle.resolve(
+            context,
+            item.status,
+          ).label,
+          lastUpdatedLabel: '更新于 2小时前',
+          title: item.title,
+          caseNumber: '(2023) 沪0115民初12345号',
+          dateLabel: item.dateLabel,
+          dateValue: '2023-10-15',
+          progress: item.progress,
+          progressLabel: '开庭中',
+          activeStepIndex: 2,
+          progressSteps: const ['证据交换', '庭审准备', '开庭中', '判决'],
+          summary:
+              '原告张三与被告李四于 2022 年签订房屋买卖协议，原告已支付全部房款，但被告迟迟未办理房产过户手续。原告遂起诉要求被告履行合同义务并赔偿违约金。',
+          plaintiffName: '张三',
+          plaintiffCounsel: '代理律师：王律师',
+          defendantName: '李四',
+          defendantCounsel: '未指定代理',
+          documents: const [
+            CaseDocumentData(
+              type: CaseDocumentType.pdf,
+              title: '起诉状_张三.pdf',
+              meta: '1.2 MB · 2023-10-16',
+            ),
+            CaseDocumentData(
+              type: CaseDocumentType.image,
+              title: '房产证复印件.jpg',
+              meta: '2.5 MB · 2023-10-18',
+            ),
+          ],
+        );
+      case '(2023) 浙02知民初256号':
+        return CaseDetailData(
+          status: _toDetailStatus(item.status),
+          statusLabel: _DashboardCaseStatusStyle.resolve(
+            context,
+            item.status,
+          ).label,
+          lastUpdatedLabel: '更新于 昨日 18:20',
+          title: item.title,
+          caseNumber: item.caseNumber,
+          dateLabel: item.dateLabel,
+          dateValue: item.dateValue,
+          progress: item.progress,
+          progressLabel: '案件执行完毕',
+          activeStepIndex: 3,
+          progressSteps: const ['立案', '技术比对', '一审判决', '执行完毕'],
+          summary:
+              '原告主张被告未经授权使用其专利方案开展量产经营，要求停止侵权并赔偿经济损失。经技术特征比对及销售数据核验后，法院已支持主要诉请。',
+          plaintiffName: '某科技公司',
+          plaintiffCounsel: '代理律师：周律师',
+          defendantName: '某制造企业',
+          defendantCounsel: '代理律师：徐律师',
+          documents: const [
+            CaseDocumentData(
+              type: CaseDocumentType.pdf,
+              title: '专利比对意见.pdf',
+              meta: '3.1 MB · 2023-11-28',
+            ),
+            CaseDocumentData(
+              type: CaseDocumentType.note,
+              title: '执行回款记录.docx',
+              meta: '540 KB · 2023-12-01',
+            ),
+          ],
+        );
+      case '(2024) 京01刑初002号':
+        return CaseDetailData(
+          status: _toDetailStatus(item.status),
+          statusLabel: _DashboardCaseStatusStyle.resolve(
+            context,
+            item.status,
+          ).label,
+          lastUpdatedLabel: '更新于 30分钟前',
+          title: item.title,
+          caseNumber: item.caseNumber,
+          dateLabel: item.dateLabel,
+          dateValue: item.dateValue,
+          progress: item.progress,
+          progressLabel: item.progressLabel,
+          activeStepIndex: 1,
+          progressSteps: const ['侦查阶段', '审查起诉', '开庭准备', '正式开庭'],
+          summary: '案件目前已完成阅卷与会见，重点争议集中在资金流向是否构成非法占有目的。辩护策略将围绕主观故意不足及证据链断点展开。',
+          plaintiffName: '北京市人民检察院',
+          plaintiffCounsel: '公诉机关',
+          defendantName: '王五',
+          defendantCounsel: '代理律师：刘律师',
+          documents: const [
+            CaseDocumentData(
+              type: CaseDocumentType.pdf,
+              title: '阅卷摘要.pdf',
+              meta: '860 KB · 2024-02-04',
+            ),
+            CaseDocumentData(
+              type: CaseDocumentType.note,
+              title: '会见笔录.docx',
+              meta: '220 KB · 2024-02-08',
+            ),
+          ],
+        );
+      case '(2024) 粤03民特18号':
+        return CaseDetailData(
+          status: _toDetailStatus(item.status),
+          statusLabel: _DashboardCaseStatusStyle.resolve(
+            context,
+            item.status,
+          ).label,
+          lastUpdatedLabel: '更新于 今日 09:40',
+          title: item.title,
+          caseNumber: item.caseNumber,
+          dateLabel: item.dateLabel,
+          dateValue: item.dateValue,
+          progress: item.progress,
+          progressLabel: item.progressLabel,
+          activeStepIndex: 2,
+          progressSteps: const ['立案受理', '证据整理', '调解中', '仲裁庭审'],
+          summary: '申请人主张公司违法解除劳动合同并拖欠加班工资，现双方已进入调解阶段。关键证据包括工资流水、考勤导出及录用通知邮件。',
+          plaintiffName: '跨境电商运营团队',
+          plaintiffCounsel: '代理律师：陈律师',
+          defendantName: '某跨境平台公司',
+          defendantCounsel: '法务代表：何女士',
+          documents: const [
+            CaseDocumentData(
+              type: CaseDocumentType.pdf,
+              title: '仲裁申请书.pdf',
+              meta: '1.4 MB · 2024-01-06',
+            ),
+            CaseDocumentData(
+              type: CaseDocumentType.image,
+              title: '考勤截图汇总.png',
+              meta: '4.8 MB · 2024-01-11',
+            ),
+          ],
+        );
+    }
+
+    return CaseDetailData.demo();
+  }
+
+  CaseDetailStatus _toDetailStatus(_DashboardCaseStatus status) {
+    return switch (status) {
+      _DashboardCaseStatus.inProgress => CaseDetailStatus.inProgress,
+      _DashboardCaseStatus.closed => CaseDetailStatus.closed,
+      _DashboardCaseStatus.waiting => CaseDetailStatus.waiting,
+    };
   }
 }
 
 class _DashboardCaseFilterChip extends StatelessWidget {
   const _DashboardCaseFilterChip({
+    super.key,
     required this.label,
     this.selected = false,
     this.icon,
+    this.onTap,
   });
 
   final String label;
   final bool selected;
   final IconData? icon;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -148,55 +418,67 @@ class _DashboardCaseFilterChip extends StatelessWidget {
         ? Theme.of(context).colorScheme.onPrimary
         : Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return Container(
-      height: 32,
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      decoration: BoxDecoration(
-        color: selected
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.surface,
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: selected
-              ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 16, color: foreground),
-            const SizedBox(width: 4),
-          ],
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: foreground,
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+        child: Container(
+          height: 32,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: BoxDecoration(
+            color: selected
+                ? Theme.of(context).colorScheme.primary
+                : Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.18),
             ),
           ),
-        ],
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 16, color: foreground),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: foreground,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
 class _DashboardCaseCard extends StatelessWidget {
-  const _DashboardCaseCard({required this.item, required this.index});
+  const _DashboardCaseCard({
+    required this.item,
+    required this.index,
+    required this.onOpenDetail,
+  });
 
   final _DashboardCaseItem item;
   final int index;
+  final VoidCallback onOpenDetail;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final statusStyle = _DashboardCaseStatusStyle.resolve(
-      context,
-      item.status,
-    );
+    final statusStyle = _DashboardCaseStatusStyle.resolve(context, item.status);
 
     return Container(
+      key: ValueKey<String>('dashboard_cases_case_card_$index'),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
@@ -297,8 +579,110 @@ class _DashboardCaseCard extends StatelessWidget {
               color: statusStyle.foreground,
             ),
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '已同步案件进度与核心材料',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                key: ValueKey<String>('dashboard_cases_detail_button_$index'),
+                onPressed: onOpenDetail,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                label: const Text('详细'),
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _DashboardCaseEmptyState extends StatelessWidget {
+  const _DashboardCaseEmptyState({required this.filter});
+
+  final _DashboardCaseListFilter filter;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final title = switch (filter) {
+      _DashboardCaseListFilter.draft => '暂无草稿案件',
+      _ => '暂无匹配案件',
+    };
+    final message = switch (filter) {
+      _DashboardCaseListFilter.draft => '当前还没有保存到草稿的案件分析。',
+      _ => '可尝试切换筛选条件查看其他案件。',
+    };
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.inbox_rounded,
+              size: 32,
+              color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 10),
+            Text(title, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DashboardCaseSheetOption extends StatelessWidget {
+  const _DashboardCaseSheetOption({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return ListTile(
+      leading: Icon(
+        icon,
+        color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
+      ),
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+          color: colorScheme.onSurface,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+        ),
+      ),
+      trailing: selected
+          ? Icon(Icons.check_rounded, color: colorScheme.primary)
+          : null,
+      onTap: onTap,
     );
   }
 }
@@ -341,6 +725,8 @@ class _DashboardCaseStatusStyle {
     }
   }
 }
+
+enum _DashboardCaseListFilter { all, inProgress, closed, waiting, draft }
 
 enum _DashboardCaseStatus { inProgress, closed, waiting }
 

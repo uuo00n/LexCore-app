@@ -24,7 +24,6 @@ class DashboardSegmentedTabs extends StatelessWidget {
           segments: const [
             ButtonSegment<int>(value: 0, label: Text('概览')),
             ButtonSegment<int>(value: 1, label: Text('案件')),
-            ButtonSegment<int>(value: 2, label: Text('报告')),
           ],
           selected: {selectedIndex},
           onSelectionChanged: (selected) {
@@ -46,7 +45,7 @@ class DashboardModuleTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppShellTopBar(
       title: title,
-      sideWidth: 96,
+      sideWidth: 56,
       leading: Align(
         alignment: Alignment.centerLeft,
         child: IconButton(
@@ -63,29 +62,6 @@ class DashboardModuleTopBar extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded),
         ),
       ),
-      actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.search_rounded)),
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            color: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: 0.16),
-            border: Border.all(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Icon(
-            Icons.person,
-            size: 18,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
-      ],
     );
   }
 }

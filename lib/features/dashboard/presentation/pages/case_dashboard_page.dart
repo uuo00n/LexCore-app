@@ -5,7 +5,6 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/features/dashboard/application/dashboard_provider.dart';
 import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_cases_page.dart';
-import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_reports_page.dart';
 import 'package:lexcore/features/dashboard/presentation/widgets/dashboard_module_navigation.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -25,7 +24,7 @@ class _CaseDashboardPageState extends ConsumerState<CaseDashboardPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_onTabChanged);
   }
 
@@ -73,7 +72,6 @@ class _CaseDashboardPageState extends ConsumerState<CaseDashboardPage>
                   children: [
                     _OverviewContent(data: data),
                     const CaseDashboardCasesContent(),
-                    const CaseDashboardReportsContent(),
                   ],
                 ),
               ),
@@ -110,10 +108,7 @@ class _OverviewContent extends StatelessWidget {
           const SizedBox(height: 24),
           _TrendSection(points: data.trendPoints),
           const SizedBox(height: 24),
-          const _SectionHeader(
-            title: '进行中的案件分析',
-            actionLabel: '查看全部',
-          ),
+          const _SectionHeader(title: '进行中的案件分析', actionLabel: '查看全部'),
           const SizedBox(height: 6),
           ...data.cases.asMap().entries.map((entry) {
             final index = entry.key;

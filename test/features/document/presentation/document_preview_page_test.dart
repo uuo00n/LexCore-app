@@ -4,10 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/core/export/app_export_service.dart';
+import 'package:lexcore/features/document/application/document_providers.dart';
+import 'package:lexcore/features/document/data/repositories/document_repository.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
+import 'package:lexcore/shared/services/mock/mock_legal_repository.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class _FakeExportService implements AppExportService {
@@ -45,11 +50,30 @@ class _FakeExportService implements AppExportService {
   }
 }
 
+class _FailingDocumentRepository extends DocumentRepository {
+  _FailingDocumentRepository() : super(const MockLegalRepository());
+
+  @override
+  Future<List<DocumentItem>> loadSaved() async {
+    return const [];
+  }
+
+  @override
+  Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
+    throw Exception('save failed');
+  }
+}
+
 void main() {
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   Future<void> pumpDocumentPreviewPage(
     WidgetTester tester, {
     Size size = const Size(390, 844),
     AppExportService? exportService,
+    DocumentRepository? documentRepository,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() async {
@@ -61,6 +85,8 @@ void main() {
         overrides: [
           if (exportService != null)
             appExportServiceProvider.overrideWithValue(exportService),
+          if (documentRepository != null)
+            documentRepositoryProvider.overrideWithValue(documentRepository),
         ],
         child: const MaterialApp(home: DocumentPreviewPage()),
       ),
@@ -135,5 +161,46 @@ void main() {
 
     expect(exportService.exportedFormats, <ExportFormat>[ExportFormat.pdf]);
     expect(find.text('分享失败，请稍后重试'), findsNothing);
+  });
+
+  testWidgets('document preview save shows success snackbar', (tester) async {
+    await pumpDocumentPreviewPage(tester);
+
+    await tester.tap(find.text('保存'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('文档已保存'), findsOneWidget);
+
+    final repository = DocumentRepository(const MockLegalRepository());
+    final documents = await repository.loadSaved();
+    expect(documents.where((item) => item.name == '劳动仲裁申请书（草稿）'), hasLength(1));
+  });
+
+  testWidgets('document preview repeated save shows updated snackbar', (
+    tester,
+  ) async {
+    await pumpDocumentPreviewPage(tester);
+
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+    expect(find.text('文档已保存'), findsOneWidget);
+
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('文档已更新'), findsOneWidget);
+  });
+
+  testWidgets('document preview save failure shows snackbar', (tester) async {
+    await pumpDocumentPreviewPage(
+      tester,
+      documentRepository: _FailingDocumentRepository(),
+    );
+
+    await tester.tap(find.text('保存'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('保存失败，请稍后重试'), findsOneWidget);
   });
 }

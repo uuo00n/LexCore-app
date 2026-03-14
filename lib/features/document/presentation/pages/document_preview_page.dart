@@ -21,6 +21,7 @@ class DocumentPreviewPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final draft = ref.watch(generatedDraftProvider);
+    final documentState = ref.watch(documentControllerProvider);
     final exportService = ref.read(appExportServiceProvider);
     final exportPayload = _buildDocumentExportPayload(draft);
     final messenger = ScaffoldMessenger.of(context);
@@ -63,6 +64,33 @@ class DocumentPreviewPage extends ConsumerWidget {
           progressOverlay.remove();
         }
         messenger.showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+      }
+    }
+
+    Future<void> saveDraft() async {
+      if (documentState.saving) {
+        return;
+      }
+
+      try {
+        final result = await ref
+            .read(documentControllerProvider.notifier)
+            .saveDraft(draft);
+        if (!context.mounted) return;
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                result == DocumentSaveResult.created ? '文档已保存' : '文档已更新',
+              ),
+            ),
+          );
+      } catch (_) {
+        if (!context.mounted) return;
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('保存失败，请稍后重试')));
       }
     }
 
@@ -125,6 +153,8 @@ class DocumentPreviewPage extends ConsumerWidget {
                               secondary: _DocumentSidePanel(
                                 title: draft.title,
                                 onExport: shareDraft,
+                                onSave: saveDraft,
+                                saving: documentState.saving,
                               ),
                             )
                           : _DocumentBody(
@@ -150,6 +180,8 @@ class DocumentPreviewPage extends ConsumerWidget {
                     child: _ActionButtons(
                       isCompact: true,
                       onExport: shareDraft,
+                      onSave: saveDraft,
+                      saving: documentState.saving,
                     ),
                   ),
                 )
@@ -259,10 +291,17 @@ class _DocumentBody extends StatelessWidget {
 }
 
 class _DocumentSidePanel extends StatelessWidget {
-  const _DocumentSidePanel({required this.title, required this.onExport});
+  const _DocumentSidePanel({
+    required this.title,
+    required this.onExport,
+    required this.onSave,
+    required this.saving,
+  });
 
   final String title;
   final Future<void> Function(BuildContext anchorContext) onExport;
+  final Future<void> Function() onSave;
+  final bool saving;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +330,12 @@ class _DocumentSidePanel extends StatelessWidget {
         AppFadeSlideIn(
           delay: const Duration(milliseconds: 160),
           child: AppSurfaceCard(
-            child: _ActionButtons(isCompact: false, onExport: onExport),
+            child: _ActionButtons(
+              isCompact: false,
+              onExport: onExport,
+              onSave: onSave,
+              saving: saving,
+            ),
           ),
         ),
       ],
@@ -300,13 +344,29 @@ class _DocumentSidePanel extends StatelessWidget {
 }
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.isCompact, this.onExport});
+  const _ActionButtons({
+    required this.isCompact,
+    required this.onExport,
+    required this.onSave,
+    required this.saving,
+  });
 
   final bool isCompact;
-  final Future<void> Function(BuildContext anchorContext)? onExport;
+  final Future<void> Function(BuildContext anchorContext) onExport;
+  final Future<void> Function() onSave;
+  final bool saving;
 
   @override
   Widget build(BuildContext context) {
+    final saveIcon = saving
+        ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          )
+        : const Icon(Icons.save_outlined);
+    final saveLabel = saving ? '保存中...' : (isCompact ? '保存' : '保存文档');
+
     if (isCompact) {
       return Row(
         children: [
@@ -324,7 +384,7 @@ class _ActionButtons extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: FilledButton.tonalIcon(
-              onPressed: onExport == null ? null : () => onExport!(context),
+              onPressed: () => onExport(context),
               icon: const Icon(Icons.ios_share_outlined),
               label: const Text('导出文件'),
               style: FilledButton.styleFrom(
@@ -336,9 +396,9 @@ class _ActionButtons extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: FilledButton.icon(
-              onPressed: () {},
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('保存'),
+              onPressed: saving ? null : onSave,
+              icon: saveIcon,
+              label: Text(saveLabel),
               style: FilledButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
                 shape: const StadiumBorder(),
@@ -353,9 +413,9 @@ class _ActionButtons extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FilledButton.icon(
-          onPressed: () {},
-          icon: const Icon(Icons.save_outlined),
-          label: const Text('保存文档'),
+          onPressed: saving ? null : onSave,
+          icon: saveIcon,
+          label: Text(saveLabel),
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
@@ -366,7 +426,7 @@ class _ActionButtons extends StatelessWidget {
         const SizedBox(height: 8),
         Builder(
           builder: (buttonContext) => OutlinedButton.icon(
-            onPressed: onExport == null ? null : () => onExport!(buttonContext),
+            onPressed: () => onExport(buttonContext),
             icon: const Icon(Icons.ios_share_outlined),
             label: const Text('导出 / 分享'),
           ),

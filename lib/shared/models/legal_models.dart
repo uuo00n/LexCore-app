@@ -104,6 +104,8 @@ class DocumentDraft {
   final String markdown;
 }
 
+enum DocumentSaveResult { created, updated }
+
 class DocumentItem {
   const DocumentItem({
     required this.id,
@@ -116,6 +118,40 @@ class DocumentItem {
   final String name;
   final DateTime updatedAt;
   final String type;
+
+  DocumentItem copyWith({
+    String? id,
+    String? name,
+    DateTime? updatedAt,
+    String? type,
+  }) {
+    return DocumentItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      updatedAt: updatedAt ?? this.updatedAt,
+      type: type ?? this.type,
+    );
+  }
+
+  Map<String, Object?> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'updatedAt': updatedAt.toIso8601String(),
+      'type': type,
+    };
+  }
+
+  factory DocumentItem.fromJson(Map<String, dynamic> json) {
+    return DocumentItem(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      updatedAt:
+          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      type: json['type'] as String? ?? '',
+    );
+  }
 }
 
 class LawSearchItem {

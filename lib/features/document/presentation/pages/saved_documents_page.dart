@@ -20,6 +20,7 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final documentState = ref.watch(documentControllerProvider);
     final docs = ref.watch(savedDocumentsProvider);
 
     return AppPageScaffold(
@@ -30,6 +31,27 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
       ],
       body: LayoutBuilder(
         builder: (context, constraints) {
+          if (documentState.loading && docs.isEmpty) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (documentState.errorMessage != null && docs.isEmpty) {
+            return _DocumentStatePlaceholder(
+              title: '文档加载失败',
+              subtitle: documentState.errorMessage!,
+              actionLabel: '重新加载',
+              onPressed: () =>
+                  ref.read(documentControllerProvider.notifier).refresh(),
+            );
+          }
+
+          if (docs.isEmpty) {
+            return const _DocumentStatePlaceholder(
+              title: '还没有已保存的文档',
+              subtitle: '在文档预览页保存后，会显示在这里。',
+            );
+          }
+
           final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
           final gridColumns = switch (viewport) {
             AppViewportSize.compact => 1,
@@ -111,6 +133,55 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _DocumentStatePlaceholder extends StatelessWidget {
+  const _DocumentStatePlaceholder({
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onPressed,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? actionLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: AppSurfaceCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.description_outlined,
+                size: 36,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 12),
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (actionLabel != null && onPressed != null) ...[
+                const SizedBox(height: 14),
+                FilledButton(onPressed: onPressed, child: Text(actionLabel!)),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

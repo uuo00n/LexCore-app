@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
@@ -18,12 +19,33 @@ class LegalArticlePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detail = ref.watch(articleDetailByItemProvider(searchItem));
+    final shareText = _buildArticleShareText(detail);
+    final messenger = ScaffoldMessenger.of(context);
+
+    Future<void> shareArticle(BuildContext anchorContext) async {
+      try {
+        await AppShare.shareText(
+          pageContext: context,
+          anchorContext: anchorContext,
+          text: shareText,
+          subject: detail.title,
+        );
+      } catch (_) {
+        messenger.showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+      }
+    }
 
     return AppPageScaffold(
       title: searchItem?.articleCode ?? '文章详情',
       actions: [
         IconButton(onPressed: () {}, icon: const Icon(Icons.bookmark_border)),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.share_outlined)),
+        Builder(
+          builder: (buttonContext) => IconButton(
+            onPressed: () => shareArticle(buttonContext),
+            tooltip: '分享',
+            icon: const Icon(Icons.share_outlined),
+          ),
+        ),
         IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded)),
       ],
       body: LayoutBuilder(
@@ -248,4 +270,22 @@ class _CitationTile extends StatelessWidget {
       onTap: () {},
     );
   }
+}
+
+String _buildArticleShareText(LawArticleDetail detail) {
+  return [
+    'LexCore 法律文章',
+    '标题：${detail.title}',
+    '作者：${detail.author}',
+    '发布时间：${detail.publishInfo}',
+    '',
+    '智能摘要',
+    detail.summary,
+    '',
+    '关键引用',
+    detail.quote,
+    '',
+    '法律引用与关联',
+    ...detail.citations.map((item) => '• ${item.title}：${item.subtitle}'),
+  ].join('\n');
 }

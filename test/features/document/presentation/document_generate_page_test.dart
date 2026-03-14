@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
+import 'package:lexcore/shared/widgets/app_searchable_dropdown_field.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
@@ -27,7 +28,7 @@ void main() {
     );
   }
 
-  Finder findDocumentTypeDropdown() => find.byType(DropdownMenu<String>);
+  Finder findDocumentTypeDropdown() => find.byType(AppSearchableDropdownField);
 
   Future<void> openDocumentTypeDropdown(WidgetTester tester) async {
     await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
@@ -58,15 +59,12 @@ void main() {
   ) async {
     await pumpDocumentGeneratePage(tester, size: const Size(390, 844));
 
-    final dropdown = tester.widget<DropdownMenu<String>>(
+    final dropdown = tester.widget<AppSearchableDropdownField>(
       findDocumentTypeDropdown(),
     );
-    expect(dropdown.enableFilter, isTrue);
-    expect(dropdown.enableSearch, isTrue);
-    expect(dropdown.requestFocusOnTap, isTrue);
+    expect(dropdown.value, '劳动仲裁申请书');
     expect(dropdown.menuHeight, 280);
-    expect(dropdown.textStyle, isNotNull);
-    expect(dropdown.dropdownMenuEntries.length, 4);
+    expect(dropdown.options.length, 4);
   });
 
   testWidgets('shows all document type options and updates after selection', (

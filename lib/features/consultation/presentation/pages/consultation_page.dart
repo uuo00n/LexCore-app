@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/consultation/application/consultation_controller.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
@@ -287,8 +287,10 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
         .read(consultationStateControllerProvider.notifier)
         .buildShareText(widget.threadId);
     try {
-      await SharePlus.instance.share(
-        ShareParams(text: text, subject: thread.title),
+      await AppShare.shareText(
+        pageContext: context,
+        text: text,
+        subject: thread.title,
       );
     } catch (_) {
       if (!mounted) return;

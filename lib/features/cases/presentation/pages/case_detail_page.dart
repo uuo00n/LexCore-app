@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/cases/presentation/widgets/case_analysis_preview_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
@@ -108,6 +109,21 @@ class CaseDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+    final shareText = _buildCaseShareText(detail);
+    final messenger = ScaffoldMessenger.of(context);
+
+    Future<void> shareCase(BuildContext anchorContext) async {
+      try {
+        await AppShare.shareText(
+          pageContext: context,
+          anchorContext: anchorContext,
+          text: shareText,
+          subject: detail.title,
+        );
+      } catch (_) {
+        messenger.showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+      }
+    }
 
     return Scaffold(
       backgroundColor: colorScheme.surfaceContainerLowest,
@@ -128,10 +144,12 @@ class CaseDetailPage extends StatelessWidget {
                     tooltip: '返回',
                   ),
                   actions: [
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.share_outlined),
-                      tooltip: '分享',
+                    Builder(
+                      builder: (buttonContext) => IconButton(
+                        onPressed: () => shareCase(buttonContext),
+                        icon: const Icon(Icons.share_outlined),
+                        tooltip: '分享',
+                      ),
                     ),
                     IconButton(
                       onPressed: () {},
@@ -190,6 +208,31 @@ class CaseDetailPage extends StatelessWidget {
       ),
     );
   }
+}
+
+String _buildCaseShareText(CaseDetailData detail) {
+  final buffer = StringBuffer()
+    ..writeln('LexCore 案件详情')
+    ..writeln('标题：${detail.title}')
+    ..writeln('案号：${detail.caseNumber}')
+    ..writeln('状态：${detail.statusLabel}')
+    ..writeln('${detail.dateLabel}：${detail.dateValue}')
+    ..writeln('当前进度：${detail.progressLabel}')
+    ..writeln()
+    ..writeln('当事人信息')
+    ..writeln('• 原告：${detail.plaintiffName}（${detail.plaintiffCounsel}）')
+    ..writeln('• 被告：${detail.defendantName}（${detail.defendantCounsel}）')
+    ..writeln()
+    ..writeln('案情摘要')
+    ..writeln(detail.summary)
+    ..writeln()
+    ..writeln('关联文档')
+    ..writeln(
+      detail.documents
+          .map((item) => '• ${item.title} · ${item.meta}')
+          .join('\n'),
+    );
+  return buffer.toString().trimRight();
 }
 
 class _OverviewSection extends StatelessWidget {

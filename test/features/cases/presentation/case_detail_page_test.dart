@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -40,6 +41,21 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 800));
     await tester.pumpAndSettle();
+  }
+
+  List<MethodCall> mockShareChannel() {
+    const channel = MethodChannel('dev.fluttercommunity.plus/share');
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return '';
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+    return calls;
   }
 
   testWidgets('renders case detail page with analysis preview card', (
@@ -108,6 +124,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('分析详情占位'), findsOneWidget);
+  });
+
+  testWidgets('shares case summary from top action', (tester) async {
+    final calls = mockShareChannel();
+    await pumpCaseDetailPage(tester);
+
+    await tester.tap(find.byTooltip('分享'));
+    await tester.pumpAndSettle();
+
+    final arguments = calls.single.arguments as Map<Object?, Object?>;
+    expect(arguments['subject'], '张三与李四房屋所有权纠纷案');
+    expect(arguments['text'], contains('(2023) 沪0115民初12345号'));
+    expect(arguments['text'], contains('关联文档'));
   });
 }
 

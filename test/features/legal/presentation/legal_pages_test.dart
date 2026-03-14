@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -56,6 +57,21 @@ void main() {
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
+  }
+
+  List<MethodCall> mockShareChannel() {
+    const channel = MethodChannel('dev.fluttercommunity.plus/share');
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return '';
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+    return calls;
   }
 
   ScrollableState findScrollableState(WidgetTester tester) {
@@ -178,4 +194,36 @@ void main() {
     expect(scrollableState.position.pixels, greaterThan(0));
     expect(tester.takeException(), isNull);
   }, variant: iosVariant);
+
+  testWidgets('terms page shares provided markdown content', (tester) async {
+    final calls = mockShareChannel();
+    await setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      MaterialApp(home: TermsOfServicePage(markdownData: mockTermsMarkdown)),
+    );
+    await pumpUntilFound(tester, find.byType(Markdown));
+
+    await tester.tap(find.byTooltip('分享'));
+    await tester.pumpAndSettle();
+
+    final arguments = calls.single.arguments as Map<Object?, Object?>;
+    expect(arguments['text'], contains('测试服务条款'));
+    expect(arguments['subject'], contains('服务条款'));
+  });
+
+  testWidgets('privacy page shares provided markdown content', (tester) async {
+    final calls = mockShareChannel();
+    await setViewport(tester, const Size(390, 844));
+    await tester.pumpWidget(
+      MaterialApp(home: PrivacyPolicyPage(markdownData: mockPrivacyMarkdown)),
+    );
+    await pumpUntilFound(tester, find.byType(Markdown));
+
+    await tester.tap(find.byTooltip('分享'));
+    await tester.pumpAndSettle();
+
+    final arguments = calls.single.arguments as Map<Object?, Object?>;
+    expect(arguments['text'], contains('测试隐私政策'));
+    expect(arguments['subject'], contains('隐私政策'));
+  });
 }

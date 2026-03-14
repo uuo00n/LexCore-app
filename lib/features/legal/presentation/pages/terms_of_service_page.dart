@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'package:lexcore/app/theme/app_spacing.dart';
 import 'package:lexcore/core/constants/app_constants.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/legal/presentation/widgets/legal_markdown_view.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
@@ -20,11 +20,16 @@ class TermsOfServicePage extends StatefulWidget {
 class _TermsOfServicePageState extends State<TermsOfServicePage> {
   static const _assetPath = 'doc/user_service.md';
 
-  Future<void> _shareTerms() async {
+  Future<void> _shareTerms(BuildContext anchorContext) async {
     try {
-      final text = await rootBundle.loadString(_assetPath);
-      await SharePlus.instance.share(
-        ShareParams(text: text, subject: '${AppConstants.appName} 服务条款'),
+      final text =
+          widget.markdownData ?? await rootBundle.loadString(_assetPath);
+      if (!mounted || !anchorContext.mounted) return;
+      await AppShare.shareText(
+        pageContext: context,
+        anchorContext: anchorContext,
+        text: text,
+        subject: '${AppConstants.appName} 服务条款',
       );
     } catch (_) {
       if (!mounted) return;
@@ -39,10 +44,12 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
     return AppPageScaffold(
       title: '服务条款',
       actions: [
-        IconButton(
-          onPressed: _shareTerms,
-          tooltip: '分享',
-          icon: const Icon(Icons.share_outlined),
+        Builder(
+          builder: (buttonContext) => IconButton(
+            onPressed: () => _shareTerms(buttonContext),
+            tooltip: '分享',
+            icon: const Icon(Icons.share_outlined),
+          ),
         ),
       ],
       body: LegalMarkdownView(

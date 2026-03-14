@@ -6,6 +6,7 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_searchable_dropdown_field.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 typedef CaseUploadFilePicker = Future<List<CaseUploadAttachment>> Function();
@@ -49,8 +50,6 @@ class _CaseUploadPageState extends State<CaseUploadPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  late final TextEditingController _causeController;
-  late final FocusNode _causeFocusNode;
 
   String? _selectedCause;
   bool _submitted = false;
@@ -58,31 +57,10 @@ class _CaseUploadPageState extends State<CaseUploadPage> {
   List<CaseUploadAttachment> _attachments = const [];
 
   @override
-  void initState() {
-    super.initState();
-    _causeController = TextEditingController();
-    _causeFocusNode = FocusNode()..addListener(_handleCauseFocusChange);
-  }
-
-  @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _causeFocusNode
-      ..removeListener(_handleCauseFocusChange)
-      ..dispose();
-    _causeController.dispose();
     super.dispose();
-  }
-
-  void _handleCauseFocusChange() {
-    if (_causeFocusNode.hasFocus) {
-      return;
-    }
-    final nextValue = _selectedCause ?? '';
-    if (_causeController.text != nextValue) {
-      _causeController.text = nextValue;
-    }
   }
 
   @override
@@ -150,99 +128,25 @@ class _CaseUploadPageState extends State<CaseUploadPage> {
                       AppFadeSlideIn(
                         delay: const Duration(milliseconds: 120),
                         beginOffset: const Offset(0, 0.02),
-                        child: DropdownMenu<String>(
+                        child: AppSearchableDropdownField(
                           key: const ValueKey<String>(
                             'case_upload_cause_field',
                           ),
-                          controller: _causeController,
-                          focusNode: _causeFocusNode,
-                          initialSelection: _selectedCause,
-                          dropdownMenuEntries: _causeOptions
-                              .map(
-                                (option) => DropdownMenuEntry<String>(
-                                  value: option,
-                                  label: option,
-                                  trailingIcon: option == _selectedCause
-                                      ? Icon(
-                                          Icons.check_rounded,
-                                          size: 18,
-                                          color: colorScheme.primary,
-                                        )
-                                      : null,
-                                  style: ButtonStyle(
-                                    padding:
-                                        const WidgetStatePropertyAll<
-                                          EdgeInsetsGeometry
-                                        >(
-                                          EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 12,
-                                          ),
-                                        ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onSelected: (selection) {
+                          label: '案由',
+                          value: _selectedCause,
+                          options: _causeOptions,
+                          helperText: '请选择案由',
+                          errorText: _submitted && _selectedCause == null
+                              ? '请选择案由'
+                              : null,
+                          onChanged: (selection) {
                             if (selection == null) {
                               return;
                             }
                             setState(() {
                               _selectedCause = selection;
-                              _causeController.text = selection;
                             });
                           },
-                          enableFilter: true,
-                          enableSearch: true,
-                          requestFocusOnTap: true,
-                          menuHeight: 280,
-                          textStyle: Theme.of(context).textTheme.bodyMedium,
-                          expandedInsets: EdgeInsets.zero,
-                          trailingIcon: Icon(
-                            Icons.keyboard_arrow_down_rounded,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          selectedTrailingIcon: Icon(
-                            Icons.keyboard_arrow_up_rounded,
-                            color: colorScheme.primary,
-                          ),
-                          menuStyle: MenuStyle(
-                            backgroundColor: WidgetStatePropertyAll<Color>(
-                              colorScheme.surfaceContainerHighest,
-                            ),
-                            surfaceTintColor: WidgetStatePropertyAll<Color>(
-                              colorScheme.surfaceTint.withValues(alpha: 0),
-                            ),
-                            shadowColor: WidgetStatePropertyAll<Color>(
-                              colorScheme.shadow.withValues(alpha: 0.2),
-                            ),
-                            elevation: const WidgetStatePropertyAll<double>(8),
-                            padding:
-                                const WidgetStatePropertyAll<
-                                  EdgeInsetsGeometry
-                                >(EdgeInsets.symmetric(vertical: 8)),
-                            side: WidgetStatePropertyAll<BorderSide>(
-                              BorderSide(color: colorScheme.outlineVariant),
-                            ),
-                            shape:
-                                const WidgetStatePropertyAll<
-                                  RoundedRectangleBorder
-                                >(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.all(
-                                      Radius.circular(16),
-                                    ),
-                                  ),
-                                ),
-                          ),
-                          decorationBuilder: (context, _) => _fieldDecoration(
-                            context,
-                            label: '案由',
-                            helperText: '请选择案由',
-                            errorText: _submitted && _selectedCause == null
-                                ? '请选择案由'
-                                : null,
-                          ),
                         ),
                       ),
                       const SizedBox(height: 14),

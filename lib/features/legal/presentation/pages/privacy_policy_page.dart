@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:share_plus/share_plus.dart';
 
 import 'package:lexcore/app/theme/app_spacing.dart';
 import 'package:lexcore/core/constants/app_constants.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/legal/presentation/widgets/legal_markdown_view.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
@@ -20,11 +20,16 @@ class PrivacyPolicyPage extends StatefulWidget {
 class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
   static const _assetPath = 'doc/privacy_policy.md';
 
-  Future<void> _sharePolicy() async {
+  Future<void> _sharePolicy(BuildContext anchorContext) async {
     try {
-      final text = await rootBundle.loadString(_assetPath);
-      await SharePlus.instance.share(
-        ShareParams(text: text, subject: '${AppConstants.appName} 隐私政策'),
+      final text =
+          widget.markdownData ?? await rootBundle.loadString(_assetPath);
+      if (!mounted || !anchorContext.mounted) return;
+      await AppShare.shareText(
+        pageContext: context,
+        anchorContext: anchorContext,
+        text: text,
+        subject: '${AppConstants.appName} 隐私政策',
       );
     } catch (_) {
       if (!mounted) return;
@@ -39,10 +44,12 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
     return AppPageScaffold(
       title: '隐私政策',
       actions: [
-        IconButton(
-          onPressed: _sharePolicy,
-          tooltip: '分享',
-          icon: const Icon(Icons.share_outlined),
+        Builder(
+          builder: (buttonContext) => IconButton(
+            onPressed: () => _sharePolicy(buttonContext),
+            tooltip: '分享',
+            icon: const Icon(Icons.share_outlined),
+          ),
         ),
       ],
       body: LegalMarkdownView(

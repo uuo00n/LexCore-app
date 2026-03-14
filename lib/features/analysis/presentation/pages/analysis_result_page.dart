@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
+import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/core/export/app_export_service.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
 import 'package:lexcore/features/analysis/domain/entities/analysis_summary.dart';
 import 'package:lexcore/features/analysis/presentation/widgets/analysis_page_header.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/widgets/app_export_sheet.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
 class AnalysisResultPage extends ConsumerWidget {
@@ -16,6 +20,50 @@ class AnalysisResultPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(analysisReportProvider);
+    final exportService = ref.read(appExportServiceProvider);
+    final exportPayload = _buildAnalysisExportPayload(report);
+    final messenger = ScaffoldMessenger.of(context);
+
+    Future<void> shareReport(BuildContext anchorContext) async {
+      final format = await showAppExportSheet(
+        context: context,
+        title: '导出分析报告',
+        subtitle: '选择要生成并分享的文件格式',
+      );
+      if (format == null || !context.mounted) return;
+
+      final progressOverlay = showAppExportProgressOverlay(
+        context: context,
+        label: format.label,
+      );
+      var overlayVisible = true;
+
+      try {
+        final artifact = await exportService.export(
+          payload: exportPayload,
+          format: format,
+        );
+        if (overlayVisible) {
+          progressOverlay.remove();
+          overlayVisible = false;
+        }
+        if (!context.mounted) return;
+        await AppShare.shareFile(
+          pageContext: context,
+          anchorContext: anchorContext,
+          filePath: artifact.filePath,
+          fileName: artifact.displayName,
+          mimeType: artifact.mimeType,
+          subject: exportPayload.title,
+          title: artifact.displayName,
+        );
+      } catch (_) {
+        if (overlayVisible) {
+          progressOverlay.remove();
+        }
+        messenger.showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+      }
+    }
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -37,10 +85,12 @@ class AnalysisResultPage extends ConsumerWidget {
                       title: '案件分析结果',
                       subtitle: '智能报告与证据评估',
                       actions: [
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.share_outlined),
-                          tooltip: '分享',
+                        Builder(
+                          builder: (buttonContext) => IconButton(
+                            onPressed: () => shareReport(buttonContext),
+                            icon: const Icon(Icons.share_outlined),
+                            tooltip: '分享',
+                          ),
                         ),
                         IconButton(
                           onPressed: () {},
@@ -62,7 +112,10 @@ class AnalysisResultPage extends ConsumerWidget {
                                 includeRiskSection: false,
                                 summaryGridColumns: 2,
                               ),
-                              secondary: _SidePanel(report: report),
+                              secondary: _SidePanel(
+                                report: report,
+                                onExport: shareReport,
+                              ),
                             ),
                           )
                         : Padding(
@@ -288,9 +341,10 @@ class _OverviewCard extends StatelessWidget {
 }
 
 class _SidePanel extends StatelessWidget {
-  const _SidePanel({required this.report});
+  const _SidePanel({required this.report, required this.onExport});
 
   final AnalysisSummary report;
+  final Future<void> Function(BuildContext anchorContext) onExport;
 
   @override
   Widget build(BuildContext context) {
@@ -309,22 +363,18 @@ class _SidePanel extends StatelessWidget {
               children: [
                 Text('快捷操作', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 8),
-                FilledButton.tonalIcon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('导出 PDF 报告'),
-                ),
-                const SizedBox(height: 8),
                 OutlinedButton.icon(
                   onPressed: () {},
                   icon: const Icon(Icons.bookmark_border),
                   label: const Text('收藏到案件库'),
                 ),
                 const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.share_outlined),
-                  label: const Text('分享报告链接'),
+                Builder(
+                  builder: (buttonContext) => OutlinedButton.icon(
+                    onPressed: () => onExport(buttonContext),
+                    icon: const Icon(Icons.ios_share_outlined),
+                    label: const Text('导出 / 分享'),
+                  ),
                 ),
               ],
             ),
@@ -332,6 +382,59 @@ class _SidePanel extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+ExportPayload _buildAnalysisExportPayload(AnalysisSummary report) {
+  final buffer = StringBuffer()
+    ..writeln('# LexCore 案件分析报告')
+    ..writeln()
+    ..writeln('- 报告编号：${report.reportId}')
+    ..writeln('- 生成时间：${report.generatedAt}')
+    ..writeln()
+    ..writeln('## 案件概览')
+    ..writeln(report.overview)
+    ..writeln()
+    ..writeln('## 争议焦点')
+    ..writeln(report.disputeFocus.map((item) => '• $item').join('\n'))
+    ..writeln()
+    ..writeln('## 法律关系')
+    ..writeln(report.legalRelations.map((item) => '• $item').join('\n'))
+    ..writeln()
+    ..writeln('## 风险指标')
+    ..writeln(
+      report.riskIndicators
+          .map(
+            (item) =>
+                '• ${item.label}：${_riskLevelLabel(item.level)} (${(item.value * 100).round()}%)',
+          )
+          .join('\n'),
+    )
+    ..writeln()
+    ..writeln('## 关键证据')
+    ..writeln(
+      report.evidences
+          .map((item) => '• ${item.title}：${item.score}')
+          .join('\n'),
+    )
+    ..writeln()
+    ..writeln('## 建议行动')
+    ..writeln(report.recommendations.map((item) => '• $item').join('\n'));
+  return ExportPayload(
+    title: 'LexCore 案件分析报告',
+    markdown: buffer.toString().trimRight(),
+    suggestedFileName: 'analysis_report_${report.reportId}',
+  );
+}
+
+String _riskLevelLabel(RiskLevel level) {
+  switch (level) {
+    case RiskLevel.low:
+      return '低风险';
+    case RiskLevel.medium:
+      return '中等风险';
+    case RiskLevel.high:
+      return '高风险';
   }
 }
 
@@ -363,7 +466,7 @@ class _RiskSection extends StatelessWidget {
               child: _RiskBar(
                 label: risk.label,
                 value: risk.value,
-                levelText: _riskLabel(risk.level),
+                levelText: _riskLevelLabel(risk.level),
                 color: _riskColor(context, risk.level),
               ),
             ),
@@ -381,17 +484,6 @@ class _RiskSection extends StatelessWidget {
         return Theme.of(context).colorScheme.tertiary;
       case RiskLevel.high:
         return Theme.of(context).colorScheme.error;
-    }
-  }
-
-  String _riskLabel(RiskLevel level) {
-    switch (level) {
-      case RiskLevel.low:
-        return '低风险';
-      case RiskLevel.medium:
-        return '中等风险';
-      case RiskLevel.high:
-        return '高风险';
     }
   }
 }

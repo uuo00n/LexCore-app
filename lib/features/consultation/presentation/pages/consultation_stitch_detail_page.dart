@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+
+const _defaultConsultationSummary =
+    '根据您的描述，LexCore 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。';
 
 class ConsultationStitchDetailPage extends StatelessWidget {
   const ConsultationStitchDetailPage({super.key, this.summary});
@@ -14,6 +18,23 @@ class ConsultationStitchDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final displayFont = GoogleFonts.publicSansTextTheme(textTheme);
+    final messenger = ScaffoldMessenger.of(context);
+    final resolvedSummary = summary?.trim().isNotEmpty == true
+        ? summary!
+        : _defaultConsultationSummary;
+
+    Future<void> shareDetail(BuildContext anchorContext) async {
+      try {
+        await AppShare.shareText(
+          pageContext: context,
+          anchorContext: anchorContext,
+          text: _buildConsultationShareText(resolvedSummary),
+          subject: 'LexCore 解答详情',
+        );
+      } catch (_) {
+        messenger.showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+      }
+    }
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -27,7 +48,10 @@ class ConsultationStitchDetailPage extends StatelessWidget {
             bottom: false,
             child: Column(
               children: [
-                _DetailHeader(onBack: () => Navigator.of(context).maybePop()),
+                _DetailHeader(
+                  onBack: () => Navigator.of(context).maybePop(),
+                  onShare: shareDetail,
+                ),
                 Expanded(
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -43,9 +67,7 @@ class ConsultationStitchDetailPage extends StatelessWidget {
                           icon: Icons.psychology_alt_outlined,
                           title: '问题理解',
                           child: Text(
-                            summary?.trim().isNotEmpty == true
-                                ? summary!
-                                : '根据您的描述，LexCore 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。',
+                            resolvedSummary,
                             style: displayFont.bodyMedium?.copyWith(
                               height: 1.6,
                               color: Theme.of(
@@ -149,9 +171,10 @@ class ConsultationStitchDetailPage extends StatelessWidget {
 }
 
 class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({required this.onBack});
+  const _DetailHeader({required this.onBack, required this.onShare});
 
   final VoidCallback onBack;
+  final Future<void> Function(BuildContext anchorContext) onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -163,14 +186,33 @@ class _DetailHeader extends StatelessWidget {
         tooltip: '返回',
       ),
       actions: [
-        IconButton(
-          onPressed: () {},
-          icon: const Icon(Icons.share_outlined),
-          tooltip: '分享',
+        Builder(
+          builder: (buttonContext) => IconButton(
+            onPressed: () => onShare(buttonContext),
+            icon: const Icon(Icons.share_outlined),
+            tooltip: '分享',
+          ),
         ),
       ],
     );
   }
+}
+
+String _buildConsultationShareText(String summary) {
+  return [
+    'LexCore 解答详情',
+    '问题理解',
+    summary,
+    '',
+    '法律依据',
+    '• 《中华人民共和国劳动法》第四十四条：用人单位安排加班的，应当按照国家有关规定向劳动者支付加班费。',
+    '• 《劳动合同法》第三十一条：用人单位应当严格执行劳动定额标准，不得强迫或者变相强迫劳动者加班。',
+    '',
+    '建议重点',
+    '• 优先与公司人力资源部门书面协商。',
+    '• 保留邮件、聊天记录和考勤导出文件。',
+    '• 如协商无果，评估劳动仲裁材料完整性后再推进。',
+  ].join('\n');
 }
 
 class _HeroCard extends StatelessWidget {

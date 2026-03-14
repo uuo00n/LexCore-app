@@ -155,4 +155,38 @@ void main() {
 
     expect(find.text('分享失败，请稍后重试'), findsOneWidget);
   });
+
+  testWidgets('share thread sends latest thread export text', (tester) async {
+    await setPhoneViewport(tester);
+    const channel = MethodChannel('dev.fluttercommunity.plus/share');
+    final calls = <MethodCall>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call);
+          return '';
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('LexCore 法律助手'));
+    await tester.pumpAndSettle();
+
+    await openThreadMenu(tester);
+    await tester.tap(find.text('分享对话'));
+    await tester.pumpAndSettle();
+
+    final arguments = calls.single.arguments as Map<Object?, Object?>;
+    expect(arguments['subject'], 'LexCore 法律助手');
+    expect(arguments['text'], contains('由 LexCore 导出'));
+    expect(arguments['text'], contains('[LexCore]'));
+  });
 }

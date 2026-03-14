@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class ConsultationStitchDetailPage extends StatelessWidget {
   const ConsultationStitchDetailPage({super.key, this.summary});
@@ -155,23 +156,22 @@ class _DetailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-      child: Row(
-        children: [
-          IconButton(
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+      child: AppShellTopBar(
+        title: 'LexCore 解答详情',
+        leading: Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
             onPressed: onBack,
             icon: const Icon(Icons.arrow_back_rounded),
           ),
-          Expanded(
-            child: Text(
-              'LexCore 解答详情',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.share_outlined),
+            tooltip: '分享',
           ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.share_outlined)),
         ],
       ),
     );

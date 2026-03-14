@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
+import 'package:lexcore/features/cases/presentation/widgets/case_analysis_preview_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 enum CaseDetailStatus { inProgress, closed, waiting }
 
@@ -115,9 +117,35 @@ class CaseDetailPage extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              _CaseDetailHeader(
-                title: '案件详情',
-                onBack: () => Navigator.of(context).maybePop(),
+              AppFadeSlideIn(
+                delay: const Duration(milliseconds: 20),
+                beginOffset: const Offset(0, -0.02),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+                  child: AppShellTopBar(
+                    title: '案件详情',
+                    sideWidth: 104,
+                    leading: Align(
+                      alignment: Alignment.centerLeft,
+                      child: IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                      ),
+                    ),
+                    actions: [
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.share_outlined),
+                        tooltip: '分享',
+                      ),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.more_vert_rounded),
+                        tooltip: '更多操作',
+                      ),
+                    ],
+                  ),
+                ),
               ),
               Expanded(
                 child: ListView(
@@ -127,15 +155,18 @@ class CaseDetailPage extends StatelessWidget {
                       delay: const Duration(milliseconds: 40),
                       child: _OverviewSection(detail: detail),
                     ),
-                    const _SectionBreak(),
+                    const SizedBox(height: 18),
                     AppFadeSlideIn(
                       delay: const Duration(milliseconds: 80),
-                      child: _AiAnalysisStrip(
+                      child: CaseAnalysisPreviewCard(
                         onPressed: () =>
                             context.push(RouteNames.analysisDetailPath),
                       ),
                     ),
-                    const _SectionBreak(),
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(0, 18, 0, 20),
+                      child: _SectionDivider(),
+                    ),
                     AppFadeSlideIn(
                       delay: const Duration(milliseconds: 120),
                       child: _ProgressSection(detail: detail),
@@ -162,42 +193,6 @@ class CaseDetailPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _CaseDetailHeader extends StatelessWidget {
-  const _CaseDetailHeader({required this.title, required this.onBack});
-
-  final String title;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.share_outlined)),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.more_vert_rounded),
-          ),
-        ],
       ),
     );
   }
@@ -264,85 +259,6 @@ class _OverviewSection extends StatelessWidget {
           label: '${detail.dateLabel}：${detail.dateValue}',
         ),
       ],
-    );
-  }
-}
-
-class _AiAnalysisStrip extends StatelessWidget {
-  const _AiAnalysisStrip({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = context.colorScheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer.withValues(alpha: 0.46),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.10)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 18,
-                  color: colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'AI 案件深度分析',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '基于大数据研判和法律大模型，对案件胜诉率、证据链完整度及诉讼风险给出结构化建议。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              key: const ValueKey<String>('case_detail_analysis_button'),
-              onPressed: onPressed,
-              style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 18,
-                  vertical: 12,
-                ),
-                minimumSize: const Size(0, 40),
-              ),
-              icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: const Text('开始分析'),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -754,10 +670,19 @@ class _SectionBreak extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Container(
-        height: 1,
-        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.10),
-      ),
+      child: const _SectionDivider(),
+    );
+  }
+}
+
+class _SectionDivider extends StatelessWidget {
+  const _SectionDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 1,
+      color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.10),
     );
   }
 }

@@ -71,7 +71,7 @@ void main() {
 
     expect(find.text('劳动合同争议咨询'), findsOneWidget);
 
-    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pumpAndSettle();
 
     expect(find.text('劳动合同争议咨询'), findsOneWidget);

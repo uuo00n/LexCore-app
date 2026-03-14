@@ -5,6 +5,7 @@ import 'package:lexcore/app/adaptive/app_adaptive_frame.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class DocumentGeneratePage extends StatefulWidget {
   const DocumentGeneratePage({super.key});
@@ -103,34 +104,28 @@ class _GenerateTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onBackTap,
-            icon: const Icon(Icons.arrow_back),
-            tooltip: '返回',
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
           ),
-          Expanded(
-            child: Text(
-              'LexCore 文书生成',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.2,
-              ),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+        child: AppShellTopBar(
+          title: 'LexCore 文书生成',
+          leading: Align(
+            alignment: Alignment.centerLeft,
+            child: IconButton(
+              onPressed: onBackTap,
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: '返回',
             ),
           ),
-          const SizedBox(width: 48),
-        ],
+        ),
       ),
     );
   }

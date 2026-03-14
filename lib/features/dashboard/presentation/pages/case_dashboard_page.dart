@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/dashboard/application/dashboard_provider.dart';
 import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_cases_page.dart';
@@ -80,7 +82,8 @@ class _CaseDashboardPageState extends ConsumerState<CaseDashboardPage>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        key: const ValueKey<String>('dashboard_open_case_upload_fab'),
+        onPressed: () => context.push(RouteNames.caseUploadPath),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Theme.of(context).colorScheme.onPrimary,
         elevation: 6,
@@ -352,12 +355,17 @@ class _QuickActionsRow extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: const [
-          _QuickActionCard(icon: Icons.add, label: '新建案件'),
-          SizedBox(width: 12),
-          _QuickActionCard(icon: Icons.upload_file, label: '批量上传'),
-          SizedBox(width: 12),
-          _QuickActionCard(icon: Icons.auto_stories, label: '法典查询'),
+        children: [
+          _QuickActionCard(
+            key: const ValueKey<String>('dashboard_quick_action_new_case'),
+            icon: Icons.add,
+            label: '新建案件',
+            onTap: () => context.push(RouteNames.caseUploadPath),
+          ),
+          const SizedBox(width: 12),
+          const _QuickActionCard(icon: Icons.upload_file, label: '批量上传'),
+          const SizedBox(width: 12),
+          const _QuickActionCard(icon: Icons.auto_stories, label: '法典查询'),
         ],
       ),
     );
@@ -365,43 +373,59 @@ class _QuickActionsRow extends StatelessWidget {
 }
 
 class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({required this.icon, required this.label});
+  const _QuickActionCard({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
 
   final IconData icon;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return AppSurfaceCard(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: SizedBox(
-        width: 88,
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                size: 20,
-                color: Theme.of(context).colorScheme.primary,
+      padding: EdgeInsets.zero,
+      child: Material(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: onTap,
+          child: SizedBox(
+            width: 104,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ],
+          ),
         ),
       ),
     );

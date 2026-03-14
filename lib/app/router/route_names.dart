@@ -7,6 +7,7 @@ class RouteNames {
   static const consultation = 'consultation';
   static const consultationChat = 'consultation_chat';
   static const consultationStitchDetail = 'consultation_stitch_detail';
+  static const caseUpload = 'case_upload';
   static const caseDetail = 'case_detail';
   static const analysisDetail = 'analysis_detail';
   static const analysisResult = 'analysis_result';
@@ -34,6 +35,7 @@ class RouteNames {
   static const consultationChatPath =
       '/consultation/chat/:$consultationChatThreadIdParam';
   static const consultationStitchDetailPath = '/consultation/stitch-detail';
+  static const caseUploadPath = '/cases/upload';
   static const caseDetailPath = '/cases/detail';
   static const analysisDetailPath = '/analysis/detail';
   static const analysisResultPath = '/analysis/result';

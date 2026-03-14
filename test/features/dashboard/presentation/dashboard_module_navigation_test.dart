@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/features/cases/presentation/pages/case_upload_page.dart';
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
 
 void main() {
@@ -21,6 +22,10 @@ void main() {
         GoRoute(
           path: RouteNames.dashboardPath,
           builder: (context, state) => const CaseDashboardPage(),
+        ),
+        GoRoute(
+          path: RouteNames.caseUploadPath,
+          builder: (context, state) => const CaseUploadPage(),
         ),
       ],
     );
@@ -43,6 +48,10 @@ void main() {
           builder: (context, state) => const CaseDashboardPage(),
         ),
         GoRoute(
+          path: RouteNames.caseUploadPath,
+          builder: (context, state) => const CaseUploadPage(),
+        ),
+        GoRoute(
           path: RouteNames.homePath,
           builder: (context, state) => const _LabelPage(title: 'Home Page'),
         ),
@@ -57,6 +66,10 @@ void main() {
         GoRoute(
           path: RouteNames.dashboardPath,
           builder: (context, state) => const CaseDashboardPage(),
+        ),
+        GoRoute(
+          path: RouteNames.caseUploadPath,
+          builder: (context, state) => const CaseUploadPage(),
         ),
         GoRoute(
           path: RouteNames.homePath,
@@ -137,6 +150,53 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pumpAndSettle();
     expect(find.text('Home Page'), findsOneWidget);
+  });
+
+  testWidgets('fab opens case upload page', (tester) async {
+    await setPhoneViewport(tester);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: buildDashboardRouter()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('dashboard_open_case_upload_fab')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('上传案件'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('case_upload_submit_button')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('quick action new case opens case upload page', (tester) async {
+    await setPhoneViewport(tester);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp.router(routerConfig: buildDashboardRouter()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey<String>('dashboard_quick_action_new_case')),
+      220,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final tapTarget = find.descendant(
+      of: find.byKey(const ValueKey<String>('dashboard_quick_action_new_case')),
+      matching: find.byType(InkWell),
+    );
+    tester.widget<InkWell>(tapTarget).onTap?.call();
+    await tester.pumpAndSettle();
+
+    expect(find.text('上传案件'), findsOneWidget);
   });
 }
 

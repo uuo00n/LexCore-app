@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -136,7 +137,9 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
-    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
     await tester.pump(const Duration(milliseconds: 800));
 
     await tester.tap(
@@ -146,6 +149,6 @@ void main() {
 
     expect(find.text('案件详情'), findsOneWidget);
     expect(find.text('张三与李四房屋所有权纠纷案'), findsOneWidget);
-    expect(find.text('AI 案件深度分析'), findsOneWidget);
+    expect(find.text('案件分析速览'), findsOneWidget);
   });
 }

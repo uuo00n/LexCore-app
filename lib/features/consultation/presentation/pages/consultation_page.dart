@@ -12,6 +12,7 @@ import 'package:lexcore/features/consultation/application/consultation_controlle
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class ConsultationPage extends ConsumerStatefulWidget {
   const ConsultationPage({super.key, required this.threadId, this.threadTitle});
@@ -380,38 +381,43 @@ class _ConsultationHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
-      child: Row(
-        children: [
-          IconButton(onPressed: onBack, icon: const Icon(Icons.arrow_back)),
-          const SizedBox(width: 4),
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: Theme.of(context).textTheme.titleSmall),
-              Text(
-                splitLayout ? '桌面协作模式' : '在线咨询中',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
+        child: Column(
+          children: [
+            AppShellTopBar(
+              title: title,
+              leading: Align(
+                alignment: Alignment.centerLeft,
+                child: IconButton(
+                  onPressed: onBack,
+                  icon: const Icon(Icons.arrow_back_rounded),
                 ),
               ),
-            ],
-          ),
-          const Spacer(),
-          IconButton(
-            key: const ValueKey('consultation_more_button'),
-            onPressed: onMoreTap,
-            icon: const Icon(Icons.more_vert),
-          ),
-        ],
+              actions: [
+                IconButton(
+                  key: const ValueKey('consultation_more_button'),
+                  onPressed: onMoreTap,
+                  icon: const Icon(Icons.more_vert_rounded),
+                  tooltip: '更多操作',
+                ),
+              ],
+            ),
+            Text(
+              splitLayout ? '桌面协作模式' : '在线咨询中',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
   Future<void> setPhoneViewport(WidgetTester tester) async {
@@ -76,6 +77,7 @@ void main() {
     await tester.tap(find.text('LexCore 法律助手'));
     await tester.pumpAndSettle();
 
+    expect(find.byType(AppShellTopBar), findsOneWidget);
     expect(find.text('LexCore 法律助手'), findsOneWidget);
     expect(find.text('请输入您的问题...'), findsOneWidget);
   });

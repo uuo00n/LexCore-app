@@ -8,6 +8,7 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/features/document/application/document_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class DocumentPreviewPage extends ConsumerWidget {
   const DocumentPreviewPage({super.key});
@@ -35,24 +36,26 @@ class DocumentPreviewPage extends ConsumerWidget {
                     child: AppFadeSlideIn(
                       delay: const Duration(milliseconds: 20),
                       beginOffset: const Offset(0, -0.02),
-                      child: Row(
-                        children: [
-                          IconButton(
+                      child: AppShellTopBar(
+                        title: '文档预览',
+                        sideWidth: 104,
+                        leading: Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
                             onPressed: () => Navigator.of(context).maybePop(),
-                            icon: const Icon(Icons.arrow_back),
+                            icon: const Icon(Icons.arrow_back_rounded),
                           ),
-                          Text(
-                            '文档预览',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const Spacer(),
+                        ),
+                        actions: [
                           IconButton(
                             onPressed: () {},
                             icon: const Icon(Icons.share_outlined),
+                            tooltip: '分享',
                           ),
                           IconButton(
                             onPressed: () {},
-                            icon: const Icon(Icons.more_vert),
+                            icon: const Icon(Icons.more_vert_rounded),
+                            tooltip: '更多操作',
                           ),
                         ],
                       ),

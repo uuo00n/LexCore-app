@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
   Future<void> pumpDocumentGeneratePage(
@@ -36,6 +37,8 @@ void main() {
   testWidgets('uses unified spacing in compact layout', (tester) async {
     await pumpDocumentGeneratePage(tester, size: const Size(390, 844));
 
+    expect(find.byType(AppShellTopBar), findsOneWidget);
+    expect(find.text('LexCore 文书生成'), findsOneWidget);
     expect(findFormListViewWithUnifiedPadding(), findsOneWidget);
     expect(find.text('创建新文档'), findsOneWidget);
   });

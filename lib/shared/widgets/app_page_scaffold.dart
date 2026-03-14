@@ -5,6 +5,7 @@ import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
 
+import 'app_shell_top_bar.dart';
 import 'app_mobile_canvas.dart';
 
 class AppPageScaffold extends StatelessWidget {
@@ -34,26 +35,40 @@ class AppPageScaffold extends StatelessWidget {
     };
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        centerTitle: true,
-        leading: showBackButton ? null : const SizedBox.shrink(),
-        automaticallyImplyLeading: showBackButton,
-        actions: actions,
-      ),
       body: AppAdaptiveFrame(
         child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: AppSpacing.sm,
-            ),
-            child: AppFadeSlideIn(
-              delay: const Duration(milliseconds: 40),
-              beginOffset: const Offset(0, 0.03),
-              child: body,
-            ),
+          bottom: false,
+          child: Column(
+            children: [
+              AppFadeSlideIn(
+                delay: const Duration(milliseconds: 20),
+                beginOffset: const Offset(0, -0.02),
+                child: AppShellTopBar(
+                  title: title,
+                  leading: showBackButton
+                      ? IconButton(
+                          onPressed: () => Navigator.of(context).maybePop(),
+                          icon: const Icon(Icons.arrow_back_rounded),
+                          tooltip: '返回',
+                        )
+                      : null,
+                  actions: actions,
+                ),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: AppFadeSlideIn(
+                    delay: const Duration(milliseconds: 40),
+                    beginOffset: const Offset(0, 0.03),
+                    child: body,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

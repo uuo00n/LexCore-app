@@ -113,18 +113,12 @@ class _GenerateTopBar extends StatelessWidget {
           ),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-        child: AppShellTopBar(
-          title: 'LexCore 文书生成',
-          leading: Align(
-            alignment: Alignment.centerLeft,
-            child: IconButton(
-              onPressed: onBackTap,
-              icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: '返回',
-            ),
-          ),
+      child: AppShellTopBar(
+        title: 'LexCore 文书生成',
+        leading: IconButton(
+          onPressed: onBackTap,
+          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: '返回',
         ),
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:lexcore/app/theme/app_spacing.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class AuthIconAssets {
   const AuthIconAssets._();
@@ -62,36 +63,15 @@ class AuthTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appBarTitleStyle =
-        Theme.of(context).appBarTheme.titleTextStyle ??
-        Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
-
-    return SizedBox(
-      height: kToolbarHeight,
-      child: Row(
-        children: [
-          SizedBox(
-            width: kToolbarHeight,
-            child: onBack == null
-                ? const SizedBox.shrink()
-                : IconButton(
-                    onPressed: onBack,
-                    icon: const Icon(Icons.arrow_back),
-                    tooltip: '返回',
-                  ),
-          ),
-          Expanded(
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: appBarTitleStyle,
+    return AppShellTopBar(
+      title: title,
+      leading: onBack == null
+          ? null
+          : IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: '返回',
             ),
-          ),
-          const SizedBox(width: kToolbarHeight),
-        ],
-      ),
     );
   }
 }

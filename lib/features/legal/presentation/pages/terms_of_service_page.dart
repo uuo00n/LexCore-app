@@ -42,7 +42,7 @@ class _TermsOfServicePageState extends State<TermsOfServicePage> {
         IconButton(
           onPressed: _shareTerms,
           tooltip: '分享',
-          icon: const Icon(Icons.share),
+          icon: const Icon(Icons.share_outlined),
         ),
       ],
       body: LegalMarkdownView(

@@ -155,25 +155,20 @@ class _DetailHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-      child: AppShellTopBar(
-        title: 'LexCore 解答详情',
-        leading: Align(
-          alignment: Alignment.centerLeft,
-          child: IconButton(
-            onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_rounded),
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.share_outlined),
-            tooltip: '分享',
-          ),
-        ],
+    return AppShellTopBar(
+      title: 'LexCore 解答详情',
+      leading: IconButton(
+        onPressed: onBack,
+        icon: const Icon(Icons.arrow_back_rounded),
+        tooltip: '返回',
       ),
+      actions: [
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.share_outlined),
+          tooltip: '分享',
+        ),
+      ],
     );
   }
 }

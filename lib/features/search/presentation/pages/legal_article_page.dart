@@ -24,7 +24,7 @@ class LegalArticlePage extends ConsumerWidget {
       actions: [
         IconButton(onPressed: () {}, icon: const Icon(Icons.bookmark_border)),
         IconButton(onPressed: () {}, icon: const Icon(Icons.share_outlined)),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded)),
       ],
       body: LayoutBuilder(
         builder: (context, constraints) {

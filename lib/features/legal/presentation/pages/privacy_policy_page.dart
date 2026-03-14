@@ -42,7 +42,7 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
         IconButton(
           onPressed: _sharePolicy,
           tooltip: '分享',
-          icon: const Icon(Icons.share),
+          icon: const Icon(Icons.share_outlined),
         ),
       ],
       body: LegalMarkdownView(

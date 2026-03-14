@@ -26,7 +26,7 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
       title: '已保存的文档',
       actions: [
         IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert)),
+        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded)),
       ],
       body: LayoutBuilder(
         builder: (context, constraints) {

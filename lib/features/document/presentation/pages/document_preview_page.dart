@@ -31,34 +31,28 @@ class DocumentPreviewPage extends ConsumerWidget {
               bottom: false,
               child: Column(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
-                    child: AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 20),
-                      beginOffset: const Offset(0, -0.02),
-                      child: AppShellTopBar(
-                        title: '文档预览',
-                        sideWidth: 104,
-                        leading: Align(
-                          alignment: Alignment.centerLeft,
-                          child: IconButton(
-                            onPressed: () => Navigator.of(context).maybePop(),
-                            icon: const Icon(Icons.arrow_back_rounded),
-                          ),
-                        ),
-                        actions: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.share_outlined),
-                            tooltip: '分享',
-                          ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.more_vert_rounded),
-                            tooltip: '更多操作',
-                          ),
-                        ],
+                  AppFadeSlideIn(
+                    delay: const Duration(milliseconds: 20),
+                    beginOffset: const Offset(0, -0.02),
+                    child: AppShellTopBar(
+                      title: '文档预览',
+                      leading: IconButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        tooltip: '返回',
                       ),
+                      actions: [
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.share_outlined),
+                          tooltip: '分享',
+                        ),
+                        IconButton(
+                          onPressed: () {},
+                          icon: const Icon(Icons.more_vert_rounded),
+                          tooltip: '更多操作',
+                        ),
+                      ],
                     ),
                   ),
                   Expanded(

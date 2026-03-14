@@ -16,39 +16,42 @@ class AnalysisPageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sideWidth = actions.length > 1 ? 104.0 : 56.0;
+    final resolvedSideWidth = AppShellTopBar.resolveSideWidth(
+      actionCount: actions.length,
+      hasLeading: true,
+    );
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-      child: Column(
-        children: [
-          AppShellTopBar(
-            title: title,
-            sideWidth: sideWidth,
-            leading: Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back_rounded),
-              ),
-            ),
-            actions: actions,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppShellTopBar(
+          title: title,
+          leading: IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back_rounded),
+            tooltip: '返回',
           ),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: sideWidth),
-              child: Text(
-                subtitle!,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+          actions: actions,
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 2),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              resolvedSideWidth + 8,
+              0,
+              resolvedSideWidth + 8,
+              8,
+            ),
+            child: Text(
+              subtitle!,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
-          ],
+          ),
         ],
-      ),
+      ],
     );
   }
 }

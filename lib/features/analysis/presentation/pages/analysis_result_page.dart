@@ -39,11 +39,13 @@ class AnalysisResultPage extends ConsumerWidget {
                       actions: [
                         IconButton(
                           onPressed: () {},
-                          icon: const Icon(Icons.share),
+                          icon: const Icon(Icons.share_outlined),
+                          tooltip: '分享',
                         ),
                         IconButton(
                           onPressed: () {},
-                          icon: const Icon(Icons.more_vert),
+                          icon: const Icon(Icons.more_vert_rounded),
+                          tooltip: '更多操作',
                         ),
                       ],
                     ),

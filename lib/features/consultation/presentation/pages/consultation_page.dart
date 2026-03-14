@@ -380,35 +380,44 @@ class _ConsultationHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedSideWidth = AppShellTopBar.resolveSideWidth(
+      actionCount: 1,
+      hasLeading: true,
+    );
+
     return Container(
       decoration: BoxDecoration(
         border: Border(
           bottom: BorderSide(color: Theme.of(context).dividerColor),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-        child: Column(
-          children: [
-            AppShellTopBar(
-              title: title,
-              leading: Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  onPressed: onBack,
-                  icon: const Icon(Icons.arrow_back_rounded),
-                ),
-              ),
-              actions: [
-                IconButton(
-                  key: const ValueKey('consultation_more_button'),
-                  onPressed: onMoreTap,
-                  icon: const Icon(Icons.more_vert_rounded),
-                  tooltip: '更多操作',
-                ),
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          AppShellTopBar(
+            title: title,
+            leading: IconButton(
+              onPressed: onBack,
+              icon: const Icon(Icons.arrow_back_rounded),
+              tooltip: '返回',
             ),
-            Text(
+            actions: [
+              IconButton(
+                key: const ValueKey('consultation_more_button'),
+                onPressed: onMoreTap,
+                icon: const Icon(Icons.more_vert_rounded),
+                tooltip: '更多操作',
+              ),
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              resolvedSideWidth + 8,
+              0,
+              resolvedSideWidth + 8,
+              8,
+            ),
+            child: Text(
               splitLayout ? '桌面协作模式' : '在线咨询中',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -416,8 +425,8 @@ class _ConsultationHeader extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
+import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
   testWidgets('login page shows LexCore branding copy', (tester) async {
@@ -15,6 +16,7 @@ void main() {
     expect(find.text('LexCore'), findsOneWidget);
     expect(find.text('以智能内核重塑法律服务效率'), findsOneWidget);
     expect(find.text('已阅读并同意《服务条款》《隐私政策》'), findsOneWidget);
+    expect(find.byType(AppShellTopBar), findsNothing);
 
     expect(find.text('LexiAI'), findsNothing);
     expect(find.text('您的智能阅读与学习助手，\n开启深度阅读的新篇章。'), findsNothing);
@@ -31,6 +33,7 @@ void main() {
     expect(find.text('创建衡法智核账户'), findsOneWidget);
     expect(find.text('衡法智核 LexCore——智能法律服务平台\n以智能内核重塑法律服务效率'), findsOneWidget);
     expect(find.text('已阅读并同意《服务条款》《隐私政策》'), findsOneWidget);
+    expect(find.byType(AppShellTopBar), findsOneWidget);
 
     expect(find.text('注册 LexiAI'), findsNothing);
     expect(find.text('加入 LexiAI，开启高效智能法律服务体验'), findsNothing);

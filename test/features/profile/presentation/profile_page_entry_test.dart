@@ -15,6 +15,11 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  Future<void> tapTopBackButton(WidgetTester tester) async {
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+  }
+
   Future<void> pumpProfileRouter(WidgetTester tester) async {
     final router = GoRouter(
       initialLocation: RouteNames.profilePath,
@@ -82,14 +87,12 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(ProfilePersonalInfoPage), findsOneWidget);
 
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    await tapTopBackButton(tester);
     await tester.tap(find.text('账号安全').first);
     await tester.pumpAndSettle();
     expect(find.byType(ProfileSecurityPage), findsOneWidget);
 
-    await tester.pageBack();
-    await tester.pumpAndSettle();
+    await tapTopBackButton(tester);
     await tester.tap(find.text('账单与订阅').first);
     await tester.pumpAndSettle();
     expect(find.byType(ProfileBillingPage), findsOneWidget);

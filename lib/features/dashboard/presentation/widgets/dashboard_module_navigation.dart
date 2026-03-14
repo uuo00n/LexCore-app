@@ -45,22 +45,16 @@ class DashboardModuleTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppShellTopBar(
       title: title,
-      sideWidth: 56,
-      leading: Align(
-        alignment: Alignment.centerLeft,
-        child: IconButton(
-          onPressed: () {
-            if (context.canPop()) {
-              context.pop();
-              return;
-            }
-            context.go(RouteNames.homePath);
-          },
-          padding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
-          constraints: const BoxConstraints.tightFor(width: 40, height: 40),
-          icon: const Icon(Icons.arrow_back_rounded),
-        ),
+      leading: IconButton(
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+            return;
+          }
+          context.go(RouteNames.homePath);
+        },
+        icon: const Icon(Icons.arrow_back_rounded),
+        tooltip: '返回',
       ),
     );
   }

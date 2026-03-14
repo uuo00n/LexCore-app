@@ -100,14 +100,12 @@ class _CaseUploadPageState extends State<CaseUploadPage> {
               AppFadeSlideIn(
                 delay: const Duration(milliseconds: 20),
                 beginOffset: const Offset(0, -0.02),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 4, 8, 8),
-                  child: AppShellTopBar(
-                    title: '上传案件',
-                    leading: IconButton(
-                      onPressed: () => Navigator.of(context).maybePop(),
-                      icon: const Icon(Icons.arrow_back_rounded),
-                    ),
+                child: AppShellTopBar(
+                  title: '上传案件',
+                  leading: IconButton(
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    tooltip: '返回',
                   ),
                 ),
               ),

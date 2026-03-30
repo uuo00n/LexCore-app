@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
 import 'package:lexcore/features/cases/presentation/widgets/case_analysis_preview_card.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
@@ -65,6 +66,10 @@ void main() {
 
     expect(find.text('案件详情'), findsOneWidget);
     expect(find.byType(AppShellTopBar), findsOneWidget);
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      isNull,
+    );
     expect(find.byIcon(Icons.share_outlined), findsOneWidget);
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
     expect(find.text('张三与李四房屋所有权纠纷案'), findsOneWidget);

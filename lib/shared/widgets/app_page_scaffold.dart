@@ -1,28 +1,41 @@
 import 'package:flutter/material.dart';
 
-import 'package:lexcore/app/adaptive/app_adaptive_frame.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/theme/app_spacing.dart';
 
-import 'app_shell_top_bar.dart';
 import 'app_mobile_canvas.dart';
+import 'app_sub_page_header.dart';
 
 class AppPageScaffold extends StatelessWidget {
   const AppPageScaffold({
     super.key,
     required this.title,
     required this.body,
+    this.subtitle,
     this.actions = const [],
     this.bottomNavigationBar,
     this.showBackButton = true,
+    this.onBackPressed,
+    this.backgroundColor,
+    this.maxContentWidth,
+    this.bodyPadding,
+    this.floatingActionButton,
+    this.floatingActionButtonLocation,
   });
 
   final String title;
+  final String? subtitle;
   final Widget body;
   final List<Widget> actions;
   final Widget? bottomNavigationBar;
   final bool showBackButton;
+  final VoidCallback? onBackPressed;
+  final Color? backgroundColor;
+  final double? maxContentWidth;
+  final EdgeInsetsGeometry? bodyPadding;
+  final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -34,8 +47,17 @@ class AppPageScaffold extends StatelessWidget {
       AppViewportSize.ultra => 28.0,
     };
 
+    final resolvedBodyPadding =
+        bodyPadding ??
+        EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: AppSpacing.sm,
+        );
+
     return Scaffold(
-      body: AppAdaptiveFrame(
+      backgroundColor: backgroundColor,
+      body: AppMobileCanvas(
+        maxContentWidth: maxContentWidth,
         child: SafeArea(
           bottom: false,
           child: Column(
@@ -43,24 +65,17 @@ class AppPageScaffold extends StatelessWidget {
               AppFadeSlideIn(
                 delay: const Duration(milliseconds: 20),
                 beginOffset: const Offset(0, -0.02),
-                child: AppShellTopBar(
+                child: AppSubPageHeader(
                   title: title,
-                  leading: showBackButton
-                      ? IconButton(
-                          onPressed: () => Navigator.of(context).maybePop(),
-                          icon: const Icon(Icons.arrow_back_rounded),
-                          tooltip: '返回',
-                        )
-                      : null,
+                  subtitle: subtitle,
                   actions: actions,
+                  showBackButton: showBackButton,
+                  onBackPressed: onBackPressed,
                 ),
               ),
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: AppSpacing.sm,
-                  ),
+                  padding: resolvedBodyPadding,
                   child: AppFadeSlideIn(
                     delay: const Duration(milliseconds: 40),
                     beginOffset: const Offset(0, 0.03),
@@ -74,9 +89,12 @@ class AppPageScaffold extends StatelessWidget {
       ),
       bottomNavigationBar: bottomNavigationBar == null
           ? null
-          : AppAdaptiveFrame(
-              child: AppMobileCanvas(child: bottomNavigationBar!),
+          : AppMobileCanvas(
+              maxContentWidth: maxContentWidth,
+              child: bottomNavigationBar!,
             ),
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
     );
   }
 }

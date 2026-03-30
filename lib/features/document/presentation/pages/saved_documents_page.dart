@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/document/application/document_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
@@ -26,8 +29,16 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
     return AppPageScaffold(
       title: '已保存的文档',
       actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.search)),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded)),
+        IconButton(
+          onPressed: () =>
+              showFeatureInProgressSnackBar(context, featureLabel: '文档搜索'),
+          icon: const Icon(Icons.search),
+        ),
+        IconButton(
+          onPressed: () =>
+              showFeatureInProgressSnackBar(context, featureLabel: '更多操作'),
+          icon: const Icon(Icons.more_vert_rounded),
+        ),
       ],
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -126,7 +137,24 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
                       Theme.of(context).colorScheme.surface,
                     ),
                   };
-                  return _DocumentCard(item: item, status: status);
+                  return _DocumentCard(
+                    item: item,
+                    status: status,
+                    onView: () => context.pushNamed(
+                      RouteNames.savedDocumentDetail,
+                      pathParameters: {
+                        RouteNames.savedDocumentIdParam: item.id,
+                      },
+                      queryParameters: const {'mode': 'view'},
+                    ),
+                    onEdit: () => context.pushNamed(
+                      RouteNames.savedDocumentDetail,
+                      pathParameters: {
+                        RouteNames.savedDocumentIdParam: item.id,
+                      },
+                      queryParameters: const {'mode': 'edit'},
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 8),
@@ -188,10 +216,17 @@ class _DocumentStatePlaceholder extends StatelessWidget {
 }
 
 class _DocumentCard extends StatelessWidget {
-  const _DocumentCard({required this.item, required this.status});
+  const _DocumentCard({
+    required this.item,
+    required this.status,
+    this.onView,
+    this.onEdit,
+  });
 
   final DocumentItem item;
   final (String, Color, Color) status;
+  final VoidCallback? onView;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -264,14 +299,14 @@ class _DocumentCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: onView,
                         child: const Text('查看'),
                       ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: FilledButton(
-                        onPressed: () {},
+                        onPressed: onEdit,
                         child: const Text('编辑'),
                       ),
                     ),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/core/utils/app_share.dart';
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
@@ -38,7 +39,11 @@ class LegalArticlePage extends ConsumerWidget {
     return AppPageScaffold(
       title: searchItem?.articleCode ?? '文章详情',
       actions: [
-        IconButton(onPressed: () {}, icon: const Icon(Icons.bookmark_border)),
+        IconButton(
+          onPressed: () =>
+              showFeatureInProgressSnackBar(context, featureLabel: '收藏'),
+          icon: const Icon(Icons.bookmark_border),
+        ),
         Builder(
           builder: (buttonContext) => IconButton(
             onPressed: () => shareArticle(buttonContext),
@@ -46,7 +51,11 @@ class LegalArticlePage extends ConsumerWidget {
             icon: const Icon(Icons.share_outlined),
           ),
         ),
-        IconButton(onPressed: () {}, icon: const Icon(Icons.more_vert_rounded)),
+        IconButton(
+          onPressed: () =>
+              showFeatureInProgressSnackBar(context, featureLabel: '更多操作'),
+          icon: const Icon(Icons.more_vert_rounded),
+        ),
       ],
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -120,7 +129,10 @@ class _ArticleMain extends StatelessWidget {
               SizedBox(
                 width: 72,
                 child: FilledButton(
-                  onPressed: () {},
+                  onPressed: () => showFeatureInProgressSnackBar(
+                    context,
+                    featureLabel: '关注',
+                  ),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -266,8 +278,9 @@ class _CitationTile extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       leadingIcon: Icons.gavel_outlined,
+      trailing: const SizedBox.shrink(),
       showBottomDivider: showBottomDivider,
-      onTap: () {},
+      onTap: null,
     );
   }
 }

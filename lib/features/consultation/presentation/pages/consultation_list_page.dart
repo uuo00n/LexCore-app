@@ -7,8 +7,7 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/consultation/application/consultation_controller.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class ConsultationListPage extends ConsumerStatefulWidget {
   const ConsultationListPage({super.key});
@@ -43,71 +42,56 @@ class _ConsultationListPageState extends ConsumerState<ConsultationListPage> {
       _searchController.text.trim(),
     );
 
-    return Scaffold(
-      body: AppMobileCanvas(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 20),
-                beginOffset: const Offset(0, -0.02),
-                child: AppShellTopBar(
-                  title: '法律咨询',
-                  leading: IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                  ),
-                  actions: [
-                    IconButton(
-                      key: const ValueKey('consultation_new_thread_button'),
-                      onPressed: _createConversation,
-                      icon: const Icon(Icons.add_comment_outlined),
-                      tooltip: '新建对话',
-                    ),
-                  ],
-                ),
-              ),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 60),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: TextField(
-                    key: const ValueKey('consultation_list_search_field'),
-                    controller: _searchController,
-                    decoration: const InputDecoration(
-                      hintText: '搜索咨询记录或法律话题...',
-                      prefixIcon: Icon(Icons.search_rounded),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: filteredSessions.isEmpty
-                    ? _EmptyState(query: _searchController.text.trim())
-                    : ListView.builder(
-                        padding: const EdgeInsets.fromLTRB(10, 4, 10, 16),
-                        itemCount: filteredSessions.length,
-                        itemBuilder: (context, index) {
-                          final session = filteredSessions[index];
-                          return AppFadeSlideIn(
-                            delay: Duration(milliseconds: 90 + (index * 30)),
-                            child: _SessionTile(
-                              key: ValueKey(
-                                'consultation_session_item_${session.id}',
-                              ),
-                              session: session,
-                              showBottomDivider:
-                                  index != filteredSessions.length - 1,
-                              onTap: () => _openSession(session),
-                            ),
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
+    return AppPageScaffold(
+      title: '法律咨询',
+      actions: [
+        IconButton(
+          key: const ValueKey('consultation_new_thread_button'),
+          onPressed: _createConversation,
+          icon: const Icon(Icons.add_comment_outlined),
+          tooltip: '新建对话',
         ),
+      ],
+      body: Column(
+        children: [
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 60),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: TextField(
+                key: const ValueKey('consultation_list_search_field'),
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  hintText: '搜索咨询记录或法律话题...',
+                  prefixIcon: Icon(Icons.search_rounded),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: filteredSessions.isEmpty
+                ? _EmptyState(query: _searchController.text.trim())
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    itemCount: filteredSessions.length,
+                    itemBuilder: (context, index) {
+                      final session = filteredSessions[index];
+                      return AppFadeSlideIn(
+                        delay: Duration(milliseconds: 90 + (index * 30)),
+                        child: _SessionTile(
+                          key: ValueKey(
+                            'consultation_session_item_${session.id}',
+                          ),
+                          session: session,
+                          showBottomDivider:
+                              index != filteredSessions.length - 1,
+                          onTap: () => _openSession(session),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

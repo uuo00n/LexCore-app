@@ -5,8 +5,8 @@ import 'package:lexcore/app/adaptive/app_adaptive_frame.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_searchable_dropdown_field.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class DocumentGeneratePage extends StatefulWidget {
   const DocumentGeneratePage({super.key});
@@ -34,92 +34,51 @@ class _DocumentGeneratePageState extends State<DocumentGeneratePage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
+    return AppPageScaffold(
+      title: 'LexCore 文书生成',
       backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _GenerateTopBar(
-              onBackTap: () {
-                if (Navigator.of(context).canPop()) {
-                  context.pop();
-                }
-              },
-            ),
-            Expanded(
-              child: AppAdaptiveFrame(
-                maxContentWidth: 1120,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final viewport = AppBreakpoints.fromWidth(
-                      constraints.maxWidth,
-                    );
-                    final splitLayout =
-                        viewport == AppViewportSize.expanded ||
-                        viewport == AppViewportSize.ultra;
+      maxContentWidth: 1120,
+      body: AppAdaptiveFrame(
+        maxContentWidth: 1120,
+        padding: EdgeInsets.zero,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+            final splitLayout =
+                viewport == AppViewportSize.expanded ||
+                viewport == AppViewportSize.ultra;
 
-                    if (!splitLayout) {
-                      return _GenerateForm(
-                        titleController: _titleController,
-                        claimController: _claimController,
-                        factController: _factController,
-                        documentType: _documentType,
-                        onTypeChanged: (value) => setState(
-                          () => _documentType = value ?? _documentType,
-                        ),
-                        showTemplateSection: true,
-                      );
-                    }
+            if (!splitLayout) {
+              return _GenerateForm(
+                titleController: _titleController,
+                claimController: _claimController,
+                factController: _factController,
+                documentType: _documentType,
+                contentPadding: const EdgeInsets.fromLTRB(0, 10, 0, 28),
+                onTypeChanged: (value) =>
+                    setState(() => _documentType = value ?? _documentType),
+                showTemplateSection: true,
+              );
+            }
 
-                    return AppAdaptiveSplitView(
-                      splitMinWidth: 980,
-                      secondaryMaxWidth: 360,
-                      primary: _GenerateForm(
-                        titleController: _titleController,
-                        claimController: _claimController,
-                        factController: _factController,
-                        documentType: _documentType,
-                        onTypeChanged: (value) => setState(
-                          () => _documentType = value ?? _documentType,
-                        ),
-                        showTemplateSection: false,
-                      ),
-                      secondary: const _GenerateSidePanel(),
-                    );
-                  },
-                ),
+            return AppAdaptiveSplitView(
+              splitMinWidth: 980,
+              secondaryMaxWidth: 360,
+              primary: _GenerateForm(
+                titleController: _titleController,
+                claimController: _claimController,
+                factController: _factController,
+                documentType: _documentType,
+                contentPadding: const EdgeInsets.fromLTRB(0, 10, 12, 28),
+                onTypeChanged: (value) =>
+                    setState(() => _documentType = value ?? _documentType),
+                showTemplateSection: false,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GenerateTopBar extends StatelessWidget {
-  const _GenerateTopBar({required this.onBackTap});
-
-  final VoidCallback onBackTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
-          ),
-        ),
-      ),
-      child: AppShellTopBar(
-        title: 'LexCore 文书生成',
-        leading: IconButton(
-          onPressed: onBackTap,
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: '返回',
+              secondary: const _GenerateSidePanel(
+                contentPadding: EdgeInsets.fromLTRB(12, 10, 0, 28),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -132,6 +91,7 @@ class _GenerateForm extends StatelessWidget {
     required this.claimController,
     required this.factController,
     required this.documentType,
+    required this.contentPadding,
     required this.onTypeChanged,
     required this.showTemplateSection,
   });
@@ -140,6 +100,7 @@ class _GenerateForm extends StatelessWidget {
   final TextEditingController claimController;
   final TextEditingController factController;
   final String documentType;
+  final EdgeInsets contentPadding;
   final ValueChanged<String?> onTypeChanged;
   final bool showTemplateSection;
 
@@ -148,7 +109,7 @@ class _GenerateForm extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+      padding: contentPadding,
       children: [
         Text(
           '创建新文档',
@@ -220,12 +181,14 @@ class _GenerateForm extends StatelessWidget {
 }
 
 class _GenerateSidePanel extends StatelessWidget {
-  const _GenerateSidePanel();
+  const _GenerateSidePanel({required this.contentPadding});
+
+  final EdgeInsets contentPadding;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 18, 16, 28),
+      padding: contentPadding,
       children: const [
         _TemplateSection(),
         SizedBox(height: 16),

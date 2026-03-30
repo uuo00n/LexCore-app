@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
@@ -8,12 +9,12 @@ import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/core/export/app_export_service.dart';
 import 'package:lexcore/core/utils/app_share.dart';
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/document/application/document_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_export_sheet.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class DocumentPreviewPage extends ConsumerWidget {
   const DocumentPreviewPage({super.key});
@@ -102,87 +103,59 @@ class DocumentPreviewPage extends ConsumerWidget {
             viewport == AppViewportSize.ultra;
         final showBottomActions = viewport == AppViewportSize.compact;
 
-        return Scaffold(
-          body: AppMobileCanvas(
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  AppFadeSlideIn(
-                    delay: const Duration(milliseconds: 20),
-                    beginOffset: const Offset(0, -0.02),
-                    child: AppShellTopBar(
-                      title: '文档预览',
-                      leading: IconButton(
-                        onPressed: () => Navigator.of(context).maybePop(),
-                        icon: const Icon(Icons.arrow_back_rounded),
-                        tooltip: '返回',
-                      ),
-                      actions: [
-                        Builder(
-                          builder: (buttonContext) => IconButton(
-                            onPressed: () => shareDraft(buttonContext),
-                            icon: const Icon(Icons.share_outlined),
-                            tooltip: '分享',
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.more_vert_rounded),
-                          tooltip: '更多操作',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        16,
-                        6,
-                        16,
-                        showBottomActions ? 110 : 16,
-                      ),
-                      child: splitLayout
-                          ? AppAdaptiveSplitView(
-                              splitMinWidth: 980,
-                              secondaryMaxWidth: 360,
-                              primary: _DocumentBody(
-                                title: draft.title,
-                                markdown: draft.markdown,
-                              ),
-                              secondary: _DocumentSidePanel(
-                                title: draft.title,
-                                onExport: shareDraft,
-                                onSave: saveDraft,
-                                saving: documentState.saving,
-                              ),
-                            )
-                          : _DocumentBody(
-                              title: draft.title,
-                              markdown: draft.markdown,
-                            ),
-                    ),
-                  ),
-                ],
+        return AppPageScaffold(
+          title: '文档预览',
+          actions: [
+            Builder(
+              builder: (buttonContext) => IconButton(
+                onPressed: () => shareDraft(buttonContext),
+                icon: const Icon(Icons.share_outlined),
+                tooltip: '分享',
               ),
             ),
+            IconButton(
+              onPressed: () =>
+                  showFeatureInProgressSnackBar(context, featureLabel: '更多操作'),
+              icon: const Icon(Icons.more_vert_rounded),
+              tooltip: '更多操作',
+            ),
+          ],
+          bodyPadding: EdgeInsets.fromLTRB(
+            16,
+            6,
+            16,
+            showBottomActions ? 110 : 16,
           ),
+          body: splitLayout
+              ? AppAdaptiveSplitView(
+                  splitMinWidth: 980,
+                  secondaryMaxWidth: 360,
+                  primary: _DocumentBody(
+                    title: draft.title,
+                    markdown: draft.markdown,
+                  ),
+                  secondary: _DocumentSidePanel(
+                    title: draft.title,
+                    onExport: shareDraft,
+                    onSave: saveDraft,
+                    saving: documentState.saving,
+                  ),
+                )
+              : _DocumentBody(title: draft.title, markdown: draft.markdown),
           bottomNavigationBar: showBottomActions
-              ? AppMobileCanvas(
-                  child: Container(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      border: Border(
-                        top: BorderSide(color: Theme.of(context).dividerColor),
-                      ),
+              ? Container(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    border: Border(
+                      top: BorderSide(color: Theme.of(context).dividerColor),
                     ),
-                    child: _ActionButtons(
-                      isCompact: true,
-                      onExport: shareDraft,
-                      onSave: saveDraft,
-                      saving: documentState.saving,
-                    ),
+                  ),
+                  child: _ActionButtons(
+                    isCompact: true,
+                    onExport: shareDraft,
+                    onSave: saveDraft,
+                    saving: documentState.saving,
                   ),
                 )
               : null,
@@ -200,6 +173,46 @@ class _DocumentBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final styleSheet = MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+      h1: textTheme.titleLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.3,
+      ),
+      h2: textTheme.titleMedium?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.35,
+      ),
+      h3: textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w700,
+        height: 1.4,
+      ),
+      p: textTheme.bodyMedium?.copyWith(height: 1.75),
+      listBullet: textTheme.bodyMedium?.copyWith(height: 1.7),
+      blockquote: textTheme.bodyMedium?.copyWith(
+        color: colorScheme.onSurfaceVariant,
+        height: 1.75,
+      ),
+      code: textTheme.bodySmall?.copyWith(
+        color: colorScheme.primary,
+        backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
+      ),
+      blockquoteDecoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(10),
+        border: Border(left: BorderSide(color: colorScheme.primary, width: 3)),
+      ),
+      blockquotePadding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 10,
+      ),
+      listIndent: 22,
+      horizontalRuleDecoration: BoxDecoration(
+        border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+      ),
+    );
+
     return ListView(
       children: [
         AppFadeSlideIn(
@@ -274,13 +287,61 @@ class _DocumentBody extends StatelessWidget {
                 Text(title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 4),
                 Text(
-                  '由 LexCore 智能引擎生成 · 2024年5月20日',
+                  '由 LexCore 智能引擎生成 · ${DateFormat('yyyy年M月d日').format(DateTime.now())}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
-                MarkdownBody(data: markdown),
+                MarkdownBody(
+                  data: markdown,
+                  styleSheet: styleSheet,
+                  sizedImageBuilder: (config) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: Image.network(
+                            config.uri.toString(),
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 16,
+                                ),
+                                color: colorScheme.surfaceContainerHigh,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.broken_image_outlined,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        config.alt?.trim().isNotEmpty == true
+                                            ? config.alt!
+                                            : '图片加载失败',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -372,7 +433,8 @@ class _ActionButtons extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () =>
+                  showFeatureInProgressSnackBar(context, featureLabel: '编辑'),
               icon: const Icon(Icons.edit_outlined),
               label: const Text('编辑'),
               style: OutlinedButton.styleFrom(
@@ -419,7 +481,8 @@ class _ActionButtons extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: () {},
+          onPressed: () =>
+              showFeatureInProgressSnackBar(context, featureLabel: '内容编辑'),
           icon: const Icon(Icons.edit_outlined),
           label: const Text('编辑内容'),
         ),

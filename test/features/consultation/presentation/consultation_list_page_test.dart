@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
@@ -49,6 +50,10 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 800));
 
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      isNull,
+    );
     expect(find.text('房产买卖纠纷咨询'), findsOneWidget);
     expect(find.text('初创企业股权架构'), findsOneWidget);
 
@@ -78,6 +83,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(AppShellTopBar), findsOneWidget);
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    );
     expect(find.text('LexCore 法律助手'), findsOneWidget);
     expect(find.text('请输入您的问题...'), findsOneWidget);
   });
@@ -98,6 +107,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    );
     expect(find.text('新建咨询会话'), findsOneWidget);
     expect(
       find.text('您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。'),

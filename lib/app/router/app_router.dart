@@ -10,6 +10,7 @@ import 'package:lexcore/features/analysis/presentation/pages/analysis_result_pag
 import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
+import 'package:lexcore/features/consultation/presentation/pages/consultation_opinion_detail_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_stitch_detail_page.dart';
 import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
@@ -17,9 +18,9 @@ import 'package:lexcore/features/cases/presentation/pages/case_upload_page.dart'
 import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
+import 'package:lexcore/features/document/presentation/pages/saved_document_detail_page.dart';
 import 'package:lexcore/features/document/presentation/pages/saved_documents_page.dart';
 import 'package:lexcore/features/history/presentation/pages/history_page.dart';
-import 'package:lexcore/features/history/presentation/pages/history_search_page.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/privacy_policy_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/terms_of_service_page.dart';
@@ -27,6 +28,7 @@ import 'package:lexcore/features/profile/presentation/pages/profile_billing_page
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_personal_info_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_security_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_manage_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
@@ -160,17 +162,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: RouteNames.historySearchPath,
-        name: RouteNames.historySearch,
-        parentNavigatorKey: _rootNavigatorKey,
-        pageBuilder: (context, state) => AppPageTransitions.build(
-          context: context,
-          state: state,
-          kind: AppRouteTransitionKind.detail,
-          child: const HistorySearchPage(),
-        ),
-      ),
-      GoRoute(
         path: RouteNames.consultationPath,
         name: RouteNames.consultation,
         parentNavigatorKey: _rootNavigatorKey,
@@ -207,6 +198,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: ConsultationStitchDetailPage(
+            summary: state.extra is String ? state.extra! as String : null,
+          ),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.consultationOpinionDetailPath,
+        name: RouteNames.consultationOpinionDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: ConsultationOpinionDetailPage(
             summary: state.extra is String ? state.extra! as String : null,
           ),
         ),
@@ -304,6 +308,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: RouteNames.savedDocumentDetailPath,
+        name: RouteNames.savedDocumentDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: SavedDocumentDetailPage(
+            documentId:
+                state.pathParameters[RouteNames.savedDocumentIdParam] ?? '',
+            startInEditMode: state.uri.queryParameters['mode'] == 'edit',
+          ),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.profilePersonalInfoPath,
         name: RouteNames.profilePersonalInfo,
         parentNavigatorKey: _rootNavigatorKey,
@@ -334,6 +353,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: const ProfileBillingPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profileSubscriptionManagePath,
+        name: RouteNames.profileSubscriptionManage,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileSubscriptionManagePage(),
         ),
       ),
       GoRoute(

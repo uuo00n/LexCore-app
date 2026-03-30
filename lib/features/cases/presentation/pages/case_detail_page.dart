@@ -6,8 +6,7 @@ import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
 import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/cases/presentation/widgets/case_analysis_preview_card.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 enum CaseDetailStatus { inProgress, closed, waiting }
 
@@ -125,86 +124,63 @@ class CaseDetailPage extends StatelessWidget {
       }
     }
 
-    return Scaffold(
+    return AppPageScaffold(
+      title: '案件详情',
       backgroundColor: colorScheme.surfaceContainerLowest,
-      body: AppMobileCanvas(
-        maxContentWidth: 520,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 20),
-                beginOffset: const Offset(0, -0.02),
-                child: AppShellTopBar(
-                  title: '案件详情',
-                  leading: IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    tooltip: '返回',
-                  ),
-                  actions: [
-                    Builder(
-                      builder: (buttonContext) => IconButton(
-                        onPressed: () => shareCase(buttonContext),
-                        icon: const Icon(Icons.share_outlined),
-                        tooltip: '分享',
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.more_vert_rounded),
-                      tooltip: '更多操作',
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                  children: [
-                    AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 40),
-                      child: _OverviewSection(detail: detail),
-                    ),
-                    const SizedBox(height: 18),
-                    AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 80),
-                      child: CaseAnalysisPreviewCard(
-                        onPressed: () =>
-                            context.push(RouteNames.analysisDetailPath),
-                      ),
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(0, 18, 0, 20),
-                      child: _SectionDivider(),
-                    ),
-                    AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 120),
-                      child: _ProgressSection(detail: detail),
-                    ),
-                    const _SectionBreak(),
-                    AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 160),
-                      child: _PartySection(detail: detail),
-                    ),
-                    const _SectionBreak(),
-                    AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 200),
-                      child: _SummarySection(summary: detail.summary),
-                    ),
-                    const _SectionBreak(),
-                    AppFadeSlideIn(
-                      delay: const Duration(milliseconds: 240),
-                      child: _DocumentsSection(documents: detail.documents),
-                    ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
-              ),
-            ],
+      maxContentWidth: 520,
+      actions: [
+        Builder(
+          builder: (buttonContext) => IconButton(
+            onPressed: () => shareCase(buttonContext),
+            icon: const Icon(Icons.share_outlined),
+            tooltip: '分享',
           ),
         ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.more_vert_rounded),
+          tooltip: '更多操作',
+        ),
+      ],
+      body: ListView(
+        padding: const EdgeInsets.only(bottom: 24),
+        children: [
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 40),
+            child: _OverviewSection(detail: detail),
+          ),
+          const SizedBox(height: 18),
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 80),
+            child: CaseAnalysisPreviewCard(
+              onPressed: () => context.push(RouteNames.analysisDetailPath),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(0, 18, 0, 20),
+            child: _SectionDivider(),
+          ),
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 120),
+            child: _ProgressSection(detail: detail),
+          ),
+          const _SectionBreak(),
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 160),
+            child: _PartySection(detail: detail),
+          ),
+          const _SectionBreak(),
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 200),
+            child: _SummarySection(summary: detail.summary),
+          ),
+          const _SectionBreak(),
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 240),
+            child: _DocumentsSection(documents: detail.documents),
+          ),
+          const SizedBox(height: 20),
+        ],
       ),
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+import 'package:lexcore/shared/widgets/app_sub_page_header.dart';
 
 class DashboardSegmentedTabs extends StatelessWidget {
   const DashboardSegmentedTabs({
@@ -43,19 +43,15 @@ class DashboardModuleTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppShellTopBar(
+    return AppSubPageHeader(
       title: title,
-      leading: IconButton(
-        onPressed: () {
-          if (context.canPop()) {
-            context.pop();
-            return;
-          }
-          context.go(RouteNames.homePath);
-        },
-        icon: const Icon(Icons.arrow_back_rounded),
-        tooltip: '返回',
-      ),
+      onBackPressed: () {
+        if (context.canPop()) {
+          context.pop();
+          return;
+        }
+        context.go(RouteNames.homePath);
+      },
     );
   }
 }

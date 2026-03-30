@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class ProfileSecurityPage extends StatelessWidget {
@@ -17,19 +18,22 @@ class ProfileSecurityPage extends StatelessWidget {
             icon: Icons.lock_outline,
             title: '修改登录密码',
             subtitle: '建议定期更新密码以保护账号安全',
-            onTap: () {},
+            onTap: () =>
+                showFeatureInProgressSnackBar(context, featureLabel: '修改密码'),
           ),
           _ActionRow(
             icon: Icons.phonelink_lock_outlined,
             title: '双重验证',
             subtitle: '开启后登录时需要额外验证码',
-            onTap: () {},
+            onTap: () =>
+                showFeatureInProgressSnackBar(context, featureLabel: '双重验证'),
           ),
           _ActionRow(
             icon: Icons.devices_outlined,
             title: '登录设备管理',
             subtitle: '查看并管理已登录设备',
-            onTap: () {},
+            onTap: () =>
+                showFeatureInProgressSnackBar(context, featureLabel: '登录设备管理'),
           ),
           const SizedBox(height: 12),
           Container(

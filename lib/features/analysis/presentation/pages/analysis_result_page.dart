@@ -9,10 +9,9 @@ import 'package:lexcore/core/export/app_export_service.dart';
 import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/analysis/application/analysis_providers.dart';
 import 'package:lexcore/features/analysis/domain/entities/analysis_summary.dart';
-import 'package:lexcore/features/analysis/presentation/widgets/analysis_page_header.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_export_sheet.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class AnalysisResultPage extends ConsumerWidget {
   const AnalysisResultPage({super.key});
@@ -65,74 +64,50 @@ class AnalysisResultPage extends ConsumerWidget {
       }
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
-        final splitLayout =
-            viewport == AppViewportSize.expanded ||
-            viewport == AppViewportSize.ultra;
-
-        return Scaffold(
-          body: AppMobileCanvas(
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  AppFadeSlideIn(
-                    delay: const Duration(milliseconds: 20),
-                    beginOffset: const Offset(0, -0.02),
-                    child: AnalysisPageHeader(
-                      title: '案件分析结果',
-                      subtitle: '智能报告与证据评估',
-                      actions: [
-                        Builder(
-                          builder: (buttonContext) => IconButton(
-                            onPressed: () => shareReport(buttonContext),
-                            icon: const Icon(Icons.share_outlined),
-                            tooltip: '分享',
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.more_vert_rounded),
-                          tooltip: '更多操作',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: splitLayout
-                        ? Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                            child: AppAdaptiveSplitView(
-                              splitMinWidth: 980,
-                              secondaryMaxWidth: 360,
-                              primary: _MainContent(
-                                report: report,
-                                includeRiskSection: false,
-                                summaryGridColumns: 2,
-                              ),
-                              secondary: _SidePanel(
-                                report: report,
-                                onExport: shareReport,
-                              ),
-                            ),
-                          )
-                        : Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                            child: _MainContent(
-                              report: report,
-                              includeRiskSection: true,
-                              summaryGridColumns: 1,
-                            ),
-                          ),
-                  ),
-                ],
-              ),
-            ),
+    return AppPageScaffold(
+      title: '案件分析结果',
+      subtitle: '智能报告与证据评估',
+      actions: [
+        Builder(
+          builder: (buttonContext) => IconButton(
+            onPressed: () => shareReport(buttonContext),
+            icon: const Icon(Icons.share_outlined),
+            tooltip: '分享',
           ),
-        );
-      },
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.more_vert_rounded),
+          tooltip: '更多操作',
+        ),
+      ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+          final splitLayout =
+              viewport == AppViewportSize.expanded ||
+              viewport == AppViewportSize.ultra;
+
+          if (splitLayout) {
+            return AppAdaptiveSplitView(
+              splitMinWidth: 980,
+              secondaryMaxWidth: 360,
+              primary: _MainContent(
+                report: report,
+                includeRiskSection: false,
+                summaryGridColumns: 2,
+              ),
+              secondary: _SidePanel(report: report, onExport: shareReport),
+            );
+          }
+
+          return _MainContent(
+            report: report,
+            includeRiskSection: true,
+            summaryGridColumns: 1,
+          );
+        },
+      ),
     );
   }
 }

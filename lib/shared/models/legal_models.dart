@@ -112,24 +112,28 @@ class DocumentItem {
     required this.name,
     required this.updatedAt,
     required this.type,
+    this.markdown = '',
   });
 
   final String id;
   final String name;
   final DateTime updatedAt;
   final String type;
+  final String markdown;
 
   DocumentItem copyWith({
     String? id,
     String? name,
     DateTime? updatedAt,
     String? type,
+    String? markdown,
   }) {
     return DocumentItem(
       id: id ?? this.id,
       name: name ?? this.name,
       updatedAt: updatedAt ?? this.updatedAt,
       type: type ?? this.type,
+      markdown: markdown ?? this.markdown,
     );
   }
 
@@ -139,19 +143,43 @@ class DocumentItem {
       'name': name,
       'updatedAt': updatedAt.toIso8601String(),
       'type': type,
+      'markdown': markdown,
     };
   }
 
   factory DocumentItem.fromJson(Map<String, dynamic> json) {
+    final name = json['name'] as String? ?? '';
+    final type = json['type'] as String? ?? '';
+    final normalizedMarkdown = (json['markdown'] as String? ?? '').trim();
+
     return DocumentItem(
       id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? '',
+      name: name,
       updatedAt:
           DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      type: json['type'] as String? ?? '',
+      type: type,
+      markdown: normalizedMarkdown.isEmpty
+          ? _legacyDocumentMarkdownFallback(name: name, type: type)
+          : normalizedMarkdown,
     );
   }
+}
+
+String _legacyDocumentMarkdownFallback({
+  required String name,
+  required String type,
+}) {
+  final resolvedName = name.trim().isEmpty ? '未命名文档' : name.trim();
+  final resolvedType = type.trim().isEmpty ? '法律文书' : type.trim();
+  return [
+    '# $resolvedName',
+    '',
+    '> 文档类型：$resolvedType',
+    '',
+    '该文档来自旧版本保存记录，原始正文未完整保留。',
+    '请进入编辑模式补充内容后重新保存。',
+  ].join('\n');
 }
 
 class LawSearchItem {

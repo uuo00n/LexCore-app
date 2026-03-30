@@ -28,6 +28,7 @@ void main() {
 
     expect(result, DocumentSaveResult.created);
     expect(documents.first.name, draft.title);
+    expect(documents.first.markdown, draft.markdown);
     expect(documents.where((item) => item.name == draft.title), hasLength(1));
   });
 
@@ -45,6 +46,32 @@ void main() {
       expect(secondResult, DocumentSaveResult.updated);
       expect(documents.where((item) => item.name == draft.title), hasLength(1));
       expect(documents.first.type, '仲裁文书');
+      expect(documents.first.markdown, draft.markdown);
+    },
+  );
+
+  test(
+    'loadSaved provides markdown fallback for legacy stored record',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'saved_documents_v1': '''
+[
+  {
+    "id": "legacy_1",
+    "name": "旧版本文档",
+    "updatedAt": "2026-03-14T08:00:00.000",
+    "type": "审查意见"
+  }
+]
+''',
+      });
+
+      final repository = DocumentRepository(const MockLegalRepository());
+      final documents = await repository.loadSaved();
+
+      expect(documents, hasLength(1));
+      expect(documents.first.name, '旧版本文档');
+      expect(documents.first.markdown, contains('旧版本文档'));
     },
   );
 }

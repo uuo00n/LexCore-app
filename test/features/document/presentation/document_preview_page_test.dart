@@ -13,6 +13,7 @@ import 'package:lexcore/features/document/data/repositories/document_repository.
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/services/mock/mock_legal_repository.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 class _FakeExportService implements AppExportService {
@@ -74,6 +75,7 @@ void main() {
     Size size = const Size(390, 844),
     AppExportService? exportService,
     DocumentRepository? documentRepository,
+    double textScale = 1.0,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() async {
@@ -88,7 +90,19 @@ void main() {
           if (documentRepository != null)
             documentRepositoryProvider.overrideWithValue(documentRepository),
         ],
-        child: const MaterialApp(home: DocumentPreviewPage()),
+        child: MaterialApp(
+          home: Builder(
+            builder: (context) {
+              final mediaQuery = MediaQuery.of(context);
+              return MediaQuery(
+                data: mediaQuery.copyWith(
+                  textScaler: TextScaler.linear(textScale),
+                ),
+                child: const DocumentPreviewPage(),
+              );
+            },
+          ),
+        ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 900));
@@ -113,6 +127,10 @@ void main() {
     await pumpDocumentPreviewPage(tester);
 
     expect(find.byType(AppShellTopBar), findsOneWidget);
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      const EdgeInsets.fromLTRB(16, 6, 16, 110),
+    );
     expect(find.text('文档预览'), findsOneWidget);
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
   });
@@ -202,5 +220,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('保存失败，请稍后重试'), findsOneWidget);
+  });
+
+  testWidgets('document preview keeps layout stable with larger text scale', (
+    tester,
+  ) async {
+    await pumpDocumentPreviewPage(tester, textScale: 1.35);
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('文档预览'), findsOneWidget);
+    expect(find.text('劳动仲裁申请书（草稿）'), findsOneWidget);
   });
 }

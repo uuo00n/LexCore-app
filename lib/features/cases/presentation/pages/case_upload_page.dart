@@ -5,9 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_searchable_dropdown_field.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 typedef CaseUploadFilePicker = Future<List<CaseUploadAttachment>> Function();
 
@@ -67,194 +66,158 @@ class _CaseUploadPageState extends State<CaseUploadPage> {
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
 
-    return Scaffold(
+    return AppPageScaffold(
+      title: '上传案件',
       backgroundColor: colorScheme.surfaceContainerLowest,
-      body: AppMobileCanvas(
-        maxContentWidth: 520,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 20),
-                beginOffset: const Offset(0, -0.02),
-                child: AppShellTopBar(
-                  title: '上传案件',
-                  leading: IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.arrow_back_rounded),
-                    tooltip: '返回',
-                  ),
-                ),
+      maxContentWidth: 520,
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 60),
+              beginOffset: const Offset(0, 0.02),
+              child: _SectionLabel(
+                icon: Icons.info_outline_rounded,
+                title: '基本信息',
               ),
-              Expanded(
-                child: Form(
-                  key: _formKey,
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: [
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 60),
-                        beginOffset: const Offset(0, 0.02),
-                        child: _SectionLabel(
-                          icon: Icons.info_outline_rounded,
-                          title: '基本信息',
-                        ),
+            ),
+            const SizedBox(height: 12),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 90),
+              beginOffset: const Offset(0, 0.02),
+              child: TextFormField(
+                key: const ValueKey<String>('case_upload_title_field'),
+                controller: _titleController,
+                textInputAction: TextInputAction.next,
+                decoration: _fieldDecoration(
+                  context,
+                  label: '案件名称',
+                  helperText: '请输入案件名称',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '请输入案件名称';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 120),
+              beginOffset: const Offset(0, 0.02),
+              child: AppSearchableDropdownField(
+                key: const ValueKey<String>('case_upload_cause_field'),
+                label: '案由',
+                value: _selectedCause,
+                options: _causeOptions,
+                helperText: '请选择案由',
+                errorText: _submitted && _selectedCause == null
+                    ? '请选择案由'
+                    : null,
+                onChanged: (selection) {
+                  if (selection == null) {
+                    return;
+                  }
+                  setState(() {
+                    _selectedCause = selection;
+                  });
+                },
+              ),
+            ),
+            const SizedBox(height: 14),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 150),
+              beginOffset: const Offset(0, 0.02),
+              child: TextFormField(
+                key: const ValueKey<String>('case_upload_description_field'),
+                controller: _descriptionController,
+                textInputAction: TextInputAction.newline,
+                minLines: 5,
+                maxLines: 5,
+                decoration: _fieldDecoration(
+                  context,
+                  label: '案件描述',
+                  helperText: '请简要描述案件经过、争议焦点等关键内容',
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return '请输入案件描述';
+                  }
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(height: 28),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 190),
+              beginOffset: const Offset(0, 0.02),
+              child: _SectionLabel(
+                icon: Icons.description_outlined,
+                title: '案件文档',
+              ),
+            ),
+            const SizedBox(height: 12),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 220),
+              beginOffset: const Offset(0, 0.02),
+              child: _UploadDropzone(
+                isLoading: _isPickingFiles,
+                selectedCount: _attachments.length,
+                onTap: _pickFiles,
+              ),
+            ),
+            if (_attachments.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              AppFadeSlideIn(
+                delay: const Duration(milliseconds: 250),
+                beginOffset: const Offset(0, 0.02),
+                child: Column(
+                  children: [
+                    for (
+                      var index = 0;
+                      index < _attachments.length;
+                      index++
+                    ) ...[
+                      _AttachmentRow(
+                        key: ValueKey<String>('case_upload_file_row_$index'),
+                        file: _attachments[index],
+                        onRemove: () => _removeAttachment(_attachments[index]),
                       ),
-                      const SizedBox(height: 12),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 90),
-                        beginOffset: const Offset(0, 0.02),
-                        child: TextFormField(
-                          key: const ValueKey<String>(
-                            'case_upload_title_field',
-                          ),
-                          controller: _titleController,
-                          textInputAction: TextInputAction.next,
-                          decoration: _fieldDecoration(
-                            context,
-                            label: '案件名称',
-                            helperText: '请输入案件名称',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return '请输入案件名称';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 120),
-                        beginOffset: const Offset(0, 0.02),
-                        child: AppSearchableDropdownField(
-                          key: const ValueKey<String>(
-                            'case_upload_cause_field',
-                          ),
-                          label: '案由',
-                          value: _selectedCause,
-                          options: _causeOptions,
-                          helperText: '请选择案由',
-                          errorText: _submitted && _selectedCause == null
-                              ? '请选择案由'
-                              : null,
-                          onChanged: (selection) {
-                            if (selection == null) {
-                              return;
-                            }
-                            setState(() {
-                              _selectedCause = selection;
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 150),
-                        beginOffset: const Offset(0, 0.02),
-                        child: TextFormField(
-                          key: const ValueKey<String>(
-                            'case_upload_description_field',
-                          ),
-                          controller: _descriptionController,
-                          textInputAction: TextInputAction.newline,
-                          minLines: 5,
-                          maxLines: 5,
-                          decoration: _fieldDecoration(
-                            context,
-                            label: '案件描述',
-                            helperText: '请简要描述案件经过、争议焦点等关键内容',
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return '请输入案件描述';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 28),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 190),
-                        beginOffset: const Offset(0, 0.02),
-                        child: _SectionLabel(
-                          icon: Icons.description_outlined,
-                          title: '案件文档',
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 220),
-                        beginOffset: const Offset(0, 0.02),
-                        child: _UploadDropzone(
-                          isLoading: _isPickingFiles,
-                          selectedCount: _attachments.length,
-                          onTap: _pickFiles,
-                        ),
-                      ),
-                      if (_attachments.isNotEmpty) ...[
-                        const SizedBox(height: 16),
-                        AppFadeSlideIn(
-                          delay: const Duration(milliseconds: 250),
-                          beginOffset: const Offset(0, 0.02),
-                          child: Column(
-                            children: [
-                              for (
-                                var index = 0;
-                                index < _attachments.length;
-                                index++
-                              ) ...[
-                                _AttachmentRow(
-                                  key: ValueKey<String>(
-                                    'case_upload_file_row_$index',
-                                  ),
-                                  file: _attachments[index],
-                                  onRemove: () =>
-                                      _removeAttachment(_attachments[index]),
-                                ),
-                                if (index != _attachments.length - 1)
-                                  const SizedBox(height: 10),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 104),
+                      if (index != _attachments.length - 1)
+                        const SizedBox(height: 10),
                     ],
-                  ),
+                  ],
                 ),
               ),
             ],
-          ),
+            const SizedBox(height: 104),
+          ],
         ),
       ),
-      bottomNavigationBar: AppMobileCanvas(
-        maxContentWidth: 520,
-        child: SafeArea(
-          top: false,
-          child: Container(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              border: Border(
-                top: BorderSide(color: colorScheme.outlineVariant),
-              ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+          ),
+          child: FilledButton.icon(
+            key: const ValueKey<String>('case_upload_submit_button'),
+            onPressed: _submit,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(56),
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              shape: const StadiumBorder(),
             ),
-            child: FilledButton.icon(
-              key: const ValueKey<String>('case_upload_submit_button'),
-              onPressed: _submit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(56),
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                shape: const StadiumBorder(),
-              ),
-              icon: const Icon(Icons.analytics_outlined),
-              label: const Text(
-                '提交分析',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
+            icon: const Icon(Icons.analytics_outlined),
+            label: const Text(
+              '提交分析',
+              style: TextStyle(fontWeight: FontWeight.w700),
             ),
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:lexcore/features/document/presentation/pages/document_generate_page.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_searchable_dropdown_field.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
@@ -19,11 +20,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder findFormListViewWithUnifiedPadding() {
+  Finder findFormListViewWithPadding(EdgeInsets padding) {
     return find.byWidgetPredicate(
-      (widget) =>
-          widget is ListView &&
-          widget.padding == const EdgeInsets.fromLTRB(16, 18, 16, 28),
+      (widget) => widget is ListView && widget.padding == padding,
       description: 'ListView with unified horizontal spacing',
     );
   }
@@ -39,8 +38,15 @@ void main() {
     await pumpDocumentGeneratePage(tester, size: const Size(390, 844));
 
     expect(find.byType(AppShellTopBar), findsOneWidget);
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      isNull,
+    );
     expect(find.text('LexCore 文书生成'), findsOneWidget);
-    expect(findFormListViewWithUnifiedPadding(), findsOneWidget);
+    expect(
+      findFormListViewWithPadding(const EdgeInsets.fromLTRB(0, 10, 0, 28)),
+      findsOneWidget,
+    );
     expect(find.text('创建新文档'), findsOneWidget);
   });
 
@@ -49,7 +55,14 @@ void main() {
   ) async {
     await pumpDocumentGeneratePage(tester, size: const Size(1280, 900));
 
-    expect(findFormListViewWithUnifiedPadding(), findsNWidgets(2));
+    expect(
+      findFormListViewWithPadding(const EdgeInsets.fromLTRB(0, 10, 12, 28)),
+      findsOneWidget,
+    );
+    expect(
+      findFormListViewWithPadding(const EdgeInsets.fromLTRB(12, 10, 0, 28)),
+      findsOneWidget,
+    );
     expect(find.text('创建新文档'), findsOneWidget);
     expect(find.text('推荐模板'), findsOneWidget);
   });

@@ -39,7 +39,6 @@ class DocumentRepository {
   }
 
   Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
-    final prefs = await SharedPreferences.getInstance();
     final currentDocuments = await loadSaved();
     final now = DateTime.now();
     final resolvedTitle = _resolveTitle(draft.title);
@@ -55,6 +54,7 @@ class DocumentRepository {
         name: resolvedTitle,
         updatedAt: now,
         type: _resolveType(resolvedTitle, fallbackType: existing.type),
+        markdown: _resolveMarkdown(draft.markdown, fallback: existing.markdown),
       );
       result = DocumentSaveResult.updated;
     } else {
@@ -64,22 +64,84 @@ class DocumentRepository {
           name: resolvedTitle,
           updatedAt: now,
           type: _resolveType(resolvedTitle),
+          markdown: _resolveMarkdown(draft.markdown),
         ),
       );
       result = DocumentSaveResult.created;
     }
 
     final sortedDocuments = _sortDocuments(nextDocuments);
-    await prefs.setString(
-      _storageKey,
-      jsonEncode(sortedDocuments.map((item) => item.toJson()).toList()),
-    );
+    await _persistDocuments(sortedDocuments);
     return result;
+  }
+
+  Future<DocumentItem?> loadById(String id) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return null;
+    }
+
+    final documents = await loadSaved();
+    for (final item in documents) {
+      if (item.id == normalizedId) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<DocumentItem?> updateDocument({
+    required String id,
+    required String title,
+    required String markdown,
+  }) async {
+    final normalizedId = id.trim();
+    if (normalizedId.isEmpty) {
+      return null;
+    }
+
+    final documents = await loadSaved();
+    final index = documents.indexWhere((item) => item.id == normalizedId);
+    if (index < 0) {
+      return null;
+    }
+
+    final current = documents[index];
+    final resolvedTitle = _resolveTitle(title);
+    final updated = current.copyWith(
+      name: resolvedTitle,
+      markdown: _resolveMarkdown(markdown, fallback: current.markdown),
+      updatedAt: DateTime.now(),
+      type: _resolveType(resolvedTitle, fallbackType: current.type),
+    );
+
+    final nextDocuments = [...documents]..[index] = updated;
+    final sorted = _sortDocuments(nextDocuments);
+    await _persistDocuments(sorted);
+
+    for (final item in sorted) {
+      if (item.id == normalizedId) {
+        return item;
+      }
+    }
+    return updated;
   }
 
   String _resolveTitle(String title) {
     final normalized = title.trim();
     return normalized.isEmpty ? '未命名文档' : normalized;
+  }
+
+  String _resolveMarkdown(String markdown, {String? fallback}) {
+    final normalized = markdown.trim();
+    if (normalized.isNotEmpty) {
+      return normalized;
+    }
+    final normalizedFallback = fallback?.trim() ?? '';
+    if (normalizedFallback.isNotEmpty) {
+      return normalizedFallback;
+    }
+    return '# 未命名文档\n\n请补充正文内容。';
   }
 
   String _resolveType(String title, {String? fallbackType}) {
@@ -103,5 +165,13 @@ class DocumentRepository {
     final sorted = [...documents];
     sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
     return sorted;
+  }
+
+  Future<void> _persistDocuments(List<DocumentItem> documents) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _storageKey,
+      jsonEncode(documents.map((item) => item.toJson()).toList()),
+    );
   }
 }

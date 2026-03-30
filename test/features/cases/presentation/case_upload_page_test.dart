@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/cases/presentation/pages/case_upload_page.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 void main() {
   Future<void> setPhoneViewport(WidgetTester tester) async {
@@ -51,6 +52,10 @@ void main() {
     await pumpCaseUploadPage(tester);
 
     expect(find.text('上传案件'), findsOneWidget);
+    expect(
+      tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
+      isNull,
+    );
     expect(find.text('基本信息'), findsOneWidget);
     expect(find.text('案件文档'), findsOneWidget);
     expect(

@@ -56,4 +56,13 @@ void main() {
     expect(arguments['text'], contains('智能摘要'));
     expect(arguments['text'], contains('用人单位安排加班的，应当依法支付加班费。'));
   });
+
+  testWidgets('citations are displayed without jump affordance', (
+    tester,
+  ) async {
+    await pumpLegalArticlePage(tester);
+
+    expect(find.text('法律引用与关联'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+  });
 }

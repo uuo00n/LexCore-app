@@ -24,6 +24,10 @@ void main() {
     expect(find.byType(AppListTileItem), findsWidgets);
     expect(find.text('工资拖欠咨询会话'), findsOneWidget);
     expect(find.textContaining('当前筛选'), findsNothing);
-    expect(find.byIcon(Icons.chevron_right), findsWidgets);
+    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(
+      find.byKey(const ValueKey<String>('history_page_keyword_field')),
+      findsOneWidget,
+    );
   });
 }

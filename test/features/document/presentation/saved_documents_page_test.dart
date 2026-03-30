@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/features/document/presentation/pages/saved_document_detail_page.dart';
 import 'package:lexcore/features/document/presentation/pages/saved_documents_page.dart';
 
 void main() {
@@ -84,5 +87,51 @@ void main() {
 
     expect(find.text('本地保存的合同审查报告'), findsOneWidget);
     expect(find.textContaining('审查意见 · 更新于'), findsOneWidget);
+  });
+
+  testWidgets('view and edit buttons open the same detail page with modes', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: RouteNames.savedDocumentsPath,
+      routes: [
+        GoRoute(
+          path: RouteNames.savedDocumentsPath,
+          builder: (context, state) => const SavedDocumentsPage(),
+        ),
+        GoRoute(
+          path: RouteNames.savedDocumentDetailPath,
+          name: RouteNames.savedDocumentDetail,
+          builder: (context, state) => SavedDocumentDetailPage(
+            documentId:
+                state.pathParameters[RouteNames.savedDocumentIdParam] ?? '',
+            startInEditMode: state.uri.queryParameters['mode'] == 'edit',
+          ),
+        ),
+      ],
+    );
+
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('查看').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(SavedDocumentDetailPage), findsOneWidget);
+    expect(find.text('查看模式'), findsOneWidget);
+
+    router.go(RouteNames.savedDocumentsPath);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('编辑').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(SavedDocumentDetailPage), findsOneWidget);
+    expect(find.text('编辑模式'), findsOneWidget);
   });
 }

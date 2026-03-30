@@ -10,7 +10,7 @@ import 'package:lexcore/features/dashboard/presentation/pages/case_dashboard_cas
 import 'package:lexcore/features/dashboard/presentation/widgets/dashboard_module_navigation.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class CaseDashboardPage extends ConsumerStatefulWidget {
   const CaseDashboardPage({super.key});
@@ -45,41 +45,40 @@ class _CaseDashboardPageState extends ConsumerState<CaseDashboardPage>
   Widget build(BuildContext context) {
     final data = ref.watch(dashboardProvider);
 
-    return Scaffold(
+    return AppPageScaffold(
+      title: 'LexCore 案件分析',
       backgroundColor: Theme.of(context).colorScheme.surface,
-      body: AppMobileCanvas(
-        maxContentWidth: 430,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              const AppFadeSlideIn(
-                delay: Duration(milliseconds: 20),
-                beginOffset: Offset(0, -0.02),
-                child: DashboardModuleTopBar(title: 'LexCore 案件分析'),
-              ),
-              AppFadeSlideIn(
-                delay: const Duration(milliseconds: 40),
-                beginOffset: const Offset(0, -0.02),
-                child: DashboardSegmentedTabs(
-                  selectedIndex: _tabController.index,
-                  onSelectionChanged: (index) {
-                    _tabController.animateTo(index);
-                  },
-                ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _OverviewContent(data: data),
-                    const CaseDashboardCasesContent(),
-                  ],
-                ),
-              ),
-            ],
+      maxContentWidth: 430,
+      onBackPressed: () {
+        if (context.canPop()) {
+          context.pop();
+          return;
+        }
+        context.go(RouteNames.homePath);
+      },
+      bodyPadding: EdgeInsets.zero,
+      body: Column(
+        children: [
+          AppFadeSlideIn(
+            delay: const Duration(milliseconds: 40),
+            beginOffset: const Offset(0, -0.02),
+            child: DashboardSegmentedTabs(
+              selectedIndex: _tabController.index,
+              onSelectionChanged: (index) {
+                _tabController.animateTo(index);
+              },
+            ),
           ),
-        ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _OverviewContent(data: data),
+                const CaseDashboardCasesContent(),
+              ],
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         key: const ValueKey<String>('dashboard_open_case_upload_fab'),
@@ -364,16 +363,10 @@ class _QuickActionsRow extends StatelessWidget {
 }
 
 class _QuickActionCard extends StatelessWidget {
-  const _QuickActionCard({
-    super.key,
-    required this.icon,
-    required this.label,
-    this.onTap,
-  });
+  const _QuickActionCard({required this.icon, required this.label});
 
   final IconData icon;
   final String label;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -383,7 +376,7 @@ class _QuickActionCard extends StatelessWidget {
         color: Theme.of(context).colorScheme.surface.withValues(alpha: 0),
         child: InkWell(
           borderRadius: BorderRadius.circular(24),
-          onTap: onTap,
+          onTap: null,
           child: SizedBox(
             width: 104,
             child: Padding(

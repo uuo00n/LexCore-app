@@ -223,6 +223,9 @@ class MockLegalRepository {
 ## 事实与理由
 申请人自 2024 年 3 月入职，被申请人连续拖欠工资两个月。申请人已多次催告无果。
 
+## 证据示意图
+![证据截图示意](https://picsum.photos/960/520)
+
 ## 证据目录
 - 劳动合同
 - 工资流水
@@ -239,18 +242,40 @@ class MockLegalRepository {
         name: '劳动仲裁申请书-2026-03-06',
         updatedAt: now.subtract(const Duration(days: 1)),
         type: '仲裁文书',
+        markdown: '''
+# 劳动仲裁申请书-2026-03-06
+
+## 仲裁请求
+1. 支付拖欠工资；
+2. 支付经济补偿。
+
+## 证据目录
+- 劳动合同
+- 工资流水
+''',
       ),
       DocumentItem(
         id: 'd2',
         name: '借款合同审查意见',
         updatedAt: now.subtract(const Duration(days: 3)),
         type: '审查意见',
+        markdown: '''
+# 借款合同审查意见
+
+## 审查结论
+合同主要条款完整，但违约责任与担保约定仍需细化。
+''',
       ),
       DocumentItem(
         id: 'd3',
         name: '合同违约律师函',
         updatedAt: now.subtract(const Duration(days: 5)),
         type: '律师函',
+        markdown: '''
+# 合同违约律师函
+
+贵司存在逾期履约行为，请于 7 日内完成整改并承担相应违约责任。
+''',
       ),
     ];
   }

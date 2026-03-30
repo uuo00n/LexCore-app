@@ -5,6 +5,7 @@ import 'package:tdesign_flutter/tdesign_flutter.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
@@ -164,7 +165,10 @@ class _SearchInputAndFilter extends StatelessWidget {
               hintText: '搜索法律、案例、法规...',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: IconButton(
-                onPressed: () {},
+                onPressed: () => showFeatureInProgressSnackBar(
+                  context,
+                  featureLabel: '语音检索',
+                ),
                 icon: const Icon(Icons.mic_none),
               ),
               border: OutlineInputBorder(

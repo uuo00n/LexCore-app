@@ -8,11 +8,11 @@ import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/context_extensions.dart';
 import 'package:lexcore/core/utils/app_share.dart';
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/consultation/application/consultation_controller.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class ConsultationPage extends ConsumerStatefulWidget {
   const ConsultationPage({super.key, required this.threadId, this.threadTitle});
@@ -49,55 +49,46 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
     final thread = ref.watch(consultationThreadProvider(widget.threadId));
     final messages = ref.watch(consultationMessagesProvider(widget.threadId));
 
-    return Scaffold(
-      body: AppMobileCanvas(
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
-              final splitLayout =
-                  viewport == AppViewportSize.expanded ||
-                  viewport == AppViewportSize.ultra;
-              final bubbleMaxWidth = splitLayout ? 420.0 : 300.0;
-
-              return Column(
-                children: [
-                  _ConsultationHeader(
-                    title: thread.title,
-                    splitLayout: splitLayout,
-                    onBack: () => Navigator.of(context).maybePop(),
-                    onMoreTap: _openThreadMenu,
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-                      child: splitLayout
-                          ? AppAdaptiveSplitView(
-                              splitMinWidth: 980,
-                              secondaryMaxWidth: 340,
-                              primary: _ConversationPane(
-                                messages: messages,
-                                bubbleMaxWidth: bubbleMaxWidth,
-                                textController: _textController,
-                                onSend: _sendMessage,
-                              ),
-                              secondary: _ConsultationSidePanel(
-                                messages: messages,
-                              ),
-                            )
-                          : _ConversationPane(
-                              messages: messages,
-                              bubbleMaxWidth: bubbleMaxWidth,
-                              textController: _textController,
-                              onSend: _sendMessage,
-                            ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+    return AppPageScaffold(
+      title: thread.title,
+      bodyPadding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+      actions: [
+        IconButton(
+          key: const ValueKey('consultation_more_button'),
+          onPressed: _openThreadMenu,
+          icon: const Icon(Icons.more_horiz_rounded),
+          tooltip: '更多操作',
         ),
+      ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+          final splitLayout =
+              viewport == AppViewportSize.expanded ||
+              viewport == AppViewportSize.ultra;
+          final bubbleMaxWidth = splitLayout ? 420.0 : 300.0;
+
+          if (splitLayout) {
+            return AppAdaptiveSplitView(
+              splitMinWidth: 980,
+              secondaryMaxWidth: 340,
+              primary: _ConversationPane(
+                messages: messages,
+                bubbleMaxWidth: bubbleMaxWidth,
+                textController: _textController,
+                onSend: _sendMessage,
+              ),
+              secondary: _ConsultationSidePanel(messages: messages),
+            );
+          }
+
+          return _ConversationPane(
+            messages: messages,
+            bubbleMaxWidth: bubbleMaxWidth,
+            textController: _textController,
+            onSend: _sendMessage,
+          );
+        },
       ),
     );
   }
@@ -367,73 +358,6 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
   }
 }
 
-class _ConsultationHeader extends StatelessWidget {
-  const _ConsultationHeader({
-    required this.title,
-    required this.splitLayout,
-    required this.onBack,
-    required this.onMoreTap,
-  });
-
-  final String title;
-  final bool splitLayout;
-  final VoidCallback onBack;
-  final VoidCallback onMoreTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final resolvedSideWidth = AppShellTopBar.resolveSideWidth(
-      actionCount: 1,
-      hasLeading: true,
-    );
-
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: Theme.of(context).dividerColor),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AppShellTopBar(
-            title: title,
-            leading: IconButton(
-              onPressed: onBack,
-              icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: '返回',
-            ),
-            actions: [
-              IconButton(
-                key: const ValueKey('consultation_more_button'),
-                onPressed: onMoreTap,
-                icon: const Icon(Icons.more_vert_rounded),
-                tooltip: '更多操作',
-              ),
-            ],
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              resolvedSideWidth + 8,
-              0,
-              resolvedSideWidth + 8,
-              8,
-            ),
-            child: Text(
-              splitLayout ? '桌面协作模式' : '在线咨询中',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 enum _ThreadMenuAction { rename, share, clear, delete }
 
 class _ConversationPane extends StatelessWidget {
@@ -634,7 +558,13 @@ class _ConversationPane extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
           child: Row(
             children: [
-              IconButton(onPressed: () {}, icon: const Icon(Icons.add)),
+              IconButton(
+                onPressed: () => showFeatureInProgressSnackBar(
+                  context,
+                  featureLabel: '附件上传',
+                ),
+                icon: const Icon(Icons.add),
+              ),
               Expanded(
                 child: TextField(
                   controller: textController,

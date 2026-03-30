@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
-import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
+import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/history/application/history_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -23,10 +23,31 @@ class HistoryPage extends ConsumerStatefulWidget {
 }
 
 class _HistoryPageState extends ConsumerState<HistoryPage> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.text = ref.read(historySearchKeywordProvider);
+    _searchController.addListener(_onKeywordChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_onKeywordChanged)
+      ..dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final filter = ref.watch(historyFilterProvider);
-    final items = ref.watch(historyItemsProvider);
+    final items = ref.watch(historySearchItemsProvider);
+    final allItems = ref.watch(historyAllItemsProvider);
+    final startTime = ref.watch(historySearchStartTimeProvider);
+    final endTime = ref.watch(historySearchEndTimeProvider);
+    final hasActiveRange = startTime != null || endTime != null;
 
     final today = <HistoryItem>[];
     final yesterday = <HistoryItem>[];
@@ -43,13 +64,13 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       }
     }
 
-    final consultationCount = items
+    final consultationCount = allItems
         .where((item) => item.category == HistoryCategory.consultation)
         .length;
-    final analysisCount = items
+    final analysisCount = allItems
         .where((item) => item.category == HistoryCategory.analysis)
         .length;
-    final documentCount = items
+    final documentCount = allItems
         .where((item) => item.category == HistoryCategory.document)
         .length;
 
@@ -66,13 +87,10 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
 
               return Column(
                 children: [
-                  AppFadeSlideIn(
+                  const AppFadeSlideIn(
                     delay: Duration(milliseconds: 20),
                     beginOffset: Offset(0, -0.02),
-                    child: _HistoryTopBar(
-                      onSearchTap: () =>
-                          context.pushNamed(RouteNames.historySearch),
-                    ),
+                    child: _HistoryTopBar(),
                   ),
                   AppFadeSlideIn(
                     delay: const Duration(milliseconds: 60),
@@ -112,7 +130,76 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  AppFadeSlideIn(
+                    delay: const Duration(milliseconds: 90),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                      child: Column(
+                        children: [
+                          TextField(
+                            key: const ValueKey<String>(
+                              'history_page_keyword_field',
+                            ),
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: '搜索历史记录标题...',
+                              prefixIcon: const Icon(Icons.search_rounded),
+                              suffixIcon: _searchController.text.trim().isEmpty
+                                  ? null
+                                  : IconButton(
+                                      onPressed: () {
+                                        _searchController.clear();
+                                        ref
+                                                .read(
+                                                  historySearchKeywordProvider
+                                                      .notifier,
+                                                )
+                                                .state =
+                                            '';
+                                      },
+                                      icon: const Icon(Icons.close_rounded),
+                                      tooltip: '清除关键词',
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  key: const ValueKey<String>(
+                                    'history_page_open_time_dialog_button',
+                                  ),
+                                  onPressed: _openTimeRangeDialog,
+                                  icon: Icon(
+                                    hasActiveRange
+                                        ? Icons.event_available_outlined
+                                        : Icons.calendar_month_outlined,
+                                  ),
+                                  label: Text(
+                                    _rangeLabel(startTime, endTime),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              if (hasActiveRange) ...[
+                                const SizedBox(width: 8),
+                                TextButton(
+                                  key: const ValueKey<String>(
+                                    'history_page_clear_time_range_button',
+                                  ),
+                                  onPressed: _clearTimeRange,
+                                  child: const Text('清空时间'),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -126,7 +213,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 older: older,
                               ),
                               secondary: _HistoryInsights(
-                                total: items.length,
+                                total: allItems.length,
+                                filteredTotal: items.length,
                                 todayCount: today.length,
                                 consultationCount: consultationCount,
                                 analysisCount: analysisCount,
@@ -148,25 +236,91 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
       ),
     );
   }
+
+  void _onKeywordChanged() {
+    ref.read(historySearchKeywordProvider.notifier).state =
+        _searchController.text;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _openTimeRangeDialog() async {
+    if (!mounted) {
+      return;
+    }
+
+    final now = DateTime.now();
+    final startTime = ref.read(historySearchStartTimeProvider);
+    final endTime = ref.read(historySearchEndTimeProvider);
+
+    DateTimeRange? initialDateRange;
+    if (startTime != null && endTime != null) {
+      final startDate = DateTime(
+        startTime.year,
+        startTime.month,
+        startTime.day,
+      );
+      final endDate = DateTime(endTime.year, endTime.month, endTime.day);
+      if (!startDate.isAfter(endDate)) {
+        initialDateRange = DateTimeRange(start: startDate, end: endDate);
+      }
+    }
+
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 10),
+      initialDateRange: initialDateRange,
+      helpText: '时间范围',
+      cancelText: '取消',
+      saveText: '确定',
+    );
+    if (picked == null) {
+      return;
+    }
+
+    ref.read(historySearchStartTimeProvider.notifier).state = DateTime(
+      picked.start.year,
+      picked.start.month,
+      picked.start.day,
+    );
+    ref.read(historySearchEndTimeProvider.notifier).state = DateTime(
+      picked.end.year,
+      picked.end.month,
+      picked.end.day,
+      23,
+      59,
+      59,
+      999,
+    );
+  }
+
+  void _clearTimeRange() {
+    ref.read(historySearchStartTimeProvider.notifier).state = null;
+    ref.read(historySearchEndTimeProvider.notifier).state = null;
+  }
+
+  String _rangeLabel(DateTime? startTime, DateTime? endTime) {
+    if (startTime == null && endTime == null) {
+      return '全部时间';
+    }
+    if (startTime != null && endTime != null) {
+      return '${DateFormat('MM-dd').format(startTime)} 至 ${DateFormat('MM-dd').format(endTime)}';
+    }
+    if (startTime != null) {
+      return '${DateFormat('MM-dd').format(startTime)} 之后';
+    }
+    return '${DateFormat('MM-dd').format(endTime!)} 之前';
+  }
 }
 
 class _HistoryTopBar extends StatelessWidget {
-  const _HistoryTopBar({required this.onSearchTap});
-
-  final VoidCallback onSearchTap;
+  const _HistoryTopBar();
 
   @override
   Widget build(BuildContext context) {
-    return AppShellTopBar(
-      title: '历史记录',
-      actions: [
-        IconButton(
-          key: const ValueKey<String>('history_page_open_search_button'),
-          onPressed: onSearchTap,
-          icon: const Icon(Icons.search),
-        ),
-      ],
-    );
+    return const AppShellTopBar(title: '历史记录');
   }
 }
 
@@ -183,6 +337,33 @@ class _HistoryTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (today.isEmpty && yesterday.isEmpty && older.isEmpty) {
+      return Center(
+        child: AppSurfaceCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.history_toggle_off,
+                size: 30,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 8),
+              Text('暂无匹配记录', style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 4),
+              Text(
+                '可尝试调整关键词、分类或时间范围。',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView(
       children: [
         AppFadeSlideIn(
@@ -203,6 +384,7 @@ class _HistoryTimeline extends StatelessWidget {
 class _HistoryInsights extends StatelessWidget {
   const _HistoryInsights({
     required this.total,
+    required this.filteredTotal,
     required this.todayCount,
     required this.consultationCount,
     required this.analysisCount,
@@ -210,6 +392,7 @@ class _HistoryInsights extends StatelessWidget {
   });
 
   final int total;
+  final int filteredTotal;
   final int todayCount;
   final int consultationCount;
   final int analysisCount;
@@ -228,7 +411,8 @@ class _HistoryInsights extends StatelessWidget {
                 Text('记录概览', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 12),
                 _MetricLine(label: '总记录数', value: '$total'),
-                _MetricLine(label: '今日新增', value: '$todayCount'),
+                _MetricLine(label: '当前筛选', value: '$filteredTotal'),
+                _MetricLine(label: '今日匹配', value: '$todayCount'),
                 _MetricLine(label: '咨询类', value: '$consultationCount'),
                 _MetricLine(label: '检索类', value: '$analysisCount'),
                 _MetricLine(label: '文档类', value: '$documentCount'),
@@ -246,13 +430,19 @@ class _HistoryInsights extends StatelessWidget {
                 Text('建议操作', style: Theme.of(context).textTheme.titleSmall),
                 const SizedBox(height: 10),
                 FilledButton.tonalIcon(
-                  onPressed: () {},
+                  onPressed: () => showFeatureInProgressSnackBar(
+                    context,
+                    featureLabel: '历史摘要导出',
+                  ),
                   icon: const Icon(Icons.file_download_outlined),
                   label: const Text('导出历史摘要'),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => showFeatureInProgressSnackBar(
+                    context,
+                    featureLabel: '旧记录清理',
+                  ),
                   icon: const Icon(Icons.cleaning_services_outlined),
                   label: const Text('清理旧记录'),
                 ),
@@ -387,8 +577,9 @@ class _HistorySection extends StatelessWidget {
               title: item.title,
               subtitle: DateTimeUtils.relativeFromNow(item.time),
               leadingIcon: icon,
+              trailing: const SizedBox.shrink(),
               showBottomDivider: index != items.length - 1,
-              onTap: () {},
+              onTap: null,
             ),
           );
         }),

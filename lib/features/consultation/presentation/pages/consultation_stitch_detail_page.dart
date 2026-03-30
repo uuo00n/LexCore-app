@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/app_share.dart';
-import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
-import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
+import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 const _defaultConsultationSummary =
     '根据您的描述，LexCore 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。';
@@ -41,159 +42,121 @@ class ConsultationStitchDetailPage extends StatelessWidget {
         textTheme: displayFont,
         scaffoldBackgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      child: Scaffold(
-        body: AppMobileCanvas(
-          maxContentWidth: 520,
-          child: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                _DetailHeader(
-                  onBack: () => Navigator.of(context).maybePop(),
-                  onShare: shareDetail,
-                ),
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    children: [
-                      const AppFadeSlideIn(
-                        delay: Duration(milliseconds: 40),
-                        child: _HeroCard(),
-                      ),
-                      const SizedBox(height: 16),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 80),
-                        child: _SectionCard(
-                          icon: Icons.psychology_alt_outlined,
-                          title: '问题理解',
-                          child: Text(
-                            resolvedSummary,
-                            style: displayFont.bodyMedium?.copyWith(
-                              height: 1.6,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const AppFadeSlideIn(
-                        delay: Duration(milliseconds: 120),
-                        child: _SectionCard(
-                          icon: Icons.menu_book_outlined,
-                          title: '法律依据',
-                          child: Column(
-                            children: [
-                              _LawItem(
-                                title: '《中华人民共和国劳动法》第四十四条',
-                                content: '用人单位安排加班的，应当按照国家有关规定向劳动者支付加班费。',
-                              ),
-                              SizedBox(height: 10),
-                              _LawItem(
-                                title: '《劳动合同法》第三十一条',
-                                content: '用人单位应当严格执行劳动定额标准，不得强迫或者变相强迫劳动者加班。',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const AppFadeSlideIn(
-                        delay: Duration(milliseconds: 160),
-                        child: _SectionCard(
-                          icon: Icons.analytics_outlined,
-                          title: '详细分析',
-                          child: Column(
-                            children: [
-                              _AnalysisStep(
-                                index: 1,
-                                title: '考勤数据分析',
-                                content:
-                                    '您的打卡记录显示平均每周工作时长超过 50 小时，已明显高于法定工作时长上限。',
-                              ),
-                              SizedBox(height: 14),
-                              _AnalysisStep(
-                                index: 2,
-                                title: '建议补救措施',
-                                content: '建议优先与公司人力资源部门书面协商，并保留邮件、聊天记录和考勤导出文件。',
-                              ),
-                              SizedBox(height: 14),
-                              _AnalysisStep(
-                                index: 3,
-                                title: '仲裁风险评估',
-                                content:
-                                    '若目前证据链完整，协商无果后申请劳动仲裁的可支持性较高，但仍需补强加班审批与薪资流水。',
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      AppFadeSlideIn(
-                        delay: const Duration(milliseconds: 220),
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: FilledButton(
-                            onPressed: () {},
-                            style: FilledButton.styleFrom(
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.primary,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                            ),
-                            child: Text(
-                              '获取更详细的法律意见书',
-                              style: displayFont.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+      child: AppPageScaffold(
+        title: 'LexCore 解答详情',
+        maxContentWidth: 520,
+        actions: [
+          Builder(
+            builder: (buttonContext) => IconButton(
+              onPressed: () => shareDetail(buttonContext),
+              icon: const Icon(Icons.share_outlined),
+              tooltip: '分享',
             ),
           ),
+        ],
+        body: ListView(
+          padding: const EdgeInsets.only(bottom: 24),
+          children: [
+            const AppFadeSlideIn(
+              delay: Duration(milliseconds: 40),
+              child: _HeroCard(),
+            ),
+            const SizedBox(height: 16),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 80),
+              child: _SectionCard(
+                icon: Icons.psychology_alt_outlined,
+                title: '问题理解',
+                child: Text(
+                  resolvedSummary,
+                  style: displayFont.bodyMedium?.copyWith(
+                    height: 1.6,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const AppFadeSlideIn(
+              delay: Duration(milliseconds: 120),
+              child: _SectionCard(
+                icon: Icons.menu_book_outlined,
+                title: '法律依据',
+                child: Column(
+                  children: [
+                    _LawItem(
+                      title: '《中华人民共和国劳动法》第四十四条',
+                      content: '用人单位安排加班的，应当按照国家有关规定向劳动者支付加班费。',
+                    ),
+                    SizedBox(height: 10),
+                    _LawItem(
+                      title: '《劳动合同法》第三十一条',
+                      content: '用人单位应当严格执行劳动定额标准，不得强迫或者变相强迫劳动者加班。',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const AppFadeSlideIn(
+              delay: Duration(milliseconds: 160),
+              child: _SectionCard(
+                icon: Icons.analytics_outlined,
+                title: '详细分析',
+                child: Column(
+                  children: [
+                    _AnalysisStep(
+                      index: 1,
+                      title: '考勤数据分析',
+                      content: '您的打卡记录显示平均每周工作时长超过 50 小时，已明显高于法定工作时长上限。',
+                    ),
+                    SizedBox(height: 14),
+                    _AnalysisStep(
+                      index: 2,
+                      title: '建议补救措施',
+                      content: '建议优先与公司人力资源部门书面协商，并保留邮件、聊天记录和考勤导出文件。',
+                    ),
+                    SizedBox(height: 14),
+                    _AnalysisStep(
+                      index: 3,
+                      title: '仲裁风险评估',
+                      content: '若目前证据链完整，协商无果后申请劳动仲裁的可支持性较高，但仍需补强加班审批与薪资流水。',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            AppFadeSlideIn(
+              delay: const Duration(milliseconds: 220),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => context.pushNamed(
+                    RouteNames.consultationOpinionDetail,
+                    extra: resolvedSummary,
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: Text(
+                    '获取更详细的法律意见书',
+                    style: displayFont.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-}
-
-class _DetailHeader extends StatelessWidget {
-  const _DetailHeader({required this.onBack, required this.onShare});
-
-  final VoidCallback onBack;
-  final Future<void> Function(BuildContext anchorContext) onShare;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppShellTopBar(
-      title: 'LexCore 解答详情',
-      leading: IconButton(
-        onPressed: onBack,
-        icon: const Icon(Icons.arrow_back_rounded),
-        tooltip: '返回',
-      ),
-      actions: [
-        Builder(
-          builder: (buttonContext) => IconButton(
-            onPressed: () => onShare(buttonContext),
-            icon: const Icon(Icons.share_outlined),
-            tooltip: '分享',
-          ),
-        ),
-      ],
     );
   }
 }

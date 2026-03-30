@@ -56,14 +56,22 @@ class ProfilePage extends ConsumerWidget {
                             title: accountMenus[i].title,
                             subtitle: accountMenus[i].subtitle,
                             leading: accountMenus[i].icon,
-                            onTap: () =>
-                                context.navigateByRoute(accountMenus[i].route),
+                            onTap: accountMenus[i].route == null
+                                ? null
+                                : () => context.navigateByRoute(
+                                    accountMenus[i].route!,
+                                  ),
                             showDivider: i != accountMenus.length - 1,
                           ),
                       ],
                     ),
                     const SizedBox(height: 18),
-                    _SubscriptionCard(summary: summary),
+                    _SubscriptionCard(
+                      summary: summary,
+                      onManageSubscription: () => context.navigateByRoute(
+                        RouteNames.profileSubscriptionManagePath,
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     _SectionTitle(
                       text: '内容与记录',
@@ -77,12 +85,17 @@ class ProfilePage extends ConsumerWidget {
                             title: contentMenus[i].title,
                             subtitle: contentMenus[i].subtitle,
                             leading: contentMenus[i].icon,
-                            onTap: () =>
-                                context.navigateByRoute(contentMenus[i].route),
+                            onTap: contentMenus[i].route == null
+                                ? null
+                                : () => context.navigateByRoute(
+                                    contentMenus[i].route!,
+                                  ),
                             showDivider: i != contentMenus.length - 1,
                           ),
                       ],
                     ),
+                    const SizedBox(height: 20),
+                    const _ProfileCopyright(),
                   ],
                 ),
               ),
@@ -124,7 +137,7 @@ class ProfilePage extends ConsumerWidget {
               title: item.title,
               subtitle: _contentSubtitleFor(item.title),
               icon: _iconFromMenu(item.icon),
-              route: item.route,
+              route: item.title == '历史记录' ? null : item.route,
             ),
           )
           .toList();
@@ -146,7 +159,7 @@ class ProfilePage extends ConsumerWidget {
         title: '历史记录',
         subtitle: _contentSubtitleFor('历史记录'),
         icon: _iconFromMenu('history'),
-        route: fallbackRoutes[1],
+        route: null,
       ),
     ];
   }
@@ -260,9 +273,13 @@ class _ProfileHero extends StatelessWidget {
 }
 
 class _SubscriptionCard extends StatelessWidget {
-  const _SubscriptionCard({required this.summary});
+  const _SubscriptionCard({
+    required this.summary,
+    required this.onManageSubscription,
+  });
 
   final ProfileSummary summary;
+  final VoidCallback onManageSubscription;
 
   @override
   Widget build(BuildContext context) {
@@ -341,7 +358,7 @@ class _SubscriptionCard extends StatelessWidget {
                   ),
                 ),
                 FilledButton(
-                  onPressed: () {},
+                  onPressed: onManageSubscription,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size(88, 34),
                     shape: RoundedRectangleBorder(
@@ -433,14 +450,14 @@ class _SectionRow extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.leading,
-    required this.onTap,
+    this.onTap,
     this.showDivider = false,
   });
 
   final String title;
   final String subtitle;
   final IconData leading;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool showDivider;
 
   @override
@@ -493,11 +510,12 @@ class _SectionRow extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
+            if (onTap != null)
+              Icon(
+                Icons.chevron_right,
+                size: 20,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
           ],
         ),
       ),
@@ -516,5 +534,23 @@ class _ProfileEntry {
   final String title;
   final String subtitle;
   final IconData icon;
-  final String route;
+  final String? route;
+}
+
+class _ProfileCopyright extends StatelessWidget {
+  const _ProfileCopyright();
+
+  @override
+  Widget build(BuildContext context) {
+    final currentYear = DateTime.now().year;
+
+    return Center(
+      child: Text(
+        '© $currentYear LexCore 保留所有权利',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
 }

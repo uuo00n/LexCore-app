@@ -9,6 +9,7 @@ import 'package:lexcore/features/profile/presentation/pages/profile_billing_page
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_personal_info_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_security_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_manage_page.dart';
 
 void main() {
   setUp(() {
@@ -39,6 +40,10 @@ void main() {
         GoRoute(
           path: RouteNames.profileBillingPath,
           builder: (context, state) => const ProfileBillingPage(),
+        ),
+        GoRoute(
+          path: RouteNames.profileSubscriptionManagePath,
+          builder: (context, state) => const ProfileSubscriptionManagePage(),
         ),
         GoRoute(
           path: RouteNames.savedDocumentsPath,
@@ -96,5 +101,29 @@ void main() {
     await tester.tap(find.text('账单与订阅').first);
     await tester.pumpAndSettle();
     expect(find.byType(ProfileBillingPage), findsOneWidget);
+  });
+
+  testWidgets('history entry on profile page does not navigate', (
+    tester,
+  ) async {
+    await pumpProfileRouter(tester);
+
+    await tester.ensureVisible(find.text('历史记录').first);
+    await tester.tap(find.text('历史记录').first, warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ProfilePage), findsOneWidget);
+    expect(find.text('历史页'), findsNothing);
+  });
+
+  testWidgets('manage subscription entry navigates to dedicated page', (
+    tester,
+  ) async {
+    await pumpProfileRouter(tester);
+
+    await tester.tap(find.text('管理订阅'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ProfileSubscriptionManagePage), findsOneWidget);
   });
 }

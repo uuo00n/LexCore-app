@@ -23,3 +23,20 @@ final documentControllerProvider =
 final savedDocumentsProvider = Provider<List<DocumentItem>>((ref) {
   return ref.watch(documentControllerProvider).documents;
 });
+
+final documentByIdProvider = Provider.family<DocumentItem?, String>((
+  ref,
+  documentId,
+) {
+  final normalizedId = documentId.trim();
+  if (normalizedId.isEmpty) {
+    return null;
+  }
+  final documents = ref.watch(savedDocumentsProvider);
+  for (final item in documents) {
+    if (item.id == normalizedId) {
+      return item;
+    }
+  }
+  return null;
+});

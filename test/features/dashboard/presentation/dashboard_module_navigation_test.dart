@@ -174,30 +174,6 @@ void main() {
     );
   });
 
-  testWidgets('quick action new case opens case upload page', (tester) async {
-    await setPhoneViewport(tester);
-
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildDashboardRouter()),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey<String>('dashboard_quick_action_new_case')),
-      220,
-      scrollable: find.byType(Scrollable).first,
-    );
-    final tapTarget = find.descendant(
-      of: find.byKey(const ValueKey<String>('dashboard_quick_action_new_case')),
-      matching: find.byType(InkWell),
-    );
-    tester.widget<InkWell>(tapTarget).onTap?.call();
-    await tester.pumpAndSettle();
-
-    expect(find.text('上传案件'), findsOneWidget);
-  });
 }
 
 class _LabelPage extends StatelessWidget {

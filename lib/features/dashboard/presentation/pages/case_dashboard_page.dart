@@ -356,15 +356,6 @@ class _QuickActionsRow extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _QuickActionCard(
-            key: const ValueKey<String>('dashboard_quick_action_new_case'),
-            icon: Icons.add,
-            label: '新建案件',
-            onTap: () => context.push(RouteNames.caseUploadPath),
-          ),
-          const SizedBox(width: 12),
-          const _QuickActionCard(icon: Icons.upload_file, label: '批量上传'),
-          const SizedBox(width: 12),
           const _QuickActionCard(icon: Icons.auto_stories, label: '法典查询'),
         ],
       ),

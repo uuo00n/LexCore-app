@@ -105,6 +105,7 @@ class HistoryRepository {
               time:
                   DateTime.tryParse(map['created_at'] as String? ?? '') ??
                   DateTime.fromMillisecondsSinceEpoch(0),
+              resourceKey: _resolveRemoteResourceKey(map),
             );
           })
           .where((item) => item.title.trim().isNotEmpty)
@@ -221,7 +222,13 @@ class _StoredHistoryItem {
   }
 
   HistoryItem toHistoryItem() {
-    return HistoryItem(id: id, title: title, category: category, time: time);
+    return HistoryItem(
+      id: id,
+      title: title,
+      category: category,
+      time: time,
+      resourceKey: resourceKey,
+    );
   }
 
   factory _StoredHistoryItem.fromJson(Map<String, dynamic> json) {
@@ -239,4 +246,27 @@ class _StoredHistoryItem {
       resourceKey: json['resourceKey'] as String?,
     );
   }
+}
+
+String? _resolveRemoteResourceKey(Map<String, dynamic> data) {
+  const keyCandidates = [
+    'resource_key',
+    'resourceKey',
+    'thread_id',
+    'threadId',
+    'article_code',
+    'articleCode',
+    'document_id',
+    'documentId',
+    'target_id',
+    'targetId',
+  ];
+
+  for (final key in keyCandidates) {
+    final value = data[key];
+    if (value is String && value.trim().isNotEmpty) {
+      return value.trim();
+    }
+  }
+  return null;
 }

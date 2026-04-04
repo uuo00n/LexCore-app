@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/history/application/history_controller.dart';
@@ -221,6 +223,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                                 today: today,
                                 yesterday: yesterday,
                                 older: older,
+                                onOpenItem: (item) =>
+                                    _openHistoryItem(context, item),
                               ),
                               secondary: _HistoryInsights(
                                 total: allItems.length,
@@ -235,6 +239,8 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
                               today: today,
                               yesterday: yesterday,
                               older: older,
+                              onOpenItem: (item) =>
+                                  _openHistoryItem(context, item),
                             ),
                     ),
                   ),
@@ -311,6 +317,66 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
     ref.read(historySearchEndTimeProvider.notifier).state = null;
   }
 
+  void _openHistoryItem(BuildContext context, HistoryItem item) {
+    switch (item.category) {
+      case HistoryCategory.consultation:
+        final threadId = item.resourceKey?.trim();
+        if (threadId != null && threadId.isNotEmpty) {
+          context.pushNamed(
+            RouteNames.consultationChat,
+            pathParameters: {
+              RouteNames.consultationChatThreadIdParam: threadId,
+            },
+            extra: item.title,
+          );
+          return;
+        }
+        context.pushNamed(RouteNames.consultation);
+        return;
+      case HistoryCategory.analysis:
+        final articleCode = _resolveArticleCode(item);
+        if (articleCode == null) {
+          context.pushNamed(RouteNames.legalArticle);
+          return;
+        }
+        context.pushNamed(
+          RouteNames.legalArticle,
+          extra: LawSearchItem(
+            title: item.title,
+            snippet: item.title,
+            articleCode: articleCode,
+          ),
+        );
+        return;
+      case HistoryCategory.document:
+        final documentId = item.resourceKey?.trim();
+        if (documentId != null && documentId.isNotEmpty) {
+          context.pushNamed(
+            RouteNames.savedDocumentDetail,
+            pathParameters: {RouteNames.savedDocumentIdParam: documentId},
+            queryParameters: const {'mode': 'view'},
+          );
+          return;
+        }
+        context.pushNamed(RouteNames.savedDocuments);
+        return;
+    }
+  }
+
+  String? _resolveArticleCode(HistoryItem item) {
+    final resourceKey = item.resourceKey?.trim();
+    if (resourceKey != null && resourceKey.isNotEmpty) {
+      return resourceKey;
+    }
+
+    final match = RegExp(r'([A-Za-z]+[-_]\d+)').firstMatch(item.title);
+    final code = match?.group(1)?.trim();
+    if (code == null || code.isEmpty) {
+      return null;
+    }
+    return code;
+  }
+
   String _rangeLabel(DateTime? startTime, DateTime? endTime) {
     if (startTime == null && endTime == null) {
       return '全部时间';
@@ -339,11 +405,13 @@ class _HistoryTimeline extends StatelessWidget {
     required this.today,
     required this.yesterday,
     required this.older,
+    required this.onOpenItem,
   });
 
   final List<HistoryItem> today;
   final List<HistoryItem> yesterday;
   final List<HistoryItem> older;
+  final ValueChanged<HistoryItem> onOpenItem;
 
   @override
   Widget build(BuildContext context) {
@@ -380,9 +448,21 @@ class _HistoryTimeline extends StatelessWidget {
           delay: const Duration(milliseconds: 100),
           child: Column(
             children: [
-              _HistorySection(title: '今天', items: today),
-              _HistorySection(title: '昨天', items: yesterday),
-              _HistorySection(title: '更早以前', items: older),
+              _HistorySection(
+                title: '今天',
+                items: today,
+                onOpenItem: onOpenItem,
+              ),
+              _HistorySection(
+                title: '昨天',
+                items: yesterday,
+                onOpenItem: onOpenItem,
+              ),
+              _HistorySection(
+                title: '更早以前',
+                items: older,
+                onOpenItem: onOpenItem,
+              ),
             ],
           ),
         ),
@@ -549,10 +629,15 @@ class _TopTab extends StatelessWidget {
 }
 
 class _HistorySection extends StatelessWidget {
-  const _HistorySection({required this.title, required this.items});
+  const _HistorySection({
+    required this.title,
+    required this.items,
+    required this.onOpenItem,
+  });
 
   final String title;
   final List<HistoryItem> items;
+  final ValueChanged<HistoryItem> onOpenItem;
 
   @override
   Widget build(BuildContext context) {
@@ -589,7 +674,7 @@ class _HistorySection extends StatelessWidget {
               leadingIcon: icon,
               trailing: const SizedBox.shrink(),
               showBottomDivider: index != items.length - 1,
-              onTap: null,
+              onTap: () => onOpenItem(item),
             ),
           );
         }),

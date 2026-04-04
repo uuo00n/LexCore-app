@@ -96,6 +96,7 @@ void main() {
       expect(items, hasLength(1));
       expect(items.single.category, HistoryCategory.analysis);
       expect(items.single.title, contains('LAW-001'));
+      expect(items.single.resourceKey, 'LAW-001');
     },
   );
 

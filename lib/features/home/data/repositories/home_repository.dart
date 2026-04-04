@@ -7,6 +7,8 @@ import 'package:lexcore/shared/models/legal_models.dart';
 class HomeRepository {
   const HomeRepository(this._apiClient, [this._historyRepository]);
 
+  static const int _recentActivityLimit = 5;
+
   final ApiClient _apiClient;
   final HistoryRepository? _historyRepository;
 
@@ -23,7 +25,7 @@ class HomeRepository {
     if (historyRepository != null) {
       try {
         final items = await historyRepository.loadAll();
-        return items
+        final mapped = items
             .map(
               (item) => ActivityRecord(
                 title: item.title,
@@ -31,8 +33,9 @@ class HomeRepository {
                 tag: _tagFromCategory(item.category),
               ),
             )
-            .take(8)
             .toList(growable: false);
+        mapped.sort((a, b) => b.time.compareTo(a.time));
+        return mapped.take(_recentActivityLimit).toList(growable: false);
       } catch (_) {
         // Fall through to legacy remote-only loading.
       }
@@ -60,7 +63,7 @@ class HomeRepository {
           .where((item) => item.title.trim().isNotEmpty)
           .toList();
       mapped.sort((a, b) => b.time.compareTo(a.time));
-      return mapped.take(8).toList(growable: false);
+      return mapped.take(_recentActivityLimit).toList(growable: false);
     } catch (_) {
       return const [];
     }

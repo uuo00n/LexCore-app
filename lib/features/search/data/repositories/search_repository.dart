@@ -100,12 +100,10 @@ class SearchRepository {
     final fallbackMessage = bodySections.isEmpty
         ? [
             '暂未获取到法规正文。',
-            if (htmlUrl != null ||
-                docxUrl != null ||
-                pdfUrl != null ||
-                sourceUrl != null)
-              '可通过下方原文入口继续查看完整内容。'
-            else
+            if (htmlUrl == null &&
+                docxUrl == null &&
+                pdfUrl == null &&
+                sourceUrl == null)
               '当前仅展示法规基础信息，请稍后重试或更换结果。',
           ].join()
         : null;

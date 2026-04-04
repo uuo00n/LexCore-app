@@ -53,7 +53,7 @@ class _FakeSearchRepository extends SearchRepository {
         htmlUrl: 'https://example.com/law-link.html',
         pdfUrl: 'https://example.com/law-link.pdf',
         sourceUrl: 'https://example.com/law-link',
-        fallbackMessage: '暂未获取到法规正文，可通过下方原文入口继续查看完整内容。',
+        fallbackMessage: '暂未获取到法规正文。',
       );
     }
     return LawArticleDetail(
@@ -192,6 +192,7 @@ void main() {
     expect(find.widgetWithText(OutlinedButton, '打开 HTML'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, '下载 PDF'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, '下载 DOCX'), findsOneWidget);
+    expect(find.text('法条 44'), findsNothing);
   });
 
   testWidgets('opens html raw link in in-app webview when tapping action', (
@@ -263,7 +264,7 @@ void main() {
 
     await pumpLegalArticlePage(tester, item: item);
 
-    expect(find.text('暂未获取到法规正文，可通过下方原文入口继续查看完整内容。'), findsOneWidget);
+    expect(find.text('暂未获取到法规正文。'), findsOneWidget);
     expect(
       find.widgetWithText(OutlinedButton, '查看原文'),
       findsAtLeastNWidgets(1),

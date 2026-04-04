@@ -23,8 +23,10 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
   int _selectedFilter = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _resultsScrollController = ScrollController();
   String? _selectedScenarioId;
   bool _isApplyingScenarioSelection = false;
+  bool _showBackToTopButton = false;
 
   @override
   void initState() {
@@ -32,12 +34,16 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
     _searchController.text = ref.read(searchControllerProvider);
     ref.read(searchFilterProvider.notifier).state = _selectedFilter;
     _searchController.addListener(_onQueryChanged);
+    _resultsScrollController.addListener(_handleResultsScroll);
   }
 
   @override
   void dispose() {
     _searchController
       ..removeListener(_onQueryChanged)
+      ..dispose();
+    _resultsScrollController
+      ..removeListener(_handleResultsScroll)
       ..dispose();
     super.dispose();
   }
@@ -60,6 +66,28 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
         onScenarioSelected: _applyScenarioKeyword,
         onResetSelection: _resetScenarioSelection,
       ),
+      floatingActionButton: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 180),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        child: _showBackToTopButton
+            ? FloatingActionButton(
+                key: const ValueKey<String>('legal_search_back_to_top_button'),
+                onPressed: _scrollToTop,
+                tooltip: '返回顶部',
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.keyboard_arrow_up_rounded),
+              )
+            : const SizedBox.shrink(
+                key: ValueKey<String>('legal_search_back_to_top_button_hidden'),
+              ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       body: AppMobileCanvas(
         child: SafeArea(
           bottom: false,
@@ -70,22 +98,28 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                 beginOffset: const Offset(0, -0.02),
                 child: _SearchTopBar(onScenarioTap: _openScenarioDrawer),
               ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: _SearchInputAndFilter(
+                  controller: _searchController,
+                  filters: filters,
+                  selectedFilter: _selectedFilter,
+                  onFilterChanged: (index) {
+                    setState(() => _selectedFilter = index);
+                    ref.read(searchFilterProvider.notifier).state = index;
+                  },
+                ),
+              ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                  key: const ValueKey<String>(
+                    'legal_search_results_scroll_view',
+                  ),
+                  controller: _resultsScrollController,
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _SearchInputAndFilter(
-                        controller: _searchController,
-                        filters: filters,
-                        selectedFilter: _selectedFilter,
-                        onFilterChanged: (index) {
-                          setState(() => _selectedFilter = index);
-                          ref.read(searchFilterProvider.notifier).state = index;
-                        },
-                      ),
-                      const SizedBox(height: 20),
                       if (searchNotice != null &&
                           searchNotice.trim().isNotEmpty)
                         Padding(
@@ -155,6 +189,31 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
     _isApplyingScenarioSelection = true;
     _searchController.clear();
     ref.read(searchControllerProvider.notifier).updateKeyword('');
+  }
+
+  void _handleResultsScroll() {
+    if (!_resultsScrollController.hasClients || !mounted) {
+      return;
+    }
+    final viewportHeight = _resultsScrollController.position.viewportDimension;
+    final shouldShow = _resultsScrollController.offset >= viewportHeight;
+    if (shouldShow == _showBackToTopButton) {
+      return;
+    }
+    setState(() {
+      _showBackToTopButton = shouldShow;
+    });
+  }
+
+  Future<void> _scrollToTop() async {
+    if (!_resultsScrollController.hasClients) {
+      return;
+    }
+    await _resultsScrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 }
 

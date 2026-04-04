@@ -225,12 +225,14 @@ class HistoryItem {
     required this.title,
     required this.category,
     required this.time,
+    this.resourceKey,
   });
 
   final String id;
   final String title;
   final HistoryCategory category;
   final DateTime time;
+  final String? resourceKey;
 }
 
 class ProfileMenuItem {

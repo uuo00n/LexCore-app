@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/router_navigation_extensions.dart';
 import 'package:lexcore/core/utils/date_time_utils.dart';
 import 'package:lexcore/features/home/application/home_providers.dart';
@@ -266,6 +267,7 @@ class _RecentActivitySection extends StatelessWidget {
   const _RecentActivitySection({required this.homeData});
 
   final HomeEntity homeData;
+  static const int _maxVisibleActivities = 5;
 
   IconData _iconFromTag(String tag) {
     switch (tag) {
@@ -281,6 +283,10 @@ class _RecentActivitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visibleActivities = homeData.activities
+        .take(_maxVisibleActivities)
+        .toList(growable: false);
+
     return AppFadeSlideIn(
       delay: const Duration(milliseconds: 90),
       child: Column(
@@ -289,20 +295,24 @@ class _RecentActivitySection extends StatelessWidget {
             children: [
               Text('最近活动', style: Theme.of(context).textTheme.titleSmall),
               const Spacer(),
-              TextButton(onPressed: () {}, child: const Text('查看全部')),
+              TextButton(
+                onPressed: () =>
+                    context.navigateByRoute(RouteNames.historyPath),
+                child: const Text('查看全部'),
+              ),
             ],
           ),
           const SizedBox(height: 6),
-          if (homeData.activities.isEmpty)
+          if (visibleActivities.isEmpty)
             const _EmptyHint(title: '暂无活动', subtitle: '近期操作会在这里展示')
           else
             Column(
               key: const ValueKey('home_recent_activity_list'),
-              children: List<Widget>.generate(homeData.activities.length, (
+              children: List<Widget>.generate(visibleActivities.length, (
                 index,
               ) {
-                final item = homeData.activities[index];
-                final isLast = index == homeData.activities.length - 1;
+                final item = visibleActivities[index];
+                final isLast = index == visibleActivities.length - 1;
                 return AppListTileItem(
                   key: ValueKey<String>('home_recent_activity_item_$index'),
                   title: item.title,

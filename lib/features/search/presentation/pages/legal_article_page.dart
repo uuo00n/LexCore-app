@@ -69,8 +69,13 @@ class LegalArticlePage extends ConsumerWidget {
       }
     }
 
+    final pageTitle = detailAsync.maybeWhen(
+      data: (detail) => detail.title,
+      orElse: () => searchItem?.title ?? '文章详情',
+    );
+
     return AppPageScaffold(
-      title: searchItem?.articleCode ?? '文章详情',
+      title: pageTitle,
       actions: [
         IconButton(
           onPressed: () =>

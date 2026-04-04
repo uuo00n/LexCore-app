@@ -1,26 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tdesign_flutter/tdesign_flutter.dart';
 
+import 'package:lexcore/core/storage/local_storage.dart';
+import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 
 void main() {
+  const mockHotResults = <LawSearchItem>[
+    LawSearchItem(
+      title: '中华人民共和国劳动合同法 第三十条',
+      snippet: '用人单位应当按照劳动合同约定和国家规定，向劳动者及时足额支付劳动报酬。',
+      articleCode: 'LCL-30',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国劳动合同法 第四十七条',
+      snippet: '经济补偿按劳动者在本单位工作的年限，每满一年支付一个月工资。',
+      articleCode: 'LCL-47',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国民法典 第一百六十五条',
+      snippet: '民事法律行为可以基于双方或者多方的意思表示一致成立。',
+      articleCode: 'CC-165',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国民法典 第一百七十六条',
+      snippet: '民事主体依照法律规定或者按照当事人约定，履行民事义务。',
+      articleCode: 'CC-176',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国公司法 第二十条',
+      snippet: '公司股东应当遵守法律、行政法规和公司章程，依法行使股东权利。',
+      articleCode: 'CL-20',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国公司法 第七十四条',
+      snippet: '股东会作出公司合并、分立决议时，异议股东可以请求公司收购其股权。',
+      articleCode: 'CL-74',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国道路交通安全法 第七十六条',
+      snippet: '机动车发生交通事故造成人身伤亡、财产损失的，先由保险公司赔偿。',
+      articleCode: 'RTSL-76',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国行政处罚法 第三十二条',
+      snippet: '当事人有权进行陈述和申辩，行政机关必须充分听取并复核。',
+      articleCode: 'APL-32',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国消费者权益保护法 第八条',
+      snippet: '消费者享有知悉其购买、使用商品或者接受服务真实情况的权利。',
+      articleCode: 'CPL-8',
+    ),
+    LawSearchItem(
+      title: '中华人民共和国合同法（历史） 第六十条',
+      snippet: '当事人应当按照约定全面履行自己的义务。',
+      articleCode: 'OLD-CL-60',
+    ),
+  ];
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   Future<void> pumpLegalSearchPage(
     WidgetTester tester, {
     ThemeData? theme,
     ThemeData? darkTheme,
     ThemeMode themeMode = ThemeMode.light,
+    List<Override> overrides = const [],
   }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
 
+    final preferences = await SharedPreferences.getInstance();
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          filteredHotSearchArticlesProvider.overrideWith((ref) {
+            final keyword = ref.watch(searchControllerProvider).trim();
+            if (keyword.isEmpty) {
+              return const AsyncValue.data(mockHotResults);
+            }
+            if (keyword.contains('劳动')) {
+              return AsyncValue.data(mockHotResults.take(2).toList());
+            }
+            final matched = mockHotResults
+                .where(
+                  (item) =>
+                      item.title.contains(keyword) ||
+                      item.snippet.contains(keyword),
+                )
+                .toList();
+            return AsyncValue.data(matched);
+          }),
+          searchNoticeProvider.overrideWith(
+            (ref) => const AsyncValue.data(null),
+          ),
+          ...overrides,
+        ],
         child: MaterialApp(
           theme: theme,
           darkTheme: darkTheme,
@@ -195,4 +282,81 @@ void main() {
       findsWidgets,
     );
   });
+
+  testWidgets('search input and filters stay fixed while results scroll', (
+    tester,
+  ) async {
+    await pumpLegalSearchPage(tester);
+
+    final searchFieldFinder = find.byType(TextField).first;
+    final firstResultFinder = find.text('中华人民共和国劳动合同法 第三十条');
+    final scrollViewFinder = find.byKey(
+      const ValueKey('legal_search_results_scroll_view'),
+    );
+
+    final searchFieldTopBefore = tester.getTopLeft(searchFieldFinder).dy;
+    final firstResultTopBefore = tester.getTopLeft(firstResultFinder).dy;
+
+    await tester.drag(scrollViewFinder, const Offset(0, -120));
+    await tester.pumpAndSettle();
+
+    final searchFieldTopAfter = tester.getTopLeft(searchFieldFinder).dy;
+    final firstResultTopAfter = tester.getTopLeft(firstResultFinder).dy;
+
+    expect(searchFieldTopAfter, closeTo(searchFieldTopBefore, 6));
+    expect(firstResultTopAfter, lessThan(firstResultTopBefore));
+  });
+
+  testWidgets(
+    'back-to-top button appears after one viewport and hides at top',
+    (tester) async {
+      final longResults = List<LawSearchItem>.generate(
+        40,
+        (index) => LawSearchItem(
+          title: '测试法条 ${index + 1}',
+          snippet: '用于验证返回顶部按钮滚动阈值与回顶行为',
+          articleCode: 'TEST-${index + 1}',
+        ),
+      );
+
+      await pumpLegalSearchPage(
+        tester,
+        overrides: [
+          filteredHotSearchArticlesProvider.overrideWith(
+            (ref) => AsyncValue.data(longResults),
+          ),
+          searchNoticeProvider.overrideWith(
+            (ref) => const AsyncValue.data(null),
+          ),
+        ],
+      );
+
+      const backToTopButtonKey = ValueKey<String>(
+        'legal_search_back_to_top_button',
+      );
+      final scrollViewFinder = find.byKey(
+        const ValueKey('legal_search_results_scroll_view'),
+      );
+
+      expect(find.byKey(backToTopButtonKey), findsNothing);
+
+      await tester.fling(scrollViewFinder, const Offset(0, -2400), 3200);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(backToTopButtonKey), findsOneWidget);
+
+      final scrollView = tester.widget<SingleChildScrollView>(scrollViewFinder);
+      final controller = scrollView.controller!;
+      expect(
+        controller.offset,
+        greaterThanOrEqualTo(controller.position.viewportDimension),
+      );
+
+      await tester.tap(find.byKey(backToTopButtonKey));
+      await tester.pumpAndSettle();
+
+      expect(controller.offset, 0);
+      expect(find.byKey(backToTopButtonKey), findsNothing);
+    },
+  );
 }

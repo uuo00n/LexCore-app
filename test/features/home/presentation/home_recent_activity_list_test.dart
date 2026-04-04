@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/home/application/home_providers.dart';
 import 'package:lexcore/features/home/domain/entities/home_entity.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 
 void main() {
-  Future<void> pumpHomePage(WidgetTester tester) async {
-    final homeData = HomeEntity(
+  HomeEntity buildHomeData({List<ActivityRecord>? activities}) {
+    return HomeEntity(
       actions: const [
         QuickAction(
           title: '法律咨询',
@@ -24,34 +26,78 @@ void main() {
           route: '/document',
         ),
       ],
-      activities: [
-        ActivityRecord(
-          title: '最新咨询记录',
-          time: DateTime(2026, 4, 4, 10),
-          tag: '咨询',
-        ),
-        ActivityRecord(
-          title: '最新文档记录',
-          time: DateTime(2026, 4, 4, 9),
-          tag: '文档',
-        ),
-        ActivityRecord(
-          title: '最新分析记录',
-          time: DateTime(2026, 4, 4, 8),
-          tag: '分析',
-        ),
-      ],
+      activities:
+          activities ??
+          [
+            ActivityRecord(
+              title: '最新咨询记录',
+              time: DateTime(2026, 4, 4, 10),
+              tag: '咨询',
+            ),
+            ActivityRecord(
+              title: '最新文档记录',
+              time: DateTime(2026, 4, 4, 9),
+              tag: '文档',
+            ),
+            ActivityRecord(
+              title: '最新分析记录',
+              time: DateTime(2026, 4, 4, 8),
+              tag: '分析',
+            ),
+          ],
     );
+  }
 
+  Future<void> _setDefaultSurfaceSize(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
+  }
+
+  Future<void> pumpHomePage(WidgetTester tester, {HomeEntity? homeData}) async {
+    await _setDefaultSurfaceSize(tester);
+
+    final resolvedHomeData = homeData ?? buildHomeData();
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [homeDataProvider.overrideWith((ref) async => homeData)],
+        overrides: [
+          homeDataProvider.overrideWith((ref) async => resolvedHomeData),
+        ],
         child: const MaterialApp(home: HomePage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> pumpHomePageWithRouter(
+    WidgetTester tester, {
+    HomeEntity? homeData,
+  }) async {
+    await _setDefaultSurfaceSize(tester);
+
+    final resolvedHomeData = homeData ?? buildHomeData();
+    final router = GoRouter(
+      initialLocation: RouteNames.homePath,
+      routes: [
+        GoRoute(
+          path: RouteNames.homePath,
+          builder: (context, state) => const HomePage(),
+        ),
+        GoRoute(
+          path: RouteNames.historyPath,
+          builder: (context, state) => const Scaffold(body: Text('历史记录页')),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeDataProvider.overrideWith((ref) async => resolvedHomeData),
+        ],
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
@@ -132,5 +178,37 @@ void main() {
 
     expect(find.text('法律搜索'), findsNothing);
     expect(find.text('法规与案例检索'), findsNothing);
+  });
+
+  testWidgets('recent activity list only renders latest five items', (
+    tester,
+  ) async {
+    final activities = List<ActivityRecord>.generate(
+      6,
+      (index) => ActivityRecord(
+        title: '活动$index',
+        time: DateTime(2026, 4, 4, 10 - index),
+        tag: '咨询',
+      ),
+    );
+
+    await pumpHomePage(tester, homeData: buildHomeData(activities: activities));
+
+    expect(activityItem(0), findsOneWidget);
+    expect(activityItem(1), findsOneWidget);
+    expect(activityItem(2), findsOneWidget);
+    expect(activityItem(3), findsOneWidget);
+    expect(activityItem(4), findsOneWidget);
+    expect(activityItem(5), findsNothing);
+    expect(find.text('活动5'), findsNothing);
+  });
+
+  testWidgets('view all button navigates to history page', (tester) async {
+    await pumpHomePageWithRouter(tester);
+
+    await tester.tap(find.widgetWithText(TextButton, '查看全部'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('历史记录页'), findsOneWidget);
   });
 }

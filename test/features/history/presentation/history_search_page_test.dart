@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/history/application/history_controller.dart';
 import 'package:lexcore/features/history/presentation/pages/history_page.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
@@ -93,5 +95,56 @@ void main() {
       findsNothing,
     );
     expect(find.text('历史记录搜索'), findsNothing);
+  });
+
+  testWidgets('history item can open legal article detail route', (
+    tester,
+  ) async {
+    final router = GoRouter(
+      initialLocation: RouteNames.historyPath,
+      routes: [
+        GoRoute(
+          path: RouteNames.historyPath,
+          name: RouteNames.history,
+          builder: (context, state) => const HistoryPage(),
+        ),
+        GoRoute(
+          path: RouteNames.legalArticlePath,
+          name: RouteNames.legalArticle,
+          builder: (context, state) => const Scaffold(body: Text('法规详情占位页')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+
+    final overrideItems = [
+      HistoryItem(
+        id: 'analysis_1',
+        title: '劳动合同法（LAW-001）',
+        category: HistoryCategory.analysis,
+        time: DateTime(2026, 4, 4, 9),
+        resourceKey: 'LAW-001',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          historyAllItemsProvider.overrideWith((ref) async => overrideItems),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('劳动合同法（LAW-001）'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('法规详情占位页'), findsOneWidget);
   });
 }

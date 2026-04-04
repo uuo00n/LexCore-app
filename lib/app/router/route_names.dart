@@ -19,6 +19,7 @@ class RouteNames {
   static const savedDocumentDetail = 'saved_document_detail';
   static const legalSearch = 'legal_search';
   static const legalArticle = 'legal_article';
+  static const inAppWebView = 'in_app_webview';
   static const history = 'history';
   static const historySearch = 'history_search';
   static const profile = 'profile';
@@ -52,6 +53,7 @@ class RouteNames {
       '/document/saved/:$savedDocumentIdParam';
   static const legalSearchPath = '/search';
   static const legalArticlePath = '/search/article';
+  static const inAppWebViewPath = '/webview';
   static const historyPath = '/history';
   static const historySearchPath = '/history/search';
   static const profilePath = '/profile';

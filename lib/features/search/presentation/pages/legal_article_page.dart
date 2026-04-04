@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/core/utils/app_share.dart';
@@ -12,6 +14,7 @@ import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
+import 'package:lexcore/shared/widgets/in_app_webview_page.dart';
 
 class LegalArticlePage extends ConsumerWidget {
   const LegalArticlePage({super.key, this.searchItem});
@@ -23,10 +26,23 @@ class LegalArticlePage extends ConsumerWidget {
     final detailAsync = ref.watch(articleDetailByItemProvider(searchItem));
     final messenger = ScaffoldMessenger.of(context);
 
-    Future<void> openExternalLink(String url, String label) async {
+    Future<void> openLink(
+      String url,
+      String label,
+      InAppWebViewKind? kind,
+    ) async {
       final uri = Uri.tryParse(url);
       if (uri == null) {
         messenger.showSnackBar(SnackBar(content: Text('$label链接无效，请稍后重试')));
+        return;
+      }
+      if (kind != null &&
+          uri.hasScheme &&
+          (uri.scheme == 'http' || uri.scheme == 'https')) {
+        context.pushNamed(
+          RouteNames.inAppWebView,
+          extra: InAppWebViewRouteArgs(title: label, url: url, kind: kind),
+        );
         return;
       }
       final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -88,7 +104,7 @@ class LegalArticlePage extends ConsumerWidget {
               return _ArticleMain(
                 detail: detail,
                 compact: true,
-                onOpenLink: openExternalLink,
+                onOpenLink: openLink,
               );
             }
 
@@ -98,12 +114,9 @@ class LegalArticlePage extends ConsumerWidget {
               primary: _ArticleMain(
                 detail: detail,
                 compact: false,
-                onOpenLink: openExternalLink,
+                onOpenLink: openLink,
               ),
-              secondary: _ArticleSide(
-                detail: detail,
-                onOpenLink: openExternalLink,
-              ),
+              secondary: _ArticleSide(detail: detail, onOpenLink: openLink),
             );
           },
         ),
@@ -121,7 +134,8 @@ class _ArticleMain extends StatelessWidget {
 
   final LawArticleDetail detail;
   final bool compact;
-  final Future<void> Function(String url, String label) onOpenLink;
+  final Future<void> Function(String url, String label, InAppWebViewKind? kind)
+  onOpenLink;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +295,8 @@ class _ArticleSide extends StatelessWidget {
   const _ArticleSide({required this.detail, required this.onOpenLink});
 
   final LawArticleDetail detail;
-  final Future<void> Function(String url, String label) onOpenLink;
+  final Future<void> Function(String url, String label, InAppWebViewKind? kind)
+  onOpenLink;
 
   @override
   Widget build(BuildContext context) {
@@ -299,7 +314,8 @@ class _ArticleSideSection extends StatelessWidget {
   });
 
   final LawArticleDetail detail;
-  final Future<void> Function(String url, String label) onOpenLink;
+  final Future<void> Function(String url, String label, InAppWebViewKind? kind)
+  onOpenLink;
   final bool showEntryActions;
 
   @override
@@ -329,7 +345,7 @@ class _ArticleSideSection extends StatelessWidget {
 
   List<Widget> _secondaryLinkActions() {
     final actions = <Widget>[];
-    void addAction(String label, String? url) {
+    void addAction(String label, String? url, InAppWebViewKind? kind) {
       if (url == null) {
         return;
       }
@@ -337,7 +353,7 @@ class _ArticleSideSection extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: OutlinedButton.icon(
-            onPressed: () => onOpenLink(url, label),
+            onPressed: () => onOpenLink(url, label, kind),
             icon: const Icon(Icons.open_in_new_rounded),
             label: Text(label),
           ),
@@ -345,9 +361,14 @@ class _ArticleSideSection extends StatelessWidget {
       );
     }
 
-    addAction('查看原文', detail.sourceUrl ?? detail.htmlUrl);
-    addAction('打开 HTML', detail.htmlUrl);
-    addAction('下载 DOCX', detail.docxUrl);
+    addAction(
+      '查看原文',
+      detail.sourceUrl ?? detail.htmlUrl,
+      InAppWebViewKind.html,
+    );
+    addAction('打开 HTML', detail.htmlUrl, InAppWebViewKind.html);
+    addAction('下载 PDF', detail.pdfUrl, InAppWebViewKind.pdf);
+    addAction('下载 DOCX', detail.docxUrl, null);
     return actions;
   }
 }
@@ -356,28 +377,50 @@ class _ArticleLinkActions extends StatelessWidget {
   const _ArticleLinkActions({required this.detail, required this.onOpenLink});
 
   final LawArticleDetail detail;
-  final Future<void> Function(String url, String label) onOpenLink;
+  final Future<void> Function(String url, String label, InAppWebViewKind? kind)
+  onOpenLink;
 
   @override
   Widget build(BuildContext context) {
     final actions = <Widget>[];
 
-    void addAction(String label, String? url, IconData icon) {
+    void addAction(
+      String label,
+      String? url,
+      IconData icon,
+      InAppWebViewKind? kind,
+    ) {
       if (url == null) {
         return;
       }
       actions.add(
         OutlinedButton.icon(
-          onPressed: () => onOpenLink(url, label),
+          onPressed: () => onOpenLink(url, label, kind),
           icon: Icon(icon),
           label: Text(label),
         ),
       );
     }
 
-    addAction('查看原文', detail.sourceUrl ?? detail.htmlUrl, Icons.menu_book);
-    addAction('打开 HTML', detail.htmlUrl, Icons.language_rounded);
-    addAction('下载 DOCX', detail.docxUrl, Icons.download_rounded);
+    addAction(
+      '查看原文',
+      detail.sourceUrl ?? detail.htmlUrl,
+      Icons.menu_book,
+      InAppWebViewKind.html,
+    );
+    addAction(
+      '打开 HTML',
+      detail.htmlUrl,
+      Icons.language_rounded,
+      InAppWebViewKind.html,
+    );
+    addAction(
+      '下载 PDF',
+      detail.pdfUrl,
+      Icons.picture_as_pdf_rounded,
+      InAppWebViewKind.pdf,
+    );
+    addAction('下载 DOCX', detail.docxUrl, Icons.download_rounded, null);
 
     if (actions.isEmpty) {
       return const SizedBox.shrink();
@@ -463,11 +506,13 @@ String _buildArticleShareText(LawArticleDetail detail) {
     ...detail.citations.map((item) => '• ${item.title}：${item.subtitle}'),
     if (detail.sourceUrl != null ||
         detail.htmlUrl != null ||
+        detail.pdfUrl != null ||
         detail.docxUrl != null) ...[
       '',
       '原文入口',
       if (detail.sourceUrl != null) '• 查看原文：${detail.sourceUrl}',
       if (detail.htmlUrl != null) '• HTML：${detail.htmlUrl}',
+      if (detail.pdfUrl != null) '• PDF：${detail.pdfUrl}',
       if (detail.docxUrl != null) '• DOCX：${detail.docxUrl}',
     ],
   ].join('\n');

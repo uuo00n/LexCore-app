@@ -31,6 +31,7 @@ class LawArticleDetail {
     required this.citations,
     this.htmlUrl,
     this.docxUrl,
+    this.pdfUrl,
     this.sourceUrl,
     this.fallbackMessage,
   });
@@ -46,6 +47,7 @@ class LawArticleDetail {
   final List<LawCitationItem> citations;
   final String? htmlUrl;
   final String? docxUrl;
+  final String? pdfUrl;
   final String? sourceUrl;
   final String? fallbackMessage;
 }

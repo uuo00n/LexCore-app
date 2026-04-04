@@ -67,6 +67,7 @@ class SearchRepository {
     final bodySections = _resolveBodySections(detail);
     final htmlUrl = _resolveUrl(detail, const [
       'html_url',
+      'html_download_url',
       'htmlUrl',
       'html_link',
       'htmlLink',
@@ -74,11 +75,19 @@ class SearchRepository {
     ]);
     final docxUrl = _resolveUrl(detail, const [
       'docx_url',
+      'docx_download_url',
       'docxUrl',
       'docx_link',
       'docxLink',
       'download_url',
       'downloadUrl',
+    ]);
+    final pdfUrl = _resolveUrl(detail, const [
+      'pdf_url',
+      'pdf_download_url',
+      'pdfUrl',
+      'pdf_link',
+      'pdfLink',
     ]);
     final sourceUrl = _resolveUrl(detail, const [
       'source_url',
@@ -91,7 +100,10 @@ class SearchRepository {
     final fallbackMessage = bodySections.isEmpty
         ? [
             '暂未获取到法规正文。',
-            if (htmlUrl != null || docxUrl != null || sourceUrl != null)
+            if (htmlUrl != null ||
+                docxUrl != null ||
+                pdfUrl != null ||
+                sourceUrl != null)
               '可通过下方原文入口继续查看完整内容。'
             else
               '当前仅展示法规基础信息，请稍后重试或更换结果。',
@@ -124,6 +136,8 @@ ${fallbackMessage ?? '暂无正文内容。'}''';
         ),
         if (htmlUrl != null)
           const LawCitationItem(title: 'HTML 原文', subtitle: '可打开网页查看法规全文'),
+        if (pdfUrl != null)
+          const LawCitationItem(title: 'PDF 下载', subtitle: '可下载法规 PDF 副本'),
         if (docxUrl != null)
           const LawCitationItem(title: 'DOCX 下载', subtitle: '可下载法规文档副本'),
         if (sourceUrl != null)
@@ -131,6 +145,7 @@ ${fallbackMessage ?? '暂无正文内容。'}''';
       ],
       htmlUrl: htmlUrl,
       docxUrl: docxUrl,
+      pdfUrl: pdfUrl,
       sourceUrl: sourceUrl,
       fallbackMessage: fallbackMessage,
     );

@@ -33,6 +33,7 @@ import 'package:lexcore/features/search/presentation/pages/legal_article_page.da
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
+import 'package:lexcore/shared/widgets/in_app_webview_page.dart';
 
 import 'route_names.dart';
 
@@ -160,6 +161,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: RouteNames.inAppWebViewPath,
+        name: RouteNames.inAppWebView,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) {
+          final args = state.extra is InAppWebViewRouteArgs
+              ? state.extra! as InAppWebViewRouteArgs
+              : const InAppWebViewRouteArgs(
+                  title: '原文预览',
+                  url: '',
+                  kind: InAppWebViewKind.html,
+                );
+          return AppPageTransitions.build(
+            context: context,
+            state: state,
+            kind: AppRouteTransitionKind.detail,
+            child: InAppWebViewPage(
+              title: args.title,
+              url: args.url,
+              kind: args.kind,
+            ),
+          );
+        },
       ),
       GoRoute(
         path: RouteNames.consultationPath,

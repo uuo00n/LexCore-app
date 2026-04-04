@@ -25,8 +25,9 @@ class _FakeSearchApiClient extends ApiClient {
         'effective_status': '现行有效',
         'publish_date': '2024-01-01',
         'full_text': '第四十四条 劳动合同终止。\n\n有下列情形之一的，劳动合同终止。',
-        'html_url': 'https://example.com/laws/LAW-101.html',
-        'docx_url': 'https://example.com/laws/LAW-101.docx',
+        'html_download_url': 'https://example.com/laws/LAW-101.html',
+        'docx_download_url': 'https://example.com/laws/LAW-101.docx',
+        'pdf_download_url': 'https://example.com/laws/LAW-101.pdf',
         'source_url': 'https://example.com/laws/LAW-101',
       });
     }
@@ -37,7 +38,7 @@ class _FakeSearchApiClient extends ApiClient {
         'issuing_authority': '地方人大',
         'effective_status': '现行有效',
         'publish_date': '2020-01-01',
-        'html_url': 'https://example.com/laws/LAW-EMPTY.html',
+        'html_download_url': 'https://example.com/laws/LAW-EMPTY.html',
       });
     }
     if (path == '/history') {
@@ -71,6 +72,7 @@ void main() {
     expect(detail.bodySections, hasLength(2));
     expect(detail.htmlUrl, 'https://example.com/laws/LAW-101.html');
     expect(detail.docxUrl, 'https://example.com/laws/LAW-101.docx');
+    expect(detail.pdfUrl, 'https://example.com/laws/LAW-101.pdf');
     expect(detail.sourceUrl, 'https://example.com/laws/LAW-101');
     expect(historyItems, hasLength(1));
     expect(historyItems.single.category, HistoryCategory.analysis);

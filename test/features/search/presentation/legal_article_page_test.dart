@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/features/search/data/repositories/search_repository.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
+import 'package:lexcore/shared/widgets/in_app_webview_page.dart';
 
 class _NoopApiClient extends ApiClient {
   _NoopApiClient() : super(Dio());
@@ -48,6 +51,7 @@ class _FakeSearchRepository extends SearchRepository {
           LawCitationItem(title: '法规 ID', subtitle: 'LAW-LINK'),
         ],
         htmlUrl: 'https://example.com/law-link.html',
+        pdfUrl: 'https://example.com/law-link.pdf',
         sourceUrl: 'https://example.com/law-link',
         fallbackMessage: '暂未获取到法规正文，可通过下方原文入口继续查看完整内容。',
       );
@@ -68,6 +72,7 @@ class _FakeSearchRepository extends SearchRepository {
         LawCitationItem(title: '劳动合同法 第四十四条', subtitle: '加班费支付标准'),
       ],
       htmlUrl: 'https://example.com/laws/44.html',
+      pdfUrl: 'https://example.com/laws/44.pdf',
       docxUrl: 'https://example.com/laws/44.docx',
       sourceUrl: 'https://example.com/laws/44',
     );
@@ -84,12 +89,32 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => LegalArticlePage(searchItem: item),
+        ),
+        GoRoute(
+          path: RouteNames.inAppWebViewPath,
+          name: RouteNames.inAppWebView,
+          builder: (context, state) {
+            final args = state.extra! as InAppWebViewRouteArgs;
+            return Scaffold(
+              body: Text('WebView:${args.title}:${args.kind.name}:${args.url}'),
+            );
+          },
+        ),
+      ],
+    );
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           searchRepositoryProvider.overrideWithValue(_FakeSearchRepository()),
         ],
-        child: MaterialApp(home: LegalArticlePage(searchItem: item)),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
@@ -148,6 +173,7 @@ void main() {
     expect(arguments['text'], contains('智能摘要'));
     expect(arguments['text'], contains('用人单位安排加班的，应当依法支付加班费。'));
     expect(arguments['text'], contains('查看原文：https://example.com/laws/44'));
+    expect(arguments['text'], contains('PDF：https://example.com/laws/44.pdf'));
   });
 
   testWidgets('shows body content and raw entry actions', (tester) async {
@@ -164,11 +190,13 @@ void main() {
     expect(find.text('休息日安排工作又不能安排补休的，应当支付相应报酬。'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, '查看原文'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, '打开 HTML'), findsOneWidget);
+    expect(find.widgetWithText(OutlinedButton, '下载 PDF'), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, '下载 DOCX'), findsOneWidget);
   });
 
-  testWidgets('opens external raw link when tapping action', (tester) async {
-    final calls = mockUrlLauncherChannel();
+  testWidgets('opens html raw link in in-app webview when tapping action', (
+    tester,
+  ) async {
     const item = LawSearchItem(
       title: '劳动合同法第四十四条',
       snippet: '用人单位安排加班的，应当依法支付加班费。',
@@ -180,9 +208,45 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
+      find.text('WebView:查看原文:html:https://example.com/laws/44'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('opens external pdf link when tapping action', (tester) async {
+    const item = LawSearchItem(
+      title: '劳动合同法第四十四条',
+      snippet: '用人单位安排加班的，应当依法支付加班费。',
+      articleCode: '法条 44',
+    );
+
+    await pumpLegalArticlePage(tester, item: item);
+    await tester.tap(find.widgetWithText(OutlinedButton, '下载 PDF').first);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('WebView:下载 PDF:pdf:https://example.com/laws/44.pdf'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('keeps docx action opening externally', (tester) async {
+    final calls = mockUrlLauncherChannel();
+    const item = LawSearchItem(
+      title: '劳动合同法第四十四条',
+      snippet: '用人单位安排加班的，应当依法支付加班费。',
+      articleCode: '法条 44',
+    );
+
+    await pumpLegalArticlePage(tester, item: item);
+    await tester.tap(find.widgetWithText(OutlinedButton, '下载 DOCX').first);
+    await tester.pumpAndSettle();
+
+    expect(
       calls.any(
-        (call) =>
-            call.arguments.toString().contains('https://example.com/laws/44'),
+        (call) => call.arguments.toString().contains(
+          'https://example.com/laws/44.docx',
+        ),
       ),
       isTrue,
     );
@@ -202,6 +266,10 @@ void main() {
     expect(find.text('暂未获取到法规正文，可通过下方原文入口继续查看完整内容。'), findsOneWidget);
     expect(
       find.widgetWithText(OutlinedButton, '查看原文'),
+      findsAtLeastNWidgets(1),
+    );
+    expect(
+      find.widgetWithText(OutlinedButton, '下载 PDF'),
       findsAtLeastNWidgets(1),
     );
     expect(find.text('法律引用与关联'), findsOneWidget);

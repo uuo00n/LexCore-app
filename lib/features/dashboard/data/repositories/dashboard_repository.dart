@@ -3,7 +3,7 @@ import 'package:lexcore/features/dashboard/domain/entities/dashboard_entity.dart
 class DashboardRepository {
   const DashboardRepository();
 
-  DashboardEntity load() {
+  DashboardEntity? load() {
     return const DashboardEntity(
       totalCases: 1284,
       inProgress: 42,

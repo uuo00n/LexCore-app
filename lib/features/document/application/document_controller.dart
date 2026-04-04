@@ -8,6 +8,7 @@ class DocumentState {
     required this.documents,
     required this.loading,
     required this.saving,
+    required this.exportingPdf,
     required this.detailLoading,
     this.errorMessage,
     this.feedbackMessage,
@@ -18,6 +19,7 @@ class DocumentState {
       documents: [],
       loading: true,
       saving: false,
+      exportingPdf: false,
       detailLoading: false,
     );
   }
@@ -25,6 +27,7 @@ class DocumentState {
   final List<DocumentItem> documents;
   final bool loading;
   final bool saving;
+  final bool exportingPdf;
   final bool detailLoading;
   final String? errorMessage;
   final String? feedbackMessage;
@@ -33,6 +36,7 @@ class DocumentState {
     List<DocumentItem>? documents,
     bool? loading,
     bool? saving,
+    bool? exportingPdf,
     bool? detailLoading,
     String? errorMessage,
     String? feedbackMessage,
@@ -43,6 +47,7 @@ class DocumentState {
       documents: documents ?? this.documents,
       loading: loading ?? this.loading,
       saving: saving ?? this.saving,
+      exportingPdf: exportingPdf ?? this.exportingPdf,
       detailLoading: detailLoading ?? this.detailLoading,
       errorMessage: clearErrorMessage
           ? null
@@ -187,6 +192,57 @@ class DocumentController extends StateNotifier<DocumentState> {
       );
       return null;
     }
+  }
+
+  Future<DocumentPdfExportResult?> exportDraftPdf(DocumentDraft draft) async {
+    if (state.exportingPdf) {
+      return null;
+    }
+
+    var target = _findDocumentByTitle(draft.title);
+    if (target == null) {
+      try {
+        await saveDraft(draft);
+      } catch (_) {
+        return null;
+      }
+      target = _findDocumentByTitle(draft.title);
+      target ??= state.documents.isEmpty ? null : state.documents.first;
+    }
+
+    if (target == null) {
+      return null;
+    }
+
+    state = state.copyWith(exportingPdf: true, clearErrorMessage: true);
+    try {
+      final result = await _repository.exportPdf(target.id);
+      state = state.copyWith(
+        exportingPdf: false,
+        errorMessage: result.errorMessage,
+        clearErrorMessage: result.completed,
+      );
+      return result;
+    } catch (_) {
+      state = state.copyWith(
+        exportingPdf: false,
+        errorMessage: 'PDF 导出失败，请稍后重试',
+      );
+      return null;
+    }
+  }
+
+  DocumentItem? _findDocumentByTitle(String title) {
+    final normalized = title.trim();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    for (final item in state.documents) {
+      if (item.name.trim() == normalized) {
+        return item;
+      }
+    }
+    return null;
   }
 
   void clearFeedbackMessage() {

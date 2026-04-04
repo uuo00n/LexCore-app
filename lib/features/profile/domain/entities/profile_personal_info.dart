@@ -1,9 +1,7 @@
-const String defaultProfileAvatarUrl =
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDyKmFYBVM8oWRTG0Q8u1PW6_yLs5OrUx9YcDTUE651ZM3gwL1vh6qDY74nxbnATNwug0EcyB4yxsZZf5hZzkAtzEWWTmi9RMWEwqvnOmCR2o8SSyppIMtMtGwgh7SD8zXR7UNgGbl6pC2uIDAKlarIwpWZzitR8U56VPDkYEVRYaIRxP5YuRRimg6EQR_LQwtIUJMTIn2wAR8OAY9pRFtf5PFzzjChKCEz3C59Awsc46Ogpqh1151wB6-_XMqlnQnTaiogvTX0DOWj';
-
 class ProfilePersonalInfo {
   const ProfilePersonalInfo({
     this.avatarPath,
+    this.avatarFileId,
     required this.name,
     required this.phone,
     required this.email,
@@ -17,18 +15,20 @@ class ProfilePersonalInfo {
   factory ProfilePersonalInfo.defaults() {
     return const ProfilePersonalInfo(
       avatarPath: null,
-      name: 'LexCore 用户',
-      phone: '138****2601',
-      email: 'lexcore_user@example.com',
-      role: '个人法律顾问',
-      organization: '独立执业',
-      practiceAreas: ['民商事纠纷', '劳动争议'],
-      language: '简体中文',
+      avatarFileId: null,
+      name: '',
+      phone: '',
+      email: '',
+      role: '',
+      organization: '',
+      practiceAreas: [],
+      language: '',
       notificationsEnabled: true,
     );
   }
 
   final String? avatarPath;
+  final String? avatarFileId;
   final String name;
   final String phone;
   final String email;
@@ -47,10 +47,11 @@ class ProfilePersonalInfo {
 
   bool get hasAvatar =>
       (avatarPath?.trim().isNotEmpty ?? false) ||
-      defaultProfileAvatarUrl.isNotEmpty;
+      (avatarFileId?.trim().isNotEmpty ?? false);
 
   ProfilePersonalInfo copyWith({
     Object? avatarPath = _copyWithSentinel,
+    Object? avatarFileId = _copyWithSentinel,
     String? name,
     String? phone,
     String? email,
@@ -64,6 +65,9 @@ class ProfilePersonalInfo {
       avatarPath: avatarPath == _copyWithSentinel
           ? this.avatarPath
           : avatarPath as String?,
+      avatarFileId: avatarFileId == _copyWithSentinel
+          ? this.avatarFileId
+          : avatarFileId as String?,
       name: name ?? this.name,
       phone: phone ?? this.phone,
       email: email ?? this.email,
@@ -78,6 +82,7 @@ class ProfilePersonalInfo {
   Map<String, dynamic> toJson() {
     return {
       'avatarPath': avatarPath,
+      'avatarFileId': avatarFileId,
       'name': name,
       'phone': phone,
       'email': email,
@@ -92,46 +97,44 @@ class ProfilePersonalInfo {
   factory ProfilePersonalInfo.fromJson(Map<String, dynamic> json) {
     return ProfilePersonalInfo(
       avatarPath: json['avatarPath'] as String?,
+      avatarFileId: json['avatarFileId'] as String?,
       name: (json['name'] as String?)?.trim().isNotEmpty == true
           ? json['name'] as String
-          : 'LexCore 用户',
+          : '',
       phone: _normalizePhone((json['phone'] as String?) ?? ''),
       email: (json['email'] as String?)?.trim().isNotEmpty == true
           ? json['email'] as String
-          : 'lexcore_user@example.com',
+          : '',
       role: (json['role'] as String?)?.trim().isNotEmpty == true
           ? json['role'] as String
-          : '个人法律顾问',
+          : '',
       organization: (json['organization'] as String?)?.trim().isNotEmpty == true
           ? json['organization'] as String
-          : '独立执业',
+          : '',
       practiceAreas: _parsePracticeAreas(json['practiceAreas']),
       language: (json['language'] as String?)?.trim().isNotEmpty == true
           ? json['language'] as String
-          : '简体中文',
+          : '',
       notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
     );
   }
 
   static List<String> _parsePracticeAreas(Object? source) {
     if (source is! List) {
-      return const ['民商事纠纷', '劳动争议'];
+      return const [];
     }
     final values = source
         .whereType<String>()
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)
         .toList();
-    if (values.isEmpty) {
-      return const ['民商事纠纷', '劳动争议'];
-    }
     return values;
   }
 
   static String _normalizePhone(String source) {
     final value = source.trim();
     if (value.isEmpty) {
-      return '138****2601';
+      return '';
     }
     if (_e164PhoneRegExp.hasMatch(value)) {
       return value;

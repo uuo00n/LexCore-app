@@ -30,7 +30,9 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(authControllerProvider.notifier).setMode(AuthMode.login);
+      final controller = ref.read(authControllerProvider.notifier);
+      controller.setMode(AuthMode.login);
+      controller.bootstrapSession();
     });
   }
 
@@ -59,9 +61,10 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     );
     if (!mounted) return;
     if (!success) {
+      final error = ref.read(authControllerProvider).errorMessage;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请先阅读并同意服务条款与隐私政策')));
+      ).showSnackBar(SnackBar(content: Text(error ?? '请先阅读并同意服务条款与隐私政策')));
       return;
     }
 
@@ -72,6 +75,12 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
     final controller = ref.read(authControllerProvider.notifier);
+    if (state.authenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        context.go(RouteNames.homePath);
+      });
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,

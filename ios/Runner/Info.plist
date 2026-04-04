@@ -28,6 +28,11 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>用于从相册选择头像并更新个人信息。</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import 'package:lexcore/features/profile/domain/entities/profile_personal_info.dart';
 import 'package:lexcore/features/profile/presentation/widgets/profile_avatar_image_provider.dart';
 
 class ProfileAvatar extends StatelessWidget {
@@ -36,13 +35,7 @@ class ProfileAvatar extends StatelessWidget {
       ),
       child: ClipOval(
         child: localImage == null
-            ? Image.network(
-                defaultProfileAvatarUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return _AvatarFallback(dark: dark, iconSize: iconSize);
-                },
-              )
+            ? _AvatarFallback(dark: dark, iconSize: iconSize)
             : Image(
                 image: localImage,
                 fit: BoxFit.cover,

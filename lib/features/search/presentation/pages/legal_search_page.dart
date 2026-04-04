@@ -30,6 +30,7 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
   void initState() {
     super.initState();
     _searchController.text = ref.read(searchControllerProvider);
+    ref.read(searchFilterProvider.notifier).state = _selectedFilter;
     _searchController.addListener(_onQueryChanged);
   }
 
@@ -45,7 +46,9 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
   Widget build(BuildContext context) {
     final keyword = ref.watch(searchControllerProvider);
     final hotArticles = ref.watch(filteredHotSearchArticlesProvider);
+    final searchNoticeAsync = ref.watch(searchNoticeProvider);
     final scenarioGroups = ref.watch(searchScenarioGroupsProvider);
+    final searchNotice = searchNoticeAsync.asData?.value;
 
     const filters = ['全部', '法律法规', '裁判文书', '行政执法'];
 
@@ -79,13 +82,28 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                         selectedFilter: _selectedFilter,
                         onFilterChanged: (index) {
                           setState(() => _selectedFilter = index);
+                          ref.read(searchFilterProvider.notifier).state = index;
                         },
                       ),
                       const SizedBox(height: 20),
-                      _ResultsSection(
-                        results: hotArticles,
-                        keyword: keyword,
-                        hasScenarioSelected: _selectedScenarioId != null,
+                      if (searchNotice != null &&
+                          searchNotice.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _SearchNoticeBanner(message: searchNotice),
+                        ),
+                      hotArticles.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (error, stackTrace) =>
+                            _EmptyResultState(keyword: keyword),
+                        data: (results) => _ResultsSection(
+                          results: results,
+                          keyword: keyword,
+                          hasScenarioSelected: _selectedScenarioId != null,
+                        ),
                       ),
                     ],
                   ),
@@ -445,6 +463,43 @@ class _SearchScenarioDrawerState extends State<_SearchScenarioDrawer> {
     setState(() {
       _selectedGroupIndex = index;
     });
+  }
+}
+
+class _SearchNoticeBanner extends StatelessWidget {
+  const _SearchNoticeBanner({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.56),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: colorScheme.onTertiaryContainer,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

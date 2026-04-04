@@ -1,19 +1,43 @@
-import 'dart:convert';
-
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/features/profile/application/profile_personal_info_controller.dart';
 import 'package:lexcore/features/profile/data/repositories/profile_personal_info_repository.dart';
+import 'package:lexcore/features/profile/domain/entities/profile_personal_info.dart';
+
+class _NoopApiClient extends ApiClient {
+  _NoopApiClient() : super(Dio());
+}
+
+class _FakeProfilePersonalInfoRepository extends ProfilePersonalInfoRepository {
+  _FakeProfilePersonalInfoRepository({ProfilePersonalInfo? initialInfo})
+    : _info = initialInfo ?? ProfilePersonalInfo.defaults(),
+      super(_NoopApiClient());
+
+  ProfilePersonalInfo _info;
+
+  @override
+  Future<ProfilePersonalInfo> load() async {
+    return _info;
+  }
+
+  @override
+  Future<ProfilePersonalInfo> save(ProfilePersonalInfo info) async {
+    _info = info;
+    return _info;
+  }
+
+  @override
+  Future<String> uploadAvatar(String filePath) async {
+    return 'file_avatar_mock';
+  }
+}
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
   test('default profile info follows weighted completeness', () async {
     final controller = ProfilePersonalInfoController(
-      repository: const ProfilePersonalInfoRepository(),
+      repository: _FakeProfilePersonalInfoRepository(),
     );
     addTearDown(controller.dispose);
 
@@ -26,7 +50,7 @@ void main() {
 
   test('valid phone update reaches full completeness', () async {
     final controller = ProfilePersonalInfoController(
-      repository: const ProfilePersonalInfoRepository(),
+      repository: _FakeProfilePersonalInfoRepository(),
     );
     addTearDown(controller.dispose);
 
@@ -39,7 +63,7 @@ void main() {
 
   test('missing high-priority fields are reported', () async {
     final controller = ProfilePersonalInfoController(
-      repository: const ProfilePersonalInfoRepository(),
+      repository: _FakeProfilePersonalInfoRepository(),
     );
     addTearDown(controller.dispose);
 
@@ -52,25 +76,24 @@ void main() {
   });
 
   test('legacy 11-digit mainland phone is normalized to E.164', () async {
-    SharedPreferences.setMockInitialValues({
-      'profile_personal_info_v1': jsonEncode({
-        'name': '张三律师',
-        'phone': '13800138000',
-        'email': 'zhangsan@example.com',
-        'role': '企业法务',
-        'organization': '华东律所',
-        'practiceAreas': ['劳动法'],
-        'language': '简体中文',
-        'notificationsEnabled': true,
-      }),
-    });
-
     final controller = ProfilePersonalInfoController(
-      repository: const ProfilePersonalInfoRepository(),
+      repository: _FakeProfilePersonalInfoRepository(
+        initialInfo: ProfilePersonalInfo.defaults().copyWith(
+          name: '张三律师',
+          phone: '13800138000',
+          email: 'zhangsan@example.com',
+          role: '企业法务',
+          organization: '华东律所',
+          practiceAreas: const ['劳动法'],
+          language: '简体中文',
+          notificationsEnabled: true,
+        ),
+      ),
     );
     addTearDown(controller.dispose);
 
     await _waitForLoad(controller);
+    await controller.updatePhone(controller.state.info.phone);
 
     expect(controller.state.info.phone, '+8613800138000');
     expect(controller.state.completionPercent, 100);

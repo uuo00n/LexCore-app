@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lexcore/app/theme/theme_mode_repository.dart';
 
 class ThemeModeController extends StateNotifier<ThemeMode> {
-  ThemeModeController({
-    required ThemeModeRepository repository,
-  })  : _repository = repository,
-        super(ThemeMode.system) {
+  ThemeModeController({required ThemeModeRepository repository})
+    : _repository = repository,
+      super(ThemeMode.system) {
     _load();
   }
 
@@ -37,7 +36,7 @@ final themeModeRepositoryProvider = Provider<ThemeModeRepository>((ref) {
 
 final themeModeControllerProvider =
     StateNotifierProvider<ThemeModeController, ThemeMode>((ref) {
-  return ThemeModeController(
-    repository: ref.watch(themeModeRepositoryProvider),
-  );
-});
+      return ThemeModeController(
+        repository: ref.watch(themeModeRepositoryProvider),
+      );
+    });

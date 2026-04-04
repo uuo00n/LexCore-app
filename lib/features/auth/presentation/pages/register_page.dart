@@ -83,9 +83,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     if (!mounted) return;
     if (!success) {
+      final error = ref.read(authControllerProvider).errorMessage;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('请先勾选服务条款与隐私政策')));
+      ).showSnackBar(SnackBar(content: Text(error ?? '请先勾选服务条款与隐私政策')));
       return;
     }
 

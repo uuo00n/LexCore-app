@@ -113,6 +113,7 @@ class DocumentItem {
     required this.updatedAt,
     required this.type,
     this.markdown = '',
+    this.status = 'completed',
   });
 
   final String id;
@@ -120,6 +121,7 @@ class DocumentItem {
   final DateTime updatedAt;
   final String type;
   final String markdown;
+  final String status;
 
   DocumentItem copyWith({
     String? id,
@@ -127,6 +129,7 @@ class DocumentItem {
     DateTime? updatedAt,
     String? type,
     String? markdown,
+    String? status,
   }) {
     return DocumentItem(
       id: id ?? this.id,
@@ -134,6 +137,7 @@ class DocumentItem {
       updatedAt: updatedAt ?? this.updatedAt,
       type: type ?? this.type,
       markdown: markdown ?? this.markdown,
+      status: status ?? this.status,
     );
   }
 
@@ -144,6 +148,7 @@ class DocumentItem {
       'updatedAt': updatedAt.toIso8601String(),
       'type': type,
       'markdown': markdown,
+      'status': status,
     };
   }
 
@@ -162,6 +167,7 @@ class DocumentItem {
       markdown: normalizedMarkdown.isEmpty
           ? _legacyDocumentMarkdownFallback(name: name, type: type)
           : normalizedMarkdown,
+      status: json['status'] as String? ?? 'completed',
     );
   }
 }

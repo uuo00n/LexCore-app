@@ -19,6 +19,9 @@ class AnalysisResultPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final report = ref.watch(analysisReportProvider);
+    if (report == null) {
+      return const _AnalysisResultUnavailablePage();
+    }
     final exportService = ref.read(appExportServiceProvider);
     final exportPayload = _buildAnalysisExportPayload(report);
     final messenger = ScaffoldMessenger.of(context);
@@ -216,6 +219,41 @@ class _MainContent extends StatelessWidget {
         }),
         const SizedBox(height: 10),
       ],
+    );
+  }
+}
+
+class _AnalysisResultUnavailablePage extends StatelessWidget {
+  const _AnalysisResultUnavailablePage();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPageScaffold(
+      title: '案件分析结果',
+      subtitle: '智能报告与证据评估',
+      body: Center(
+        child: AppSurfaceCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.insights_outlined,
+                size: 38,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 10),
+              Text('暂无分析结果', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(
+                '当前版本暂未接入分析结果数据源。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

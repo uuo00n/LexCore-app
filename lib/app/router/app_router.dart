@@ -237,7 +237,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           child: CaseDetailPage(
             detail: state.extra is CaseDetailData
                 ? state.extra! as CaseDetailData
-                : CaseDetailData.demo(),
+                : null,
           ),
         ),
       ),

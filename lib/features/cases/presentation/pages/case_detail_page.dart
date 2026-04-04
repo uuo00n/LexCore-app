@@ -34,40 +34,6 @@ class CaseDetailData {
     required this.documents,
   });
 
-  factory CaseDetailData.demo() {
-    return const CaseDetailData(
-      status: CaseDetailStatus.inProgress,
-      statusLabel: '进行中',
-      lastUpdatedLabel: '更新于 2小时前',
-      title: '张三与李四房屋所有权纠纷案',
-      caseNumber: '(2023) 沪0115民初12345号',
-      dateLabel: '立案日期',
-      dateValue: '2023-10-15',
-      progress: 0.65,
-      progressLabel: '开庭中',
-      activeStepIndex: 2,
-      progressSteps: ['证据交换', '庭审准备', '开庭中', '判决'],
-      summary:
-          '原告张三与被告李四于 2022 年签订房屋买卖协议，原告已支付全部房款，但被告迟迟未办理房产过户手续。原告遂起诉要求被告履行合同义务并赔偿违约金。',
-      plaintiffName: '张三',
-      plaintiffCounsel: '代理律师：王律师',
-      defendantName: '李四',
-      defendantCounsel: '未指定代理',
-      documents: [
-        CaseDocumentData(
-          type: CaseDocumentType.pdf,
-          title: '起诉状_张三.pdf',
-          meta: '1.2 MB · 2023-10-16',
-        ),
-        CaseDocumentData(
-          type: CaseDocumentType.image,
-          title: '房产证复印件.jpg',
-          meta: '2.5 MB · 2023-10-18',
-        ),
-      ],
-    );
-  }
-
   final CaseDetailStatus status;
   final String statusLabel;
   final String lastUpdatedLabel;
@@ -101,14 +67,41 @@ class CaseDocumentData {
 }
 
 class CaseDetailPage extends StatelessWidget {
-  const CaseDetailPage({super.key, required this.detail});
+  const CaseDetailPage({super.key, this.detail});
 
-  final CaseDetailData detail;
+  final CaseDetailData? detail;
 
   @override
   Widget build(BuildContext context) {
+    final detailData = detail;
+    if (detailData == null) {
+      return AppPageScaffold(
+        title: '案件详情',
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.folder_open_outlined,
+                size: 38,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 10),
+              Text('暂无案件详情', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(
+                '当前版本暂未接入案件详情数据源。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final colorScheme = context.colorScheme;
-    final shareText = _buildCaseShareText(detail);
+    final shareText = _buildCaseShareText(detailData);
     final messenger = ScaffoldMessenger.of(context);
 
     Future<void> shareCase(BuildContext anchorContext) async {
@@ -117,7 +110,7 @@ class CaseDetailPage extends StatelessWidget {
           pageContext: context,
           anchorContext: anchorContext,
           text: shareText,
-          subject: detail.title,
+          subject: detailData.title,
         );
       } catch (_) {
         messenger.showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
@@ -147,7 +140,7 @@ class CaseDetailPage extends StatelessWidget {
         children: [
           AppFadeSlideIn(
             delay: const Duration(milliseconds: 40),
-            child: _OverviewSection(detail: detail),
+            child: _OverviewSection(detail: detailData),
           ),
           const SizedBox(height: 18),
           AppFadeSlideIn(
@@ -162,22 +155,22 @@ class CaseDetailPage extends StatelessWidget {
           ),
           AppFadeSlideIn(
             delay: const Duration(milliseconds: 120),
-            child: _ProgressSection(detail: detail),
+            child: _ProgressSection(detail: detailData),
           ),
           const _SectionBreak(),
           AppFadeSlideIn(
             delay: const Duration(milliseconds: 160),
-            child: _PartySection(detail: detail),
+            child: _PartySection(detail: detailData),
           ),
           const _SectionBreak(),
           AppFadeSlideIn(
             delay: const Duration(milliseconds: 200),
-            child: _SummarySection(summary: detail.summary),
+            child: _SummarySection(summary: detailData.summary),
           ),
           const _SectionBreak(),
           AppFadeSlideIn(
             delay: const Duration(milliseconds: 240),
-            child: _DocumentsSection(documents: detail.documents),
+            child: _DocumentsSection(documents: detailData.documents),
           ),
           const SizedBox(height: 20),
         ],

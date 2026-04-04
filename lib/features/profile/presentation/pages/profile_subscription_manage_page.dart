@@ -1,75 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:lexcore/core/utils/feature_notice.dart';
+import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
-class ProfileSubscriptionManagePage extends StatelessWidget {
+class ProfileSubscriptionManagePage extends ConsumerWidget {
   const ProfileSubscriptionManagePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final snapshotAsync = ref.watch(profileSubscriptionSnapshotProvider);
     return AppPageScaffold(
       title: '管理订阅',
       subtitle: '会员计划与计费',
-      body: ListView(
-        children: [
-          AppSurfaceCard(
-            backgroundColor: Theme.of(
-              context,
-            ).colorScheme.primary.withValues(alpha: 0.08),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '当前计划：PRO 会员',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+      body: snapshotAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => const Center(child: Text('订阅信息加载失败')),
+        data: (snapshot) => ListView(
+          children: [
+            AppSurfaceCard(
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.08),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '当前计划：${snapshot.planCode}',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '下次计费日期：2024年12月1日',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 6),
+                  Text(
+                    '订阅状态：${snapshot.status}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: const [
-                    _PlanBenefit(text: '无限次智能咨询'),
-                    _PlanBenefit(text: '高级文书模板'),
-                    _PlanBenefit(text: '优先导出能力'),
-                  ],
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _PlanBenefit(text: '文书剩余 ${snapshot.documentRemaining}'),
+                      _PlanBenefit(text: 'PDF 剩余 ${snapshot.pdfRemaining}'),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _SubscriptionActionTile(
-            icon: Icons.upgrade_outlined,
-            title: '升级套餐',
-            subtitle: '切换到团队版或企业版',
-            onTap: () =>
-                showFeatureInProgressSnackBar(context, featureLabel: '升级套餐'),
-          ),
-          _SubscriptionActionTile(
-            icon: Icons.calendar_month_outlined,
-            title: '调整续费周期',
-            subtitle: '月付 / 年付灵活切换',
-            onTap: () =>
-                showFeatureInProgressSnackBar(context, featureLabel: '续费周期调整'),
-          ),
-          _SubscriptionActionTile(
-            icon: Icons.cancel_outlined,
-            title: '取消自动续费',
-            subtitle: '到期后自动停止计费',
-            onTap: () =>
-                showFeatureInProgressSnackBar(context, featureLabel: '取消自动续费'),
-          ),
-        ],
+            const SizedBox(height: 12),
+            _SubscriptionActionTile(
+              icon: Icons.upgrade_outlined,
+              title: '升级套餐',
+              subtitle: '切换到团队版或企业版',
+              onTap: () =>
+                  showFeatureInProgressSnackBar(context, featureLabel: '升级套餐'),
+            ),
+            _SubscriptionActionTile(
+              icon: Icons.calendar_month_outlined,
+              title: '调整续费周期',
+              subtitle: '月付 / 年付灵活切换',
+              onTap: () => showFeatureInProgressSnackBar(
+                context,
+                featureLabel: '续费周期调整',
+              ),
+            ),
+            _SubscriptionActionTile(
+              icon: Icons.cancel_outlined,
+              title: '取消自动续费',
+              subtitle: '到期后自动停止计费',
+              onTap: () => showFeatureInProgressSnackBar(
+                context,
+                featureLabel: '取消自动续费',
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

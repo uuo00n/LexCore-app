@@ -110,7 +110,7 @@ class ProfilePersonalInfoController
       _applyInfo(
         ProfilePersonalInfo.defaults(),
         loading: false,
-        feedbackMessage: '个人信息加载失败，已切换为默认资料',
+        feedbackMessage: '个人信息加载失败，已切换为空白资料',
       );
     }
   }
@@ -173,14 +173,17 @@ class ProfilePersonalInfoController
           '${directory.path}/profile_avatar_${DateTime.now().millisecondsSinceEpoch}$extension';
       await selectedImage.saveTo(savedPath);
 
-      await _saveInfo(state.info.copyWith(avatarPath: savedPath));
+      final avatarFileId = await _repository.uploadAvatar(savedPath);
+      await _saveInfo(
+        state.info.copyWith(avatarPath: savedPath, avatarFileId: avatarFileId),
+      );
     } catch (_) {
       state = state.copyWith(feedbackMessage: '头像更新失败，请稍后重试');
     }
   }
 
   Future<void> resetAvatar() async {
-    await _saveInfo(state.info.copyWith(avatarPath: null));
+    await _saveInfo(state.info.copyWith(avatarPath: null, avatarFileId: null));
   }
 
   void clearFeedbackMessage() {
@@ -190,7 +193,11 @@ class ProfilePersonalInfoController
   Future<void> _saveInfo(ProfilePersonalInfo info) async {
     _applyInfo(info, clearFeedbackMessage: true);
     try {
-      await _repository.save(info);
+      final saved = await _repository.save(info);
+      _applyInfo(
+        saved.copyWith(avatarPath: info.avatarPath),
+        clearFeedbackMessage: true,
+      );
     } catch (_) {
       state = state.copyWith(feedbackMessage: '保存失败，请稍后重试');
     }

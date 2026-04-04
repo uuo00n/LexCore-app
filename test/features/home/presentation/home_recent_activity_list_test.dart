@@ -2,19 +2,59 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:lexcore/features/home/application/home_providers.dart';
+import 'package:lexcore/features/home/domain/entities/home_entity.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 
 void main() {
   Future<void> pumpHomePage(WidgetTester tester) async {
+    final homeData = HomeEntity(
+      actions: const [
+        QuickAction(
+          title: '法律咨询',
+          subtitle: '智能问答',
+          icon: 'chat_bubble',
+          route: '/consultation',
+        ),
+        QuickAction(
+          title: '文书生成',
+          subtitle: '自动起草',
+          icon: 'description',
+          route: '/document',
+        ),
+      ],
+      activities: [
+        ActivityRecord(
+          title: '最新咨询记录',
+          time: DateTime(2026, 4, 4, 10),
+          tag: '咨询',
+        ),
+        ActivityRecord(
+          title: '最新文档记录',
+          time: DateTime(2026, 4, 4, 9),
+          tag: '文档',
+        ),
+        ActivityRecord(
+          title: '最新分析记录',
+          time: DateTime(2026, 4, 4, 8),
+          tag: '分析',
+        ),
+      ],
+    );
+
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
 
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: HomePage())),
+      ProviderScope(
+        overrides: [homeDataProvider.overrideWith((ref) async => homeData)],
+        child: const MaterialApp(home: HomePage()),
+      ),
     );
-    await tester.pump(const Duration(milliseconds: 900));
+    await tester.pumpAndSettle();
   }
 
   Finder activityItem(int index) {

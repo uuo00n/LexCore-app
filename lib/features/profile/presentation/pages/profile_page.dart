@@ -16,93 +16,105 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final summary = ref.watch(profileSummaryProvider);
+    final summaryAsync = ref.watch(profileSummaryProvider);
     final personalInfo = ref.watch(profilePersonalInfoControllerProvider).info;
     final menus = ref.watch(profileMenusProvider);
     final accountMenus = _buildAccountMenus();
     final contentMenus = _buildContentMenus(menus);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      body: AppMobileCanvas(
-        maxContentWidth: 560,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _ProfileTopBar(
-                onSettingsTap: () => context.push(RouteNames.settingsPath),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 118),
-                  children: [
-                    _ProfileHero(
-                      summary: summary,
-                      name: personalInfo.name,
-                      email: personalInfo.email,
-                      avatarPath: personalInfo.avatarPath,
-                    ),
-                    const SizedBox(height: 20),
-                    _SectionTitle(
-                      text: '账号与订阅',
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 8),
-                    _SectionCard(
-                      children: [
-                        for (var i = 0; i < accountMenus.length; i++)
-                          _SectionRow(
-                            title: accountMenus[i].title,
-                            subtitle: accountMenus[i].subtitle,
-                            leading: accountMenus[i].icon,
-                            onTap: accountMenus[i].route == null
-                                ? null
-                                : () => context.navigateByRoute(
-                                    accountMenus[i].route!,
-                                  ),
-                            showDivider: i != accountMenus.length - 1,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    _SubscriptionCard(
-                      summary: summary,
-                      onManageSubscription: () => context.navigateByRoute(
-                        RouteNames.profileSubscriptionManagePath,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _SectionTitle(
-                      text: '内容与记录',
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 8),
-                    _SectionCard(
-                      children: [
-                        for (var i = 0; i < contentMenus.length; i++)
-                          _SectionRow(
-                            title: contentMenus[i].title,
-                            subtitle: contentMenus[i].subtitle,
-                            leading: contentMenus[i].icon,
-                            onTap: contentMenus[i].route == null
-                                ? null
-                                : () => context.navigateByRoute(
-                                    contentMenus[i].route!,
-                                  ),
-                            showDivider: i != contentMenus.length - 1,
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const _ProfileCopyright(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+    return summaryAsync.when(
+      loading: () => Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: const Center(child: CircularProgressIndicator()),
       ),
+      error: (error, stackTrace) => Scaffold(
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        body: const Center(child: Text('个人信息加载失败')),
+      ),
+      data: (summary) {
+        return Scaffold(
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          body: AppMobileCanvas(
+            maxContentWidth: 560,
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  _ProfileTopBar(
+                    onSettingsTap: () => context.push(RouteNames.settingsPath),
+                  ),
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 118),
+                      children: [
+                        _ProfileHero(
+                          summary: summary,
+                          name: _displayOrUnset(personalInfo.name),
+                          email: _displayOrUnset(personalInfo.email),
+                          avatarPath: personalInfo.avatarPath,
+                        ),
+                        const SizedBox(height: 20),
+                        _SectionTitle(
+                          text: '账号与订阅',
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        const SizedBox(height: 8),
+                        _SectionCard(
+                          children: [
+                            for (var i = 0; i < accountMenus.length; i++)
+                              _SectionRow(
+                                title: accountMenus[i].title,
+                                subtitle: accountMenus[i].subtitle,
+                                leading: accountMenus[i].icon,
+                                onTap: accountMenus[i].route == null
+                                    ? null
+                                    : () => context.navigateByRoute(
+                                        accountMenus[i].route!,
+                                      ),
+                                showDivider: i != accountMenus.length - 1,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        _SubscriptionCard(
+                          summary: summary,
+                          onManageSubscription: () => context.navigateByRoute(
+                            RouteNames.profileSubscriptionManagePath,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        _SectionTitle(
+                          text: '内容与记录',
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: 8),
+                        _SectionCard(
+                          children: [
+                            for (var i = 0; i < contentMenus.length; i++)
+                              _SectionRow(
+                                title: contentMenus[i].title,
+                                subtitle: contentMenus[i].subtitle,
+                                leading: contentMenus[i].icon,
+                                onTap: contentMenus[i].route == null
+                                    ? null
+                                    : () => context.navigateByRoute(
+                                        contentMenus[i].route!,
+                                      ),
+                                showDivider: i != contentMenus.length - 1,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        const _ProfileCopyright(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -173,6 +185,10 @@ class ProfilePage extends ConsumerWidget {
       default:
         return '';
     }
+  }
+
+  static String _displayOrUnset(String value) {
+    return value.trim().isEmpty ? '未设置' : value.trim();
   }
 
   static IconData _iconFromMenu(String icon) {

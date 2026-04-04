@@ -43,11 +43,21 @@ class _HistoryPageState extends ConsumerState<HistoryPage> {
   @override
   Widget build(BuildContext context) {
     final filter = ref.watch(historyFilterProvider);
-    final items = ref.watch(historySearchItemsProvider);
-    final allItems = ref.watch(historyAllItemsProvider);
+    final itemsAsync = ref.watch(historySearchItemsProvider);
+    final allItemsAsync = ref.watch(historyAllItemsProvider);
     final startTime = ref.watch(historySearchStartTimeProvider);
     final endTime = ref.watch(historySearchEndTimeProvider);
     final hasActiveRange = startTime != null || endTime != null;
+
+    if (itemsAsync.isLoading || allItemsAsync.isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (itemsAsync.hasError || allItemsAsync.hasError) {
+      return const Scaffold(body: Center(child: Text('历史记录加载失败')));
+    }
+
+    final items = itemsAsync.valueOrNull ?? const <HistoryItem>[];
+    final allItems = allItemsAsync.valueOrNull ?? const <HistoryItem>[];
 
     final today = <HistoryItem>[];
     final yesterday = <HistoryItem>[];

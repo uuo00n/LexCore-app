@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +29,13 @@ class ConsultationPage extends ConsumerStatefulWidget {
 
 class _ConsultationPageState extends ConsumerState<ConsultationPage> {
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _messageScrollController = ScrollController();
+
+  bool _hasHandledInitialScroll = false;
+  bool _hasScheduledScroll = false;
+  bool _scheduledScrollAnimated = false;
+  int _lastMessageCount = 0;
+  bool _lastIsAiThinking = false;
 
   @override
   void initState() {
@@ -35,12 +45,15 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
       final controller = ref.read(consultationStateControllerProvider.notifier);
       controller.ensureThread(widget.threadId, title: widget.threadTitle);
       controller.selectThread(widget.threadId);
+      unawaited(controller.syncRemoteMessages(widget.threadId));
+      _scheduleScrollToBottom(animated: false);
     });
   }
 
   @override
   void dispose() {
     _textController.dispose();
+    _messageScrollController.dispose();
     super.dispose();
   }
 
@@ -48,6 +61,13 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
   Widget build(BuildContext context) {
     final thread = ref.watch(consultationThreadProvider(widget.threadId));
     final messages = ref.watch(consultationMessagesProvider(widget.threadId));
+    final isAiThinking = ref.watch(
+      consultationIsAiThinkingProvider(widget.threadId),
+    );
+    _handleAutoScroll(
+      messageCount: messages.length,
+      isAiThinking: isAiThinking,
+    );
 
     return AppPageScaffold(
       title: thread.title,
@@ -74,7 +94,9 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
               secondaryMaxWidth: 340,
               primary: _ConversationPane(
                 messages: messages,
+                isAiThinking: isAiThinking,
                 bubbleMaxWidth: bubbleMaxWidth,
+                scrollController: _messageScrollController,
                 textController: _textController,
                 onSend: _sendMessage,
               ),
@@ -84,7 +106,9 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
 
           return _ConversationPane(
             messages: messages,
+            isAiThinking: isAiThinking,
             bubbleMaxWidth: bubbleMaxWidth,
+            scrollController: _messageScrollController,
             textController: _textController,
             onSend: _sendMessage,
           );
@@ -94,10 +118,104 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
   }
 
   void _sendMessage() {
-    ref
-        .read(consultationStateControllerProvider.notifier)
-        .send(widget.threadId, _textController.text);
+    final text = _textController.text;
+    if (text.trim().isEmpty) {
+      return;
+    }
+    unawaited(
+      ref
+          .read(consultationStateControllerProvider.notifier)
+          .send(widget.threadId, text),
+    );
     _textController.clear();
+  }
+
+  void _handleAutoScroll({
+    required int messageCount,
+    required bool isAiThinking,
+  }) {
+    if (!_hasHandledInitialScroll) {
+      _hasHandledInitialScroll = true;
+      _scheduleScrollToBottom(animated: false);
+    } else {
+      final didMessageCountIncrease = messageCount > _lastMessageCount;
+      final didThinkingStateChange = isAiThinking != _lastIsAiThinking;
+      final shouldScrollForMessages =
+          didMessageCountIncrease && (!isAiThinking || _lastIsAiThinking);
+
+      if (didThinkingStateChange || shouldScrollForMessages) {
+        _scheduleScrollToBottom();
+      }
+    }
+
+    _lastMessageCount = messageCount;
+    _lastIsAiThinking = isAiThinking;
+  }
+
+  void _scheduleScrollToBottom({bool animated = true}) {
+    if (_hasScheduledScroll) {
+      _scheduledScrollAnimated = _scheduledScrollAnimated || animated;
+      return;
+    }
+
+    _hasScheduledScroll = true;
+    _scheduledScrollAnimated = animated;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _hasScheduledScroll = false;
+      final shouldAnimate = _scheduledScrollAnimated;
+      _scheduledScrollAnimated = false;
+      _scrollToBottom(shouldAnimate, attempt: 0);
+    });
+  }
+
+  void _scrollToBottom(bool animated, {required int attempt}) {
+    if (!mounted || !_messageScrollController.hasClients) {
+      return;
+    }
+
+    final position = _messageScrollController.position;
+    final targetOffset = position.maxScrollExtent;
+    if (!position.hasContentDimensions || targetOffset <= 0) {
+      _messageScrollController.jumpTo(0);
+      return;
+    }
+
+    final currentOffset = position.pixels;
+    if ((currentOffset - targetOffset).abs() < 1) {
+      return;
+    }
+
+    if (animated) {
+      unawaited(
+        _messageScrollController
+            .animateTo(
+              targetOffset,
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOutCubic,
+            )
+            .whenComplete(() => _scheduleScrollCorrection(attempt + 1)),
+      );
+      return;
+    }
+
+    _messageScrollController.jumpTo(targetOffset);
+    _scheduleScrollCorrection(attempt + 1);
+  }
+
+  void _scheduleScrollCorrection(int attempt) {
+    if (attempt > 3) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_messageScrollController.hasClients) {
+        return;
+      }
+      final position = _messageScrollController.position;
+      if ((position.maxScrollExtent - position.pixels).abs() >= 1) {
+        _scrollToBottom(false, attempt: attempt);
+      }
+      _scheduleScrollCorrection(attempt + 1);
+    });
   }
 
   Future<void> _openThreadMenu() async {
@@ -297,7 +415,7 @@ class _ConsultationPageState extends ConsumerState<ConsultationPage> {
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('清空当前对话'),
-          content: const Text('清空后将仅保留欢迎消息，是否继续？'),
+          content: const Text('清空后将移除当前会话全部消息，是否继续？'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -363,196 +481,41 @@ enum _ThreadMenuAction { rename, share, clear, delete }
 class _ConversationPane extends StatelessWidget {
   const _ConversationPane({
     required this.messages,
+    required this.isAiThinking,
     required this.bubbleMaxWidth,
+    required this.scrollController,
     required this.textController,
     required this.onSend,
   });
 
   final List<ChatMessage> messages;
+  final bool isAiThinking;
   final double bubbleMaxWidth;
+  final ScrollController scrollController;
   final TextEditingController textController;
   final VoidCallback onSend;
 
   @override
   Widget build(BuildContext context) {
+    final conversationItems = _buildConversationItems(context);
+
     return Column(
       children: [
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(4, 2, 4, 8),
-            itemCount: messages.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final item = messages[index];
-              final isUser = item.role == ChatRole.user;
-              return AppFadeSlideIn(
-                key: ValueKey('${item.role.name}-$index-${item.content}'),
-                delay: Duration(milliseconds: 20 + (index * 35)),
-                beginOffset: const Offset(0, 0.02),
-                child: Row(
-                  mainAxisAlignment: isUser
-                      ? MainAxisAlignment.end
-                      : MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (!isUser) ...[
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primaryContainer,
-                        child: Icon(Icons.smart_toy_outlined, size: 18),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: isUser
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            constraints: BoxConstraints(
-                              maxWidth: bubbleMaxWidth,
-                            ),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isUser
-                                  ? context.tokens.chatUserBubble
-                                  : context.tokens.chatAiBubble,
-                              borderRadius: BorderRadius.only(
-                                topLeft: const Radius.circular(16),
-                                topRight: const Radius.circular(16),
-                                bottomLeft: Radius.circular(isUser ? 16 : 4),
-                                bottomRight: Radius.circular(isUser ? 4 : 16),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.content,
-                                  style: TextStyle(
-                                    color: isUser
-                                        ? Theme.of(
-                                            context,
-                                          ).colorScheme.onPrimary
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                  ),
-                                ),
-                                if (!isUser &&
-                                    item.content.trim().isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  TextButton.icon(
-                                    onPressed: () => context.pushNamed(
-                                      RouteNames.consultationStitchDetail,
-                                      extra: item.content,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.open_in_new_rounded,
-                                      size: 14,
-                                    ),
-                                    label: const Text('查看结果详情'),
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      backgroundColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary
-                                          .withValues(alpha: 0.08),
-                                      textStyle: Theme.of(context)
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                      minimumSize: const Size(0, 32),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 10,
-                                        vertical: 6,
-                                      ),
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      visualDensity: const VisualDensity(
-                                        horizontal: -2,
-                                        vertical: -2,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                                if (item.references.isNotEmpty) ...[
-                                  const SizedBox(height: 10),
-                                  Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: item.references
-                                        .map(
-                                          (reference) => Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: isUser
-                                                  ? Theme.of(context)
-                                                        .colorScheme
-                                                        .onPrimary
-                                                        .withValues(alpha: 0.2)
-                                                  : Theme.of(context)
-                                                        .colorScheme
-                                                        .surfaceContainerLowest,
-                                              borderRadius:
-                                                  BorderRadius.circular(999),
-                                            ),
-                                            child: Text(
-                                              reference,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    color: isUser
-                                                        ? Theme.of(context)
-                                                              .colorScheme
-                                                              .onPrimary
-                                                        : Theme.of(context)
-                                                              .colorScheme
-                                                              .onSurfaceVariant,
-                                                  ),
-                                            ),
-                                          ),
-                                        )
-                                        .toList(),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+          child: messages.isEmpty && !isAiThinking
+              ? Center(
+                  child: Text(
+                    '发送消息开始咨询',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
-                    if (isUser) ...[
-                      const SizedBox(width: 8),
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.primary.withValues(alpha: 0.13),
-                        child: Icon(Icons.person, size: 18),
-                      ),
-                    ],
-                  ],
+                  ),
+                )
+              : ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(4, 2, 4, 8),
+                  children: conversationItems,
                 ),
-              );
-            },
-          ),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(0, 8, 0, 0),
@@ -581,13 +544,306 @@ class _ConversationPane extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   minimumSize: const Size(46, 46),
                 ),
-                onPressed: onSend,
-                child: const Icon(Icons.send),
+                onPressed: isAiThinking ? null : onSend,
+                child: isAiThinking
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  List<Widget> _buildConversationItems(BuildContext context) {
+    final totalCount = messages.length + (isAiThinking ? 1 : 0);
+    final items = <Widget>[];
+
+    for (var index = 0; index < totalCount; index++) {
+      if (index == messages.length && isAiThinking) {
+        items.add(
+          AppFadeSlideIn(
+            key: const ValueKey<String>('consultation_ai_thinking'),
+            delay: Duration(milliseconds: 20 + (index * 35)),
+            beginOffset: const Offset(0, 0.02),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primaryContainer,
+                  child: const Icon(Icons.smart_toy_outlined, size: 18),
+                ),
+                const SizedBox(width: 8),
+                Flexible(child: _AiThinkingBubble(maxWidth: bubbleMaxWidth)),
+              ],
+            ),
+          ),
+        );
+      } else {
+        final item = messages[index];
+        final isUser = item.role == ChatRole.user;
+        items.add(
+          AppFadeSlideIn(
+            key: ValueKey('${item.role.name}-$index-${item.content}'),
+            delay: Duration(milliseconds: 20 + (index * 35)),
+            beginOffset: const Offset(0, 0.02),
+            child: Row(
+              mainAxisAlignment: isUser
+                  ? MainAxisAlignment.end
+                  : MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!isUser) ...[
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primaryContainer,
+                    child: const Icon(Icons.smart_toy_outlined, size: 18),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: isUser
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        constraints: BoxConstraints(maxWidth: bubbleMaxWidth),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isUser
+                              ? context.tokens.chatUserBubble
+                              : context.tokens.chatAiBubble,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(16),
+                            topRight: const Radius.circular(16),
+                            bottomLeft: Radius.circular(isUser ? 16 : 4),
+                            bottomRight: Radius.circular(isUser ? 4 : 16),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.content,
+                              style: TextStyle(
+                                color: isUser
+                                    ? Theme.of(context).colorScheme.onPrimary
+                                    : Theme.of(context).colorScheme.onSurface,
+                              ),
+                            ),
+                            if (!isUser && item.content.trim().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                onPressed: () => context.pushNamed(
+                                  RouteNames.consultationStitchDetail,
+                                  extra: item.content,
+                                ),
+                                icon: const Icon(
+                                  Icons.open_in_new_rounded,
+                                  size: 14,
+                                ),
+                                label: const Text('查看结果详情'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  backgroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withValues(alpha: 0.08),
+                                  textStyle: Theme.of(context)
+                                      .textTheme
+                                      .labelMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                  minimumSize: const Size(0, 32),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 6,
+                                  ),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                  visualDensity: const VisualDensity(
+                                    horizontal: -2,
+                                    vertical: -2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                ),
+                              ),
+                            ],
+                            if (item.references.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: item.references
+                                    .map(
+                                      (reference) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: isUser
+                                              ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary
+                                                    .withValues(alpha: 0.2)
+                                              : Theme.of(context)
+                                                    .colorScheme
+                                                    .surfaceContainerLowest,
+                                          borderRadius: BorderRadius.circular(
+                                            999,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          reference,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                color: isUser
+                                                    ? Theme.of(
+                                                        context,
+                                                      ).colorScheme.onPrimary
+                                                    : Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (isUser) ...[
+                  const SizedBox(width: 8),
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.13),
+                    child: const Icon(Icons.person, size: 18),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }
+
+      if (index != totalCount - 1) {
+        items.add(const SizedBox(height: 12));
+      }
+    }
+
+    return items;
+  }
+}
+
+class _AiThinkingBubble extends StatefulWidget {
+  const _AiThinkingBubble({required this.maxWidth});
+
+  final double maxWidth;
+
+  @override
+  State<_AiThinkingBubble> createState() => _AiThinkingBubbleState();
+}
+
+class _AiThinkingBubbleState extends State<_AiThinkingBubble>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(maxWidth: widget.maxWidth),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: context.tokens.chatAiBubble,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+          bottomLeft: Radius.circular(4),
+          bottomRight: Radius.circular(16),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'LexCore 正在思考',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(width: 8),
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              return Row(
+                children: List.generate(3, (index) {
+                  final value = _controller.value;
+                  final phase = ((value + index * 0.2) % 1.0) * 2 * math.pi;
+                  final pulse = (math.sin(phase - math.pi / 2) + 1) / 2;
+                  final opacity = 0.25 + pulse * 0.75;
+                  final scale = 0.75 + pulse * 0.35;
+
+                  return Padding(
+                    padding: EdgeInsets.only(right: index == 2 ? 0 : 4),
+                    child: Opacity(
+                      opacity: opacity.clamp(0, 1).toDouble(),
+                      child: Transform.scale(
+                        scale: scale,
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

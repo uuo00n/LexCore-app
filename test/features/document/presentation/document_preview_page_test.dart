@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,11 +9,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/core/export/app_export_service.dart';
-import 'package:lexcore/features/document/application/document_providers.dart';
+import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/features/document/data/repositories/document_repository.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
-import 'package:lexcore/shared/services/mock/mock_legal_repository.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
@@ -51,8 +51,77 @@ class _FakeExportService implements AppExportService {
   }
 }
 
+class _NoopApiClient extends ApiClient {
+  _NoopApiClient() : super(Dio());
+}
+
+class _InMemoryDocumentRepository extends DocumentRepository {
+  _InMemoryDocumentRepository({
+    required SharedPreferences preferences,
+    List<DocumentItem>? initialDocuments,
+  }) : _documents =
+           initialDocuments ??
+           [
+             DocumentItem(
+               id: 'doc_1',
+               name: '劳动仲裁申请书（草稿）',
+               updatedAt: DateTime.now().subtract(const Duration(days: 1)),
+               type: '仲裁文书',
+               markdown: '# 劳动仲裁申请书（草稿）',
+               status: 'completed',
+             ),
+           ],
+       super(_NoopApiClient(), preferences);
+
+  final List<DocumentItem> _documents;
+
+  @override
+  Future<List<DocumentItem>> loadSaved() async {
+    return [..._documents];
+  }
+
+  @override
+  Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
+    final now = DateTime.now();
+    final existingIndex = _documents.indexWhere(
+      (item) => item.name == draft.title,
+    );
+    if (existingIndex >= 0) {
+      _documents[existingIndex] = _documents[existingIndex].copyWith(
+        markdown: draft.markdown,
+        updatedAt: now,
+      );
+      return DocumentSaveResult.updated;
+    }
+
+    _documents.insert(
+      0,
+      DocumentItem(
+        id: 'doc_${_documents.length + 1}',
+        name: draft.title,
+        updatedAt: now,
+        type: '法律文书',
+        markdown: draft.markdown,
+        status: 'queued',
+      ),
+    );
+    return DocumentSaveResult.created;
+  }
+
+  @override
+  Future<DocumentItem?> loadById(String id) async {
+    for (final item in _documents) {
+      if (item.id == id) {
+        return item;
+      }
+    }
+    return null;
+  }
+}
+
 class _FailingDocumentRepository extends DocumentRepository {
-  _FailingDocumentRepository() : super(const MockLegalRepository());
+  _FailingDocumentRepository({required SharedPreferences preferences})
+    : super(_NoopApiClient(), preferences);
 
   @override
   Future<List<DocumentItem>> loadSaved() async {
@@ -63,6 +132,11 @@ class _FailingDocumentRepository extends DocumentRepository {
   Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
     throw Exception('save failed');
   }
+}
+
+Future<_InMemoryDocumentRepository> _buildInMemoryRepository() async {
+  final preferences = await SharedPreferences.getInstance();
+  return _InMemoryDocumentRepository(preferences: preferences);
 }
 
 void main() {
@@ -82,13 +156,14 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
+    final repository = documentRepository ?? await _buildInMemoryRepository();
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           if (exportService != null)
             appExportServiceProvider.overrideWithValue(exportService),
-          if (documentRepository != null)
-            documentRepositoryProvider.overrideWithValue(documentRepository),
+          documentRepositoryProvider.overrideWithValue(repository),
         ],
         child: MaterialApp(
           home: Builder(
@@ -190,15 +265,15 @@ void main() {
   });
 
   testWidgets('document preview save shows success snackbar', (tester) async {
-    await pumpDocumentPreviewPage(tester);
+    final repository = await _buildInMemoryRepository();
+    await pumpDocumentPreviewPage(tester, documentRepository: repository);
 
     await tester.tap(find.text('保存'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('文档已保存'), findsOneWidget);
+    expect(find.text('文档已更新'), findsOneWidget);
 
-    final repository = DocumentRepository(const MockLegalRepository());
     final documents = await repository.loadSaved();
     expect(documents.where((item) => item.name == '劳动仲裁申请书（草稿）'), hasLength(1));
   });
@@ -206,11 +281,12 @@ void main() {
   testWidgets('document preview repeated save shows updated snackbar', (
     tester,
   ) async {
-    await pumpDocumentPreviewPage(tester);
+    final repository = await _buildInMemoryRepository();
+    await pumpDocumentPreviewPage(tester, documentRepository: repository);
 
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
-    expect(find.text('文档已保存'), findsOneWidget);
+    expect(find.text('文档已更新'), findsOneWidget);
 
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
@@ -219,9 +295,10 @@ void main() {
   });
 
   testWidgets('document preview save failure shows snackbar', (tester) async {
+    final preferences = await SharedPreferences.getInstance();
     await pumpDocumentPreviewPage(
       tester,
-      documentRepository: _FailingDocumentRepository(),
+      documentRepository: _FailingDocumentRepository(preferences: preferences),
     );
 
     await tester.tap(find.text('保存'));

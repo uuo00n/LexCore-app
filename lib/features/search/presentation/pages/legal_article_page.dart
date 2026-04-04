@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
@@ -19,11 +20,27 @@ class LegalArticlePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final detail = ref.watch(articleDetailByItemProvider(searchItem));
-    final shareText = _buildArticleShareText(detail);
+    final detailAsync = ref.watch(articleDetailByItemProvider(searchItem));
     final messenger = ScaffoldMessenger.of(context);
 
+    Future<void> openExternalLink(String url, String label) async {
+      final uri = Uri.tryParse(url);
+      if (uri == null) {
+        messenger.showSnackBar(SnackBar(content: Text('$label链接无效，请稍后重试')));
+        return;
+      }
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!opened && context.mounted) {
+        messenger.showSnackBar(SnackBar(content: Text('$label打开失败，请稍后重试')));
+      }
+    }
+
     Future<void> shareArticle(BuildContext anchorContext) async {
+      final detail = detailAsync.valueOrNull;
+      if (detail == null) {
+        return;
+      }
+      final shareText = _buildArticleShareText(detail);
       try {
         await AppShare.shareText(
           pageContext: context,
@@ -57,34 +74,54 @@ class LegalArticlePage extends ConsumerWidget {
           icon: const Icon(Icons.more_vert_rounded),
         ),
       ],
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
-          final splitLayout =
-              viewport == AppViewportSize.expanded ||
-              viewport == AppViewportSize.ultra;
+      body: detailAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => const Center(child: Text('法规详情加载失败')),
+        data: (detail) => LayoutBuilder(
+          builder: (context, constraints) {
+            final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
+            final splitLayout =
+                viewport == AppViewportSize.expanded ||
+                viewport == AppViewportSize.ultra;
 
-          if (!splitLayout) {
-            return _ArticleMain(detail: detail, compact: true);
-          }
+            if (!splitLayout) {
+              return _ArticleMain(
+                detail: detail,
+                compact: true,
+                onOpenLink: openExternalLink,
+              );
+            }
 
-          return AppAdaptiveSplitView(
-            splitMinWidth: 980,
-            secondaryMaxWidth: 360,
-            primary: _ArticleMain(detail: detail, compact: false),
-            secondary: _ArticleSide(detail: detail),
-          );
-        },
+            return AppAdaptiveSplitView(
+              splitMinWidth: 980,
+              secondaryMaxWidth: 360,
+              primary: _ArticleMain(
+                detail: detail,
+                compact: false,
+                onOpenLink: openExternalLink,
+              ),
+              secondary: _ArticleSide(
+                detail: detail,
+                onOpenLink: openExternalLink,
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
 class _ArticleMain extends StatelessWidget {
-  const _ArticleMain({required this.detail, required this.compact});
+  const _ArticleMain({
+    required this.detail,
+    required this.compact,
+    required this.onOpenLink,
+  });
 
   final LawArticleDetail detail;
   final bool compact;
+  final Future<void> Function(String url, String label) onOpenLink;
 
   @override
   Widget build(BuildContext context) {
@@ -176,48 +213,107 @@ class _ArticleMain extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        Text(
-          detail.content,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.8),
-        ),
-        const SizedBox(height: 12),
-        AppSurfaceCard(
-          backgroundColor: Theme.of(
-            context,
-          ).colorScheme.primary.withValues(alpha: 0.05),
-          child: Text(
-            '“${detail.quote}”',
-            style: Theme.of(
+        Text('法规正文', style: Theme.of(context).textTheme.titleSmall),
+        const SizedBox(height: 8),
+        _ArticleLinkActions(detail: detail, onOpenLink: onOpenLink),
+        if (detail.fallbackMessage != null) ...[
+          const SizedBox(height: 10),
+          AppSurfaceCard(
+            backgroundColor: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+            ).colorScheme.surfaceContainerHighest,
+            child: Text(
+              detail.fallbackMessage!,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ),
-        ),
+        ],
+        const SizedBox(height: 10),
+        ..._buildBodyContent(context),
+        if (detail.quote.trim().isNotEmpty) ...[
+          const SizedBox(height: 12),
+          AppSurfaceCard(
+            backgroundColor: Theme.of(
+              context,
+            ).colorScheme.primary.withValues(alpha: 0.05),
+            child: Text(
+              '“${detail.quote}”',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic),
+            ),
+          ),
+        ],
         if (compact) ...[
           const SizedBox(height: 14),
-          Text('法律引用与关联', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 8),
-          ...detail.citations.asMap().entries.map(
-            (entry) => _CitationTile(
-              title: entry.value.title,
-              subtitle: entry.value.subtitle,
-              showBottomDivider: entry.key != detail.citations.length - 1,
-            ),
+          _ArticleSideSection(
+            detail: detail,
+            onOpenLink: onOpenLink,
+            showEntryActions: false,
           ),
         ],
       ],
     );
   }
+
+  List<Widget> _buildBodyContent(BuildContext context) {
+    final sections = detail.bodySections.isNotEmpty
+        ? detail.bodySections
+        : [detail.content];
+    return sections
+        .where((section) => section.trim().isNotEmpty)
+        .map(
+          (section) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Text(
+              section,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(height: 1.8),
+            ),
+          ),
+        )
+        .toList();
+  }
 }
 
 class _ArticleSide extends StatelessWidget {
-  const _ArticleSide({required this.detail});
+  const _ArticleSide({required this.detail, required this.onOpenLink});
 
   final LawArticleDetail detail;
+  final Future<void> Function(String url, String label) onOpenLink;
 
   @override
   Widget build(BuildContext context) {
     return ListView(
+      children: [_ArticleSideSection(detail: detail, onOpenLink: onOpenLink)],
+    );
+  }
+}
+
+class _ArticleSideSection extends StatelessWidget {
+  const _ArticleSideSection({
+    required this.detail,
+    required this.onOpenLink,
+    this.showEntryActions = true,
+  });
+
+  final LawArticleDetail detail;
+  final Future<void> Function(String url, String label) onOpenLink;
+  final bool showEntryActions;
+
+  @override
+  Widget build(BuildContext context) {
+    final secondaryActions = _secondaryLinkActions();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (showEntryActions && secondaryActions.isNotEmpty) ...[
+          Text('原文入口', style: Theme.of(context).textTheme.titleSmall),
+          const SizedBox(height: 8),
+          ...secondaryActions,
+          const SizedBox(height: 14),
+        ],
         Text('法律引用与关联', style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         ...detail.citations.asMap().entries.map(
@@ -229,6 +325,65 @@ class _ArticleSide extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<Widget> _secondaryLinkActions() {
+    final actions = <Widget>[];
+    void addAction(String label, String? url) {
+      if (url == null) {
+        return;
+      }
+      actions.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: OutlinedButton.icon(
+            onPressed: () => onOpenLink(url, label),
+            icon: const Icon(Icons.open_in_new_rounded),
+            label: Text(label),
+          ),
+        ),
+      );
+    }
+
+    addAction('查看原文', detail.sourceUrl ?? detail.htmlUrl);
+    addAction('打开 HTML', detail.htmlUrl);
+    addAction('下载 DOCX', detail.docxUrl);
+    return actions;
+  }
+}
+
+class _ArticleLinkActions extends StatelessWidget {
+  const _ArticleLinkActions({required this.detail, required this.onOpenLink});
+
+  final LawArticleDetail detail;
+  final Future<void> Function(String url, String label) onOpenLink;
+
+  @override
+  Widget build(BuildContext context) {
+    final actions = <Widget>[];
+
+    void addAction(String label, String? url, IconData icon) {
+      if (url == null) {
+        return;
+      }
+      actions.add(
+        OutlinedButton.icon(
+          onPressed: () => onOpenLink(url, label),
+          icon: Icon(icon),
+          label: Text(label),
+        ),
+      );
+    }
+
+    addAction('查看原文', detail.sourceUrl ?? detail.htmlUrl, Icons.menu_book);
+    addAction('打开 HTML', detail.htmlUrl, Icons.language_rounded);
+    addAction('下载 DOCX', detail.docxUrl, Icons.download_rounded);
+
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Wrap(spacing: 10, runSpacing: 10, children: actions);
   }
 }
 
@@ -286,6 +441,9 @@ class _CitationTile extends StatelessWidget {
 }
 
 String _buildArticleShareText(LawArticleDetail detail) {
+  final bodyPreview = detail.bodySections.isNotEmpty
+      ? detail.bodySections.first
+      : detail.content;
   return [
     'LexCore 法律文章',
     '标题：${detail.title}',
@@ -298,7 +456,19 @@ String _buildArticleShareText(LawArticleDetail detail) {
     '关键引用',
     detail.quote,
     '',
+    '正文摘录',
+    bodyPreview,
+    '',
     '法律引用与关联',
     ...detail.citations.map((item) => '• ${item.title}：${item.subtitle}'),
+    if (detail.sourceUrl != null ||
+        detail.htmlUrl != null ||
+        detail.docxUrl != null) ...[
+      '',
+      '原文入口',
+      if (detail.sourceUrl != null) '• 查看原文：${detail.sourceUrl}',
+      if (detail.htmlUrl != null) '• HTML：${detail.htmlUrl}',
+      if (detail.docxUrl != null) '• DOCX：${detail.docxUrl}',
+    ],
   ].join('\n');
 }

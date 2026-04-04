@@ -384,9 +384,36 @@ class _CaseDashboardCasesContentState extends State<CaseDashboardCasesContent> {
             ),
           ],
         );
+      default:
+        return CaseDetailData(
+          status: _toDetailStatus(item.status),
+          statusLabel: _DashboardCaseStatusStyle.resolve(
+            context,
+            item.status,
+          ).label,
+          lastUpdatedLabel: '更新于 刚刚',
+          title: item.title,
+          caseNumber: item.caseNumber,
+          dateLabel: item.dateLabel,
+          dateValue: item.dateValue,
+          progress: item.progress,
+          progressLabel: item.progressLabel,
+          activeStepIndex: 1,
+          progressSteps: const ['立案', '证据整理', '审理中', '结案'],
+          summary: '该案件处于演示数据模式，后续将由真实后端数据替换。',
+          plaintiffName: '原告（演示）',
+          plaintiffCounsel: '代理律师：演示',
+          defendantName: '被告（演示）',
+          defendantCounsel: '代理律师：演示',
+          documents: const [
+            CaseDocumentData(
+              type: CaseDocumentType.note,
+              title: '演示材料说明.txt',
+              meta: '12 KB · 今天',
+            ),
+          ],
+        );
     }
-
-    return CaseDetailData.demo();
   }
 
   CaseDetailStatus _toDetailStatus(_DashboardCaseStatus status) {
@@ -614,10 +641,12 @@ class _DashboardCaseEmptyState extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final title = switch (filter) {
       _DashboardCaseListFilter.draft => '暂无草稿案件',
+      _DashboardCaseListFilter.all => '暂无案件数据',
       _ => '暂无匹配案件',
     };
     final message = switch (filter) {
       _DashboardCaseListFilter.draft => '当前还没有保存到草稿的案件分析。',
+      _DashboardCaseListFilter.all => '完成后端接口接入后，案件列表将自动显示。',
       _ => '可尝试切换筛选条件查看其他案件。',
     };
 

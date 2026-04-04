@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class AppConstants {
   const AppConstants._();
 
@@ -9,5 +11,30 @@ class AppConstants {
   static const copyrightYear = '2026';
   static const appAuthor = 'LexCore Team (uuo)';
   static const appCopyright = '© $copyrightYear $appAuthor';
-  static const baseApiUrl = 'https://api.example.com';
+  static const _configuredBaseApiUrl = String.fromEnvironment(
+    'BASE_API_URL',
+    defaultValue: '',
+  );
+
+  static String get baseApiUrl {
+    final configured = _configuredBaseApiUrl.trim();
+    if (configured.isNotEmpty) {
+      return configured;
+    }
+
+    if (kIsWeb) {
+      return 'http://localhost:8000/api/v1';
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'http://10.0.2.2:8000/api/v1';
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      case TargetPlatform.fuchsia:
+        return 'http://127.0.0.1:8000/api/v1';
+    }
+  }
 }

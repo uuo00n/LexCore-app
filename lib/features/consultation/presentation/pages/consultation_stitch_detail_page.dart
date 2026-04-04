@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/app/theme/app_spacing.dart';
 import 'package:lexcore/core/utils/app_share.dart';
+import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
-
-const _defaultConsultationSummary =
-    '根据您的描述，LexCore 已识别出该法律问题的核心在于劳动合同纠纷中的加班费争议，涉及入职时间、劳动合同条款及考勤记录完整性。';
 
 class ConsultationStitchDetailPage extends StatelessWidget {
   const ConsultationStitchDetailPage({super.key, this.summary});
@@ -17,19 +14,18 @@ class ConsultationStitchDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final displayFont = GoogleFonts.publicSansTextTheme(textTheme);
     final messenger = ScaffoldMessenger.of(context);
-    final resolvedSummary = summary?.trim().isNotEmpty == true
-        ? summary!
-        : _defaultConsultationSummary;
+    final resolvedSummary = summary?.trim() ?? '';
+    final hasSummary = resolvedSummary.isNotEmpty;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     Future<void> shareDetail(BuildContext anchorContext) async {
       try {
         await AppShare.shareText(
           pageContext: context,
           anchorContext: anchorContext,
-          text: _buildConsultationShareText(resolvedSummary),
+          text: resolvedSummary,
           subject: 'LexCore 解答详情',
         );
       } catch (_) {
@@ -37,15 +33,12 @@ class ConsultationStitchDetailPage extends StatelessWidget {
       }
     }
 
-    return Theme(
-      data: Theme.of(context).copyWith(
-        textTheme: displayFont,
-        scaffoldBackgroundColor: Theme.of(context).colorScheme.surface,
-      ),
-      child: AppPageScaffold(
-        title: 'LexCore 解答详情',
-        maxContentWidth: 520,
-        actions: [
+    return AppPageScaffold(
+      title: 'LexCore 解答详情',
+      subtitle: 'AI 生成摘要与建议重点',
+      maxContentWidth: 560,
+      actions: [
+        if (hasSummary)
           Builder(
             builder: (buttonContext) => IconButton(
               onPressed: () => shareDetail(buttonContext),
@@ -53,350 +46,196 @@ class ConsultationStitchDetailPage extends StatelessWidget {
               tooltip: '分享',
             ),
           ),
-        ],
-        body: ListView(
-          padding: const EdgeInsets.only(bottom: 24),
-          children: [
-            const AppFadeSlideIn(
-              delay: Duration(milliseconds: 40),
-              child: _HeroCard(),
-            ),
-            const SizedBox(height: 16),
-            AppFadeSlideIn(
-              delay: const Duration(milliseconds: 80),
-              child: _SectionCard(
-                icon: Icons.psychology_alt_outlined,
-                title: '问题理解',
-                child: Text(
-                  resolvedSummary,
-                  style: displayFont.bodyMedium?.copyWith(
-                    height: 1.6,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ],
+      body: ListView(
+        children: [
+          AppSurfaceCard(
+            backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    hasSummary
+                        ? Icons.auto_awesome_outlined
+                        : Icons.description_outlined,
+                    color: colorScheme.onPrimaryContainer,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const AppFadeSlideIn(
-              delay: Duration(milliseconds: 120),
-              child: _SectionCard(
-                icon: Icons.menu_book_outlined,
-                title: '法律依据',
-                child: Column(
-                  children: [
-                    _LawItem(
-                      title: '《中华人民共和国劳动法》第四十四条',
-                      content: '用人单位安排加班的，应当按照国家有关规定向劳动者支付加班费。',
-                    ),
-                    SizedBox(height: 10),
-                    _LawItem(
-                      title: '《劳动合同法》第三十一条',
-                      content: '用人单位应当严格执行劳动定额标准，不得强迫或者变相强迫劳动者加班。',
-                    ),
-                  ],
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        hasSummary ? '智能解答摘要' : '暂无解答详情',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        hasSummary
+                            ? '已整理 AI 对话中的核心结论与建议重点，支持继续生成法律意见书。'
+                            : '请先在咨询会话中发送问题并等待回复。',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.55,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
-            const AppFadeSlideIn(
-              delay: Duration(milliseconds: 160),
-              child: _SectionCard(
-                icon: Icons.analytics_outlined,
-                title: '详细分析',
-                child: Column(
-                  children: [
-                    _AnalysisStep(
-                      index: 1,
-                      title: '考勤数据分析',
-                      content: '您的打卡记录显示平均每周工作时长超过 50 小时，已明显高于法定工作时长上限。',
-                    ),
-                    SizedBox(height: 14),
-                    _AnalysisStep(
-                      index: 2,
-                      title: '建议补救措施',
-                      content: '建议优先与公司人力资源部门书面协商，并保留邮件、聊天记录和考勤导出文件。',
-                    ),
-                    SizedBox(height: 14),
-                    _AnalysisStep(
-                      index: 3,
-                      title: '仲裁风险评估',
-                      content: '若目前证据链完整，协商无果后申请劳动仲裁的可支持性较高，但仍需补强加班审批与薪资流水。',
-                    ),
-                  ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          AppSurfaceCard(
+            child: hasSummary
+                ? _SummaryDetailContent(summary: resolvedSummary)
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '回复内容',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        '当前还没有可展示的解答内容，完成一次咨询后，这里会展示结构化摘要。',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          height: 1.65,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+      ),
+      bottomNavigationBar: hasSummary
+          ? SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.md,
                 ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            AppFadeSlideIn(
-              delay: const Duration(milliseconds: 220),
-              child: SizedBox(
-                width: double.infinity,
-                child: FilledButton(
+                child: FilledButton.icon(
                   onPressed: () => context.pushNamed(
                     RouteNames.consultationOpinionDetail,
                     extra: resolvedSummary,
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                  ),
-                  child: Text(
-                    '获取更详细的法律意见书',
-                    style: displayFont.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                  ),
+                  icon: const Icon(Icons.gavel_outlined),
+                  label: const Text('生成法律意见书'),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            )
+          : null,
     );
   }
 }
 
-String _buildConsultationShareText(String summary) {
-  return [
-    'LexCore 解答详情',
-    '问题理解',
-    summary,
-    '',
-    '法律依据',
-    '• 《中华人民共和国劳动法》第四十四条：用人单位安排加班的，应当按照国家有关规定向劳动者支付加班费。',
-    '• 《劳动合同法》第三十一条：用人单位应当严格执行劳动定额标准，不得强迫或者变相强迫劳动者加班。',
-    '',
-    '建议重点',
-    '• 优先与公司人力资源部门书面协商。',
-    '• 保留邮件、聊天记录和考勤导出文件。',
-    '• 如协商无果，评估劳动仲裁材料完整性后再推进。',
-  ].join('\n');
-}
+class _SummaryDetailContent extends StatelessWidget {
+  const _SummaryDetailContent({required this.summary});
 
-class _HeroCard extends StatelessWidget {
-  const _HeroCard();
+  final String summary;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          colors: [
-            Theme.of(context).colorScheme.primaryContainer,
-            Theme.of(context).colorScheme.secondaryContainer,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
-        ),
-      ),
-      child: Column(
-        children: [
-          Container(
-            width: 68,
-            height: 68,
-            decoration: BoxDecoration(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Icon(
-              Icons.gavel_rounded,
-              color: Theme.of(context).colorScheme.primary,
-              size: 34,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '专业法律智能分析',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final sections = _splitSummarySections(summary);
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({
-    required this.icon,
-    required this.title,
-    required this.child,
-  });
-
-  final IconData icon;
-  final String title;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.18),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.primary.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: Theme.of(context).colorScheme.primary),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Container(
-            height: 1,
-            color: Theme.of(context).colorScheme.surfaceContainerHigh,
-          ),
-          const SizedBox(height: 14),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-class _LawItem extends StatelessWidget {
-  const _LawItem({required this.title, required this.content});
-
-  final String title;
-  final String content;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border(
-          left: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 4,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            content,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnalysisStep extends StatelessWidget {
-  const _AnalysisStep({
-    required this.index,
-    required this.title,
-    required this.content,
-  });
-
-  final int index;
-  final String title;
-  final String content;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 26,
-          height: 26,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            '$index',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onPrimary,
-              fontWeight: FontWeight.w800,
-            ),
+        Text(
+          '回复内容',
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                content,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.55,
-                ),
-              ),
-            ],
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '以下内容按段落整理展示，便于快速浏览与后续生成文书。',
+          style: theme.textTheme.bodySmall?.copyWith(
+            height: 1.5,
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
+        for (var index = 0; index < sections.length; index++) ...[
+          _SummarySection(text: sections[index]),
+          if (index != sections.length - 1)
+            const SizedBox(height: AppSpacing.lg),
+        ],
       ],
     );
   }
+}
+
+class _SummarySection extends StatelessWidget {
+  const _SummarySection({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isHeading = _isHeadingBlock(text);
+
+    if (isHeading) {
+      return Text(
+        _normalizeHeading(text),
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          color: colorScheme.onSurface,
+          height: 1.4,
+        ),
+      );
+    }
+
+    return Text(
+      text,
+      style: theme.textTheme.bodyMedium?.copyWith(
+        height: 1.75,
+        color: colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+List<String> _splitSummarySections(String summary) {
+  return summary
+      .split(RegExp(r'\n\s*\n'))
+      .map((section) => section.trim())
+      .where((section) => section.isNotEmpty)
+      .toList();
+}
+
+bool _isHeadingBlock(String text) {
+  final normalized = text.trim();
+  if (normalized.isEmpty || normalized.contains('\n')) {
+    return false;
+  }
+  return normalized.startsWith('#') ||
+      (normalized.startsWith('**') && normalized.endsWith('**'));
+}
+
+String _normalizeHeading(String text) {
+  return text.trim().replaceAll(RegExp(r'^#+\s*'), '').replaceAll('**', '');
 }

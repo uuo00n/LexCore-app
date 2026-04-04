@@ -120,19 +120,24 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
                 itemCount: docs.length,
                 itemBuilder: (context, index) {
                   final item = docs[index];
-                  final status = switch (index % 3) {
-                    0 => (
+                  final status = switch (item.status) {
+                    'completed' => (
                       '已完成',
                       Theme.of(context).colorScheme.primary,
                       Theme.of(context).colorScheme.onPrimary,
                     ),
-                    1 => (
-                      '草稿',
+                    'failed' => (
+                      '失败',
+                      Theme.of(context).colorScheme.error,
+                      Theme.of(context).colorScheme.onError,
+                    ),
+                    'processing' => (
+                      '处理中',
                       Theme.of(context).colorScheme.tertiary,
                       Theme.of(context).colorScheme.onTertiary,
                     ),
                     _ => (
-                      '已归档',
+                      '排队中',
                       Theme.of(context).colorScheme.onSurfaceVariant,
                       Theme.of(context).colorScheme.surface,
                     ),

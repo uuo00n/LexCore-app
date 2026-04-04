@@ -1,52 +1,62 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lexcore/core/error/app_exception.dart';
 import 'package:lexcore/features/consultation/data/repositories/consultation_repository.dart';
 import 'package:lexcore/features/consultation/domain/entities/consultation_thread.dart';
+import 'package:lexcore/features/history/data/repositories/history_repository.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
-import 'package:lexcore/shared/services/mock/mock_providers.dart';
 
-const ChatMessage _defaultWelcomeMessage = ChatMessage(
-  id: 'new_thread_welcome',
-  role: ChatRole.assistant,
-  content: '您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。',
-);
-
-final consultationRepositoryProvider = Provider<ConsultationRepository>((ref) {
-  return ConsultationRepository(ref.watch(mockLegalRepositoryProvider));
-});
+const _serviceUnavailableNotice = '智能咨询服务暂时不可用，请稍后重试。';
+const _serviceFailedNotice = '咨询请求失败，请稍后重试。';
 
 class ConsultationState {
-  const ConsultationState({required this.sessions, required this.threads});
+  const ConsultationState({
+    required this.sessions,
+    required this.threads,
+    required this.remoteConversationIds,
+    required this.pendingAssistantThreadIds,
+  });
 
   final List<ConsultationSession> sessions;
   final Map<String, ConsultationThread> threads;
+  final Map<String, String> remoteConversationIds;
+  final Set<String> pendingAssistantThreadIds;
 
   ConsultationState copyWith({
     List<ConsultationSession>? sessions,
     Map<String, ConsultationThread>? threads,
+    Map<String, String>? remoteConversationIds,
+    Set<String>? pendingAssistantThreadIds,
   }) {
     return ConsultationState(
       sessions: sessions ?? this.sessions,
       threads: threads ?? this.threads,
+      remoteConversationIds:
+          remoteConversationIds ?? this.remoteConversationIds,
+      pendingAssistantThreadIds:
+          pendingAssistantThreadIds ?? this.pendingAssistantThreadIds,
     );
   }
 }
 
 class ConsultationStateController extends StateNotifier<ConsultationState> {
-  ConsultationStateController(this._repository)
+  ConsultationStateController(this._repository, [this._historyRepository])
     : super(_buildInitialState(_repository));
 
   final ConsultationRepository _repository;
+  final HistoryRepository? _historyRepository;
 
   static ConsultationState _buildInitialState(
     ConsultationRepository repository,
   ) {
-    final sessions = repository.loadSessions();
-    final threads = <String, ConsultationThread>{};
-    for (final session in sessions) {
-      threads[session.id] = repository.loadThreadById(session.id);
-    }
-    return ConsultationState(sessions: sessions, threads: threads);
+    return ConsultationState(
+      sessions: repository.loadSessions(),
+      threads: const {},
+      remoteConversationIds: const {},
+      pendingAssistantThreadIds: const <String>{},
+    );
   }
 
   ConsultationThread ensureThread(String threadId, {String? title}) {
@@ -60,17 +70,11 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
       return existing;
     }
 
-    final seedThread = _repository.loadThreadById(threadId);
-    final resolvedTitle = trimmedTitle.isNotEmpty
-        ? trimmedTitle
-        : seedThread.title;
-    final messages = seedThread.messages.isEmpty
-        ? const <ChatMessage>[_defaultWelcomeMessage]
-        : seedThread.messages;
+    final resolvedTitle = trimmedTitle.isNotEmpty ? trimmedTitle : '新建咨询会话';
     final newThread = ConsultationThread(
       id: threadId,
       title: resolvedTitle,
-      messages: messages,
+      messages: const <ChatMessage>[],
     );
     _upsertThread(newThread, icon: 'smart_toy', markActive: true);
     return newThread;
@@ -78,6 +82,7 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
 
   void createThread({required String threadId, required String title}) {
     ensureThread(threadId, title: title);
+    unawaited(_bindRemoteConversation(threadId, title: title));
   }
 
   void selectThread(String threadId) {
@@ -90,26 +95,99 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
     );
   }
 
-  void send(String threadId, String content) {
+  Future<void> send(String threadId, String content) async {
     final normalized = content.trim();
-    if (normalized.isEmpty) return;
+    if (normalized.isEmpty || _isThreadPending(threadId)) return;
 
     final thread = ensureThread(threadId);
+    final localUserMessageId = _newLocalMessageId(role: ChatRole.user);
     final userMessage = ChatMessage(
-      id: 'u_${DateTime.now().millisecondsSinceEpoch}',
+      id: localUserMessageId,
       role: ChatRole.user,
       content: normalized,
     );
-    final aiMessage = ChatMessage(
-      id: 'a_${DateTime.now().millisecondsSinceEpoch}',
-      role: ChatRole.assistant,
-      content: '已收到你的问题，我将基于法规要点给出分步骤建议。',
-      references: const ['民法典 总则编', '劳动合同法 第三十条'],
+    _upsertThread(
+      thread.copyWith(messages: [...thread.messages, userMessage]),
+      markActive: true,
     );
-    final updatedThread = thread.copyWith(
-      messages: [...thread.messages, userMessage, aiMessage],
-    );
-    _upsertThread(updatedThread, markActive: true);
+    await _recordConsultationHistory(threadId: threadId, content: normalized);
+    _setThreadPending(threadId, pending: true);
+
+    try {
+      final remoteConversationId = await _resolveRemoteConversationId(
+        threadId,
+        fallbackTitle: thread.title,
+      );
+      if (remoteConversationId == null) {
+        _appendAssistantMessage(
+          threadId,
+          ChatMessage(
+            id: _newLocalMessageId(role: ChatRole.assistant),
+            role: ChatRole.assistant,
+            content: _serviceUnavailableNotice,
+          ),
+        );
+        return;
+      }
+
+      final assistantMessage = await _repository.sendMessage(
+        conversationId: remoteConversationId,
+        content: normalized,
+      );
+      if (assistantMessage == null) {
+        _appendAssistantMessage(
+          threadId,
+          ChatMessage(
+            id: _newLocalMessageId(role: ChatRole.assistant),
+            role: ChatRole.assistant,
+            content: _serviceFailedNotice,
+          ),
+        );
+        return;
+      }
+
+      _replaceLocalUserMessage(
+        threadId,
+        localMessageId: localUserMessageId,
+        remoteMessage: assistantMessage.userMessage,
+      );
+      _appendAssistantMessage(threadId, assistantMessage.assistantMessage);
+    } on AppException catch (error) {
+      final lowered = error.message.toLowerCase();
+      if (lowered.contains('upstream unavailable') ||
+          lowered.contains('503') ||
+          lowered.contains('yuanqi')) {
+        _appendAssistantMessage(
+          threadId,
+          ChatMessage(
+            id: _newLocalMessageId(role: ChatRole.assistant),
+            role: ChatRole.assistant,
+            content: _serviceUnavailableNotice,
+          ),
+        );
+        return;
+      }
+
+      _appendAssistantMessage(
+        threadId,
+        ChatMessage(
+          id: _newLocalMessageId(role: ChatRole.assistant),
+          role: ChatRole.assistant,
+          content: _serviceFailedNotice,
+        ),
+      );
+    } catch (_) {
+      _appendAssistantMessage(
+        threadId,
+        ChatMessage(
+          id: _newLocalMessageId(role: ChatRole.assistant),
+          role: ChatRole.assistant,
+          content: _serviceFailedNotice,
+        ),
+      );
+    } finally {
+      _setThreadPending(threadId, pending: false);
+    }
   }
 
   void renameThread(String threadId, String title) {
@@ -122,7 +200,7 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
   void clearThread(String threadId) {
     final thread = ensureThread(threadId);
     _upsertThread(
-      thread.copyWith(messages: const <ChatMessage>[_defaultWelcomeMessage]),
+      thread.copyWith(messages: const <ChatMessage>[]),
       markActive: true,
     );
   }
@@ -141,7 +219,17 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
       sessions = [first, ...sessions.skip(1)];
     }
 
-    state = state.copyWith(threads: threads, sessions: sessions);
+    final remoteIds = <String, String>{...state.remoteConversationIds}
+      ..remove(threadId);
+    final pendingThreads = {...state.pendingAssistantThreadIds}
+      ..remove(threadId);
+
+    state = state.copyWith(
+      threads: threads,
+      sessions: sessions,
+      remoteConversationIds: remoteIds,
+      pendingAssistantThreadIds: pendingThreads,
+    );
     return true;
   }
 
@@ -167,6 +255,91 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
     }
 
     return lines.join('\n').trimRight();
+  }
+
+  Future<void> _bindRemoteConversation(
+    String threadId, {
+    required String title,
+  }) async {
+    if (state.remoteConversationIds.containsKey(threadId)) {
+      return;
+    }
+    final remoteId = await _repository.createConversation(title: title);
+    if (remoteId == null || remoteId.trim().isEmpty) {
+      return;
+    }
+    _setRemoteConversationId(threadId, remoteId);
+  }
+
+  Future<void> _syncRemoteMessages(String threadId) async {
+    final remoteId = state.remoteConversationIds[threadId];
+    if (remoteId == null || remoteId.trim().isEmpty) {
+      return;
+    }
+    final remoteMessages = await _repository.listMessages(remoteId);
+    if (remoteMessages == null || remoteMessages.isEmpty) {
+      return;
+    }
+    final thread = state.threads[threadId];
+    if (thread == null) {
+      return;
+    }
+    final merged = _mergeRemoteAndLocalMessages(
+      remoteMessages: remoteMessages,
+      localMessages: thread.messages,
+    );
+    _upsertThread(thread.copyWith(messages: merged), markActive: false);
+  }
+
+  Future<String?> _resolveRemoteConversationId(
+    String threadId, {
+    required String fallbackTitle,
+  }) async {
+    final existing = state.remoteConversationIds[threadId];
+    if (existing != null && existing.trim().isNotEmpty) {
+      return existing;
+    }
+
+    final created = await _repository.createConversation(title: fallbackTitle);
+    if (created == null || created.trim().isEmpty) {
+      return null;
+    }
+    _setRemoteConversationId(threadId, created);
+    return created;
+  }
+
+  void _setRemoteConversationId(String threadId, String remoteId) {
+    state = state.copyWith(
+      remoteConversationIds: {
+        ...state.remoteConversationIds,
+        threadId: remoteId,
+      },
+    );
+  }
+
+  void _appendAssistantMessage(String threadId, ChatMessage message) {
+    final thread = state.threads[threadId] ?? ensureThread(threadId);
+    if (thread.messages.any((item) => item.id == message.id)) {
+      return;
+    }
+    final updated = thread.copyWith(messages: [...thread.messages, message]);
+    _upsertThread(updated, markActive: true);
+  }
+
+  void _replaceLocalUserMessage(
+    String threadId, {
+    required String localMessageId,
+    required ChatMessage remoteMessage,
+  }) {
+    final thread = state.threads[threadId] ?? ensureThread(threadId);
+    final messages = [...thread.messages];
+    final index = messages.indexWhere((item) => item.id == localMessageId);
+    if (index >= 0) {
+      messages[index] = remoteMessage;
+    } else if (!messages.any((item) => item.id == remoteMessage.id)) {
+      messages.add(remoteMessage);
+    }
+    _upsertThread(thread.copyWith(messages: messages), markActive: true);
   }
 
   void _upsertThread(
@@ -218,10 +391,82 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
 
   String _previewFromMessages(List<ChatMessage> messages) {
     for (var i = messages.length - 1; i >= 0; i--) {
-      final text = messages[i].content.trim();
+      final message = messages[i];
+      if (message.role != ChatRole.assistant) {
+        continue;
+      }
+      final text = _compactPreviewText(message.content);
+      if (text.isNotEmpty) {
+        return text;
+      }
+    }
+    for (var i = messages.length - 1; i >= 0; i--) {
+      final text = _compactPreviewText(messages[i].content);
       if (text.isNotEmpty) return text;
     }
     return '开始新的法律咨询对话';
+  }
+
+  String _compactPreviewText(String content) {
+    return content
+        .replaceAll(RegExp(r'[\r\n]+'), '')
+        .replaceAll(RegExp(r'[ \t\f\v]+'), ' ')
+        .trim();
+  }
+
+  bool _isThreadPending(String threadId) {
+    return state.pendingAssistantThreadIds.contains(threadId);
+  }
+
+  void _setThreadPending(String threadId, {required bool pending}) {
+    final next = {...state.pendingAssistantThreadIds};
+    final changed = pending ? next.add(threadId) : next.remove(threadId);
+    if (!changed) return;
+    state = state.copyWith(pendingAssistantThreadIds: next);
+  }
+
+  String _newLocalMessageId({required ChatRole role}) {
+    final prefix = role == ChatRole.user ? 'u' : 'a';
+    return '${prefix}_local_${DateTime.now().microsecondsSinceEpoch}';
+  }
+
+  List<ChatMessage> _mergeRemoteAndLocalMessages({
+    required List<ChatMessage> remoteMessages,
+    required List<ChatMessage> localMessages,
+  }) {
+    final merged = [...remoteMessages];
+    final existingIds = remoteMessages.map((message) => message.id).toSet();
+    for (final message in localMessages) {
+      if (!ConsultationRepository.isLocalOnlyMessageId(message.id)) {
+        continue;
+      }
+      if (existingIds.add(message.id)) {
+        merged.add(message);
+      }
+    }
+    return merged;
+  }
+
+  Future<void> syncRemoteMessages(String threadId) async {
+    await _syncRemoteMessages(threadId);
+  }
+
+  Future<void> _recordConsultationHistory({
+    required String threadId,
+    required String content,
+  }) async {
+    final historyRepository = _historyRepository;
+    if (historyRepository == null) {
+      return;
+    }
+    try {
+      await historyRepository.recordConsultationQuery(
+        question: content,
+        threadId: threadId,
+      );
+    } catch (_) {
+      // Keep chat flow resilient when history persistence is unavailable.
+    }
   }
 }
 
@@ -231,6 +476,7 @@ final consultationStateControllerProvider =
     ) {
       return ConsultationStateController(
         ref.watch(consultationRepositoryProvider),
+        ref.watch(historyRepositoryProvider),
       );
     });
 
@@ -243,11 +489,7 @@ final consultationThreadProvider = Provider.family<ConsultationThread, String>((
   threadId,
 ) {
   return ref.watch(consultationStateControllerProvider).threads[threadId] ??
-      ConsultationThread(
-        id: threadId,
-        title: '新建咨询会话',
-        messages: const [_defaultWelcomeMessage],
-      );
+      ConsultationThread(id: threadId, title: '新建咨询会话', messages: const []);
 });
 
 final consultationMessagesProvider = Provider.family<List<ChatMessage>, String>(
@@ -255,3 +497,13 @@ final consultationMessagesProvider = Provider.family<List<ChatMessage>, String>(
     return ref.watch(consultationThreadProvider(threadId)).messages;
   },
 );
+
+final consultationIsAiThinkingProvider = Provider.family<bool, String>((
+  ref,
+  threadId,
+) {
+  return ref
+      .watch(consultationStateControllerProvider)
+      .pendingAssistantThreadIds
+      .contains(threadId);
+});

@@ -97,25 +97,29 @@ class _CaseDashboardPageState extends ConsumerState<CaseDashboardPage>
 class _OverviewContent extends StatelessWidget {
   const _OverviewContent({required this.data});
 
-  final DashboardEntity data;
+  final DashboardEntity? data;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedData = data;
+    if (resolvedData == null) {
+      return const _DashboardUnavailableState();
+    }
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StatsGrid(data: data),
+          _StatsGrid(data: resolvedData),
           const SizedBox(height: 24),
-          _TrendSection(points: data.trendPoints),
+          _TrendSection(points: resolvedData.trendPoints),
           const SizedBox(height: 24),
           const _SectionHeader(title: '进行中的案件分析', actionLabel: '查看全部'),
           const SizedBox(height: 6),
-          ...data.cases.asMap().entries.map((entry) {
+          ...resolvedData.cases.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
-            final isLast = index == data.cases.length - 1;
+            final isLast = index == resolvedData.cases.length - 1;
             return AppFadeSlideIn(
               delay: Duration(milliseconds: 80 + (index * 35)),
               beginOffset: const Offset(0, 0.02),
@@ -132,6 +136,40 @@ class _OverviewContent extends StatelessWidget {
           const _QuickActionsRow(),
           const SizedBox(height: 80),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardUnavailableState extends StatelessWidget {
+  const _DashboardUnavailableState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: AppSurfaceCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.dashboard_outlined,
+                size: 38,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 10),
+              Text('暂无仪表盘数据', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(
+                '当前版本暂未接入案件仪表盘接口。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -603,9 +641,10 @@ class _TrendPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final normalized = points.isEmpty
-        ? const [0.8, 0.72, 0.74, 0.58, 0.5, 0.42, 0.47]
-        : points;
+    final normalized = points;
+    if (normalized.isEmpty) {
+      return;
+    }
 
     final path = Path();
     final fillPath = Path();

@@ -1,13 +1,17 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/core/export/app_export_service.dart';
+import 'package:lexcore/core/network/dio_provider.dart';
 import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/document/application/document_providers.dart';
@@ -42,6 +46,42 @@ class DocumentPreviewPage extends ConsumerWidget {
       var overlayVisible = true;
 
       try {
+        if (format == ExportFormat.pdf) {
+          final pdfResult = await ref
+              .read(documentControllerProvider.notifier)
+              .exportDraftPdf(draft);
+          final downloadUrl = pdfResult?.downloadUrl;
+          if (pdfResult != null &&
+              pdfResult.completed &&
+              downloadUrl != null &&
+              downloadUrl.trim().isNotEmpty) {
+            final directory = await getTemporaryDirectory();
+            final displayName = '${exportPayload.suggestedFileName}.pdf';
+            final filePath = '${directory.path}/$displayName';
+            final outputFile = File(filePath);
+            if (await outputFile.exists()) {
+              await outputFile.delete();
+            }
+            await ref.read(dioProvider).download(downloadUrl, filePath);
+
+            if (overlayVisible) {
+              progressOverlay.remove();
+              overlayVisible = false;
+            }
+            if (!context.mounted) return;
+            await AppShare.shareFile(
+              pageContext: context,
+              anchorContext: anchorContext,
+              filePath: filePath,
+              fileName: displayName,
+              mimeType: ExportFormat.pdf.mimeType,
+              subject: draft.title,
+              title: displayName,
+            );
+            return;
+          }
+        }
+
         final artifact = await exportService.export(
           payload: exportPayload,
           format: format,
@@ -220,67 +260,86 @@ class _DocumentBody extends StatelessWidget {
                 Text(title, style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: 4),
                 Text(
-                  '由 LexCore 智能引擎生成 · ${DateFormat('yyyy年M月d日').format(DateTime.now())}',
+                  '文档预览 · ${DateFormat('yyyy年M月d日').format(DateTime.now())}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
-                MarkdownBody(
-                  data: markdown,
-                  styleSheet: styleSheet,
-                  sizedImageBuilder: (config) {
-                    if (_isEvidenceIllustrationPlaceholder(config.uri)) {
-                      return const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 10),
-                        child: _EvidenceIllustrationCard(),
-                      );
-                    }
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 280),
-                          child: Image.network(
-                            config.uri.toString(),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 16,
-                                ),
-                                color: colorScheme.surfaceContainerHigh,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.broken_image_outlined,
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        config.alt?.trim().isNotEmpty == true
-                                            ? config.alt!
-                                            : '图片加载失败',
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: colorScheme.onSurfaceVariant,
+                if (markdown.trim().isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '请在上一页填写内容后再生成文档。',
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                else
+                  MarkdownBody(
+                    data: markdown,
+                    styleSheet: styleSheet,
+                    sizedImageBuilder: (config) {
+                      if (_isEvidenceIllustrationPlaceholder(config.uri)) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: _EvidenceIllustrationCard(),
+                        );
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 280),
+                            child: Image.network(
+                              config.uri.toString(),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 16,
+                                  ),
+                                  color: colorScheme.surfaceContainerHigh,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.broken_image_outlined,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          config.alt?.trim().isNotEmpty == true
+                                              ? config.alt!
+                                              : '图片加载失败',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -411,11 +470,14 @@ class _DocumentSidePanel extends StatelessWidget {
                 const SizedBox(height: 10),
                 _InfoRow(label: '标题', value: title),
                 const SizedBox(height: 8),
-                const _InfoRow(label: '版本', value: 'v1.0 草稿'),
+                const _InfoRow(label: '版本', value: '未保存'),
                 const SizedBox(height: 8),
-                const _InfoRow(label: '来源', value: 'LexCore 智能引擎'),
+                const _InfoRow(label: '来源', value: '用户输入'),
                 const SizedBox(height: 8),
-                const _InfoRow(label: '更新时间', value: '2024-05-20 14:08'),
+                _InfoRow(
+                  label: '更新时间',
+                  value: DateFormat('yyyy-MM-dd HH:mm').format(DateTime.now()),
+                ),
               ],
             ),
           ),

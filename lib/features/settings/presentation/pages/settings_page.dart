@@ -15,7 +15,11 @@ import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 class SettingsPage extends ConsumerWidget {
   const SettingsPage({super.key});
 
-  void _handleSettingTap(BuildContext context, WidgetRef ref, SettingItem item) {
+  void _handleSettingTap(
+    BuildContext context,
+    WidgetRef ref,
+    SettingItem item,
+  ) {
     switch (item.icon) {
       case 'dark_mode':
         _showThemeModeSheet(context, ref);
@@ -216,20 +220,18 @@ class _SettingsMain extends StatelessWidget {
             onChanged: onBiometricChanged,
           ),
         ),
-        ...items.map(
-          (item) {
-            final subtitle = item.icon == 'dark_mode'
-                ? SettingsPage._themeModeLabel(themeMode)
-                : item.subtitle;
-            return _SettingRow(
-              icon: _iconFrom(item.icon),
-              title: item.title,
-              subtitle: subtitle,
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => onSettingTap(item),
-            );
-          },
-        ),
+        ...items.map((item) {
+          final subtitle = item.icon == 'dark_mode'
+              ? SettingsPage._themeModeLabel(themeMode)
+              : item.subtitle;
+          return _SettingRow(
+            icon: _iconFrom(item.icon),
+            title: item.title,
+            subtitle: subtitle,
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => onSettingTap(item),
+          );
+        }),
         if (showHelpEntry)
           _SettingRow(
             icon: Icons.help_outline,

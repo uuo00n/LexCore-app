@@ -17,3 +17,17 @@ class ProfileSummary {
   final String nextBillingDate;
   final List<String> benefits;
 }
+
+class ProfileSubscriptionSnapshot {
+  const ProfileSubscriptionSnapshot({
+    required this.planCode,
+    required this.status,
+    required this.documentRemaining,
+    required this.pdfRemaining,
+  });
+
+  final String planCode;
+  final String status;
+  final int documentRemaining;
+  final int pdfRemaining;
+}

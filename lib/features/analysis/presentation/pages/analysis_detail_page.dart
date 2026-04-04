@@ -17,6 +17,9 @@ class AnalysisDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final summary = ref.watch(analysisSummaryProvider);
+    if (summary == null) {
+      return const _AnalysisUnavailablePage();
+    }
 
     return AppPageScaffold(
       title: '分析详情',
@@ -145,6 +148,41 @@ class _AnalysisDetailMain extends StatelessWidget {
         ),
         const SizedBox(height: 4),
       ],
+    );
+  }
+}
+
+class _AnalysisUnavailablePage extends StatelessWidget {
+  const _AnalysisUnavailablePage();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPageScaffold(
+      title: '分析详情',
+      subtitle: '案件摘要与法条匹配',
+      body: Center(
+        child: AppSurfaceCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.analytics_outlined,
+                size: 38,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              const SizedBox(height: 10),
+              Text('暂无分析数据', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 6),
+              Text(
+                '当前版本暂未接入案件分析结果接口。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

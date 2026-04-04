@@ -18,6 +18,39 @@ class CaseAnalysisPreviewCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
     final summary = ref.watch(analysisSummaryProvider);
+    if (summary == null) {
+      return AppSurfaceCard(
+        key: cardKey,
+        onTap: onPressed,
+        backgroundColor: colorScheme.surfaceContainerLow,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '案件分析速览',
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '当前版本暂未接入案件分析数据。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '进入详情',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     final metrics = _selectMetrics(summary.metrics);
     final risk = summary.risks.isNotEmpty ? summary.risks.first : null;
     final riskAccent = _riskAccentColor(context, risk?.level);

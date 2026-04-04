@@ -38,8 +38,12 @@ class _HistorySearchPageState extends ConsumerState<HistorySearchPage> {
     final selectedCategory = ref.watch(historyFilterProvider);
     final startTime = ref.watch(historySearchStartTimeProvider);
     final endTime = ref.watch(historySearchEndTimeProvider);
-    final results = ref.watch(historySearchItemsProvider);
+    final resultsAsync = ref.watch(historySearchItemsProvider);
     final hasActiveRange = startTime != null || endTime != null;
+    final resultCount = resultsAsync.maybeWhen(
+      data: (items) => items.length,
+      orElse: () => 0,
+    );
 
     return AppPageScaffold(
       title: '历史记录搜索',
@@ -92,7 +96,7 @@ class _HistorySearchPageState extends ConsumerState<HistorySearchPage> {
           Row(
             children: [
               Text(
-                '搜索结果（${results.length}）',
+                '搜索结果（$resultCount）',
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const Spacer(),
@@ -104,21 +108,27 @@ class _HistorySearchPageState extends ConsumerState<HistorySearchPage> {
             ],
           ),
           const SizedBox(height: 2),
-          if (results.isEmpty)
-            const _HistorySearchEmptyState()
-          else
-            ...results.asMap().entries.map((entry) {
-              final index = entry.key;
-              final item = entry.value;
-              return AppListTileItem(
-                title: item.title,
-                subtitle:
-                    '${_categoryLabel(item.category)} · ${DateFormat('yyyy-MM-dd HH:mm').format(item.time)}',
-                leadingIcon: _iconForCategory(item.category),
-                showBottomDivider: index != results.length - 1,
-                onTap: () {},
-              );
-            }),
+          ...resultsAsync.when(
+            loading: () => const [Center(child: CircularProgressIndicator())],
+            error: (error, stackTrace) => const [_HistorySearchErrorState()],
+            data: (results) {
+              if (results.isEmpty) {
+                return const [_HistorySearchEmptyState()];
+              }
+              return results.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return AppListTileItem(
+                  title: item.title,
+                  subtitle:
+                      '${_categoryLabel(item.category)} · ${DateFormat('yyyy-MM-dd HH:mm').format(item.time)}',
+                  leadingIcon: _iconForCategory(item.category),
+                  showBottomDivider: index != results.length - 1,
+                  onTap: () {},
+                );
+              }).toList();
+            },
+          ),
         ],
       ),
     );
@@ -284,6 +294,32 @@ class _HistorySearchEmptyState extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HistorySearchErrorState extends StatelessWidget {
+  const _HistorySearchErrorState();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppSurfaceCard(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '历史记录加载失败，请稍后重试',
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
         ],

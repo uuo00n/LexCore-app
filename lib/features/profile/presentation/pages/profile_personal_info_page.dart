@@ -54,8 +54,8 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
       body: ListView(
         children: [
           _ProfileHeader(
-            name: info.name,
-            email: info.email,
+            name: _displayOrUnset(info.name),
+            email: _displayOrUnset(info.email),
             avatarPath: info.avatarPath,
             onAvatarEditTap: () => _showAvatarActionSheet(context, controller),
           ),
@@ -70,7 +70,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
           _InfoActionRow(
             icon: Icons.person_outline,
             title: '姓名',
-            subtitle: info.name,
+            subtitle: _displayOrUnset(info.name),
             onTap: () => _showTextEditSheet(
               context: context,
               title: '修改姓名',
@@ -86,7 +86,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
           _InfoActionRow(
             icon: Icons.phone_outlined,
             title: '手机号',
-            subtitle: info.phone,
+            subtitle: _displayOrUnset(info.phone),
             onTap: () => _showPhoneEditSheet(
               context: context,
               currentPhone: info.phone,
@@ -96,7 +96,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
           _InfoActionRow(
             icon: Icons.email_outlined,
             title: '邮箱',
-            subtitle: info.email,
+            subtitle: _displayOrUnset(info.email),
             onTap: () => _showTextEditSheet(
               context: context,
               title: '修改邮箱',
@@ -115,7 +115,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
           _InfoActionRow(
             icon: Icons.work_outline,
             title: '职位角色',
-            subtitle: info.role,
+            subtitle: _displayOrUnset(info.role),
             onTap: () => _showTextEditSheet(
               context: context,
               title: '修改职位角色',
@@ -131,7 +131,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
           _InfoActionRow(
             icon: Icons.business_outlined,
             title: '所属机构',
-            subtitle: info.organization,
+            subtitle: _displayOrUnset(info.organization),
             onTap: () => _showTextEditSheet(
               context: context,
               title: '修改所属机构',
@@ -168,7 +168,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
           _InfoActionRow(
             icon: Icons.language_outlined,
             title: '语言偏好',
-            subtitle: info.language,
+            subtitle: _displayOrUnset(info.language),
             onTap: () => _showLanguageActionSheet(
               context: context,
               controller: controller,
@@ -215,7 +215,7 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
                   Icons.refresh_outlined,
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                title: const Text('恢复默认头像'),
+                title: const Text('移除头像'),
                 onTap: () async {
                   Navigator.of(sheetContext).pop();
                   await controller.resetAvatar();
@@ -560,6 +560,10 @@ class ProfilePersonalInfoPage extends ConsumerWidget {
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .toList();
+  }
+
+  String _displayOrUnset(String value) {
+    return value.trim().isEmpty ? '未设置' : value.trim();
   }
 
   String? _validateName(String value) {

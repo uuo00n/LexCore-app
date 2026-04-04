@@ -1,18 +1,11 @@
 import 'package:lexcore/core/constants/app_constants.dart';
-import 'package:lexcore/features/settings/domain/entities/settings_profile.dart';
+import 'package:lexcore/shared/config/static_ui_config.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
-import 'package:lexcore/shared/services/mock/mock_legal_repository.dart';
 
 class SettingsRepository {
-  const SettingsRepository(this._mock);
+  const SettingsRepository();
 
-  final MockLegalRepository _mock;
-
-  List<SettingItem> items() => _mock.settings();
-
-  SettingsProfile profile() {
-    return const SettingsProfile(name: 'LexCore 用户', membership: 'PRO 会员');
-  }
+  List<SettingItem> items() => StaticUiConfig.settingsItems;
 
   String version() =>
       'LexCore 版本 ${AppConstants.appVersion} (${AppConstants.copyrightYear})';

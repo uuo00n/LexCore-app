@@ -1,78 +1,67 @@
 import 'dart:convert';
+import 'dart:async';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/core/network/api_client.dart';
+import 'package:lexcore/core/network/dio_provider.dart';
+import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
-import 'package:lexcore/shared/services/mock/mock_legal_repository.dart';
 
 class DocumentRepository {
-  const DocumentRepository(this._mock);
+  DocumentRepository(this._apiClient, this._preferences);
 
-  static const _storageKey = 'saved_documents_v1';
+  final ApiClient _apiClient;
+  final SharedPreferences _preferences;
 
-  final MockLegalRepository _mock;
+  static const _localEditsStorageKey = 'saved_documents_local_edits_v2';
 
-  DocumentDraft generatePreview() => _mock.generatedDraft();
+  DocumentDraft generatePreview() {
+    return const DocumentDraft(title: '未命名文档', markdown: '');
+  }
 
   Future<List<DocumentItem>> loadSaved() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
-
-    if (raw == null || raw.isEmpty) {
-      return _sortDocuments(_mock.savedDocuments());
-    }
-
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) {
-        return _sortDocuments(_mock.savedDocuments());
-      }
-
-      final documents = decoded
-          .whereType<Map>()
-          .map((item) => DocumentItem.fromJson(Map<String, dynamic>.from(item)))
-          .toList(growable: false);
-      return _sortDocuments(documents);
-    } catch (_) {
-      return _sortDocuments(_mock.savedDocuments());
-    }
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/documents',
+      queryParameters: const {'offset': 0, 'limit': 100},
+      decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+    final items = (data['items'] as List?) ?? const [];
+    final localEdits = _readLocalEdits();
+    return items.whereType<Map>().map((item) {
+      final map = item.cast<String, dynamic>();
+      final id = map['document_id'] as String? ?? '';
+      final local = localEdits[id] ?? const {};
+      final title = local['title'] as String? ?? map['title'] as String? ?? '';
+      final markdown =
+          local['markdown'] as String? ?? map['content_markdown'] as String?;
+      final updatedAt =
+          DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final docType = map['doc_type'] as String? ?? '法律文书';
+      return DocumentItem(
+        id: id,
+        name: title,
+        updatedAt: updatedAt,
+        type: docType,
+        markdown: _resolveMarkdown(markdown),
+        status: map['status'] as String? ?? 'queued',
+      );
+    }).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
-    final currentDocuments = await loadSaved();
-    final now = DateTime.now();
-    final resolvedTitle = _resolveTitle(draft.title);
-    final existingIndex = currentDocuments.indexWhere(
-      (item) => item.name.trim() == resolvedTitle,
+    await _apiClient.post<Map<String, dynamic>>(
+      '/documents/generate',
+      data: {
+        'title': _resolveTitle(draft.title),
+        'doc_type': _resolveType(draft.title),
+        'prompt': _resolveMarkdown(draft.markdown),
+      },
+      decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
     );
-
-    final nextDocuments = [...currentDocuments];
-    DocumentSaveResult result;
-    if (existingIndex >= 0) {
-      final existing = nextDocuments[existingIndex];
-      nextDocuments[existingIndex] = existing.copyWith(
-        name: resolvedTitle,
-        updatedAt: now,
-        type: _resolveType(resolvedTitle, fallbackType: existing.type),
-        markdown: _resolveMarkdown(draft.markdown, fallback: existing.markdown),
-      );
-      result = DocumentSaveResult.updated;
-    } else {
-      nextDocuments.add(
-        DocumentItem(
-          id: 'doc_${now.microsecondsSinceEpoch}',
-          name: resolvedTitle,
-          updatedAt: now,
-          type: _resolveType(resolvedTitle),
-          markdown: _resolveMarkdown(draft.markdown),
-        ),
-      );
-      result = DocumentSaveResult.created;
-    }
-
-    final sortedDocuments = _sortDocuments(nextDocuments);
-    await _persistDocuments(sortedDocuments);
-    return result;
+    return DocumentSaveResult.created;
   }
 
   Future<DocumentItem?> loadById(String id) async {
@@ -80,14 +69,26 @@ class DocumentRepository {
     if (normalizedId.isEmpty) {
       return null;
     }
-
-    final documents = await loadSaved();
-    for (final item in documents) {
-      if (item.id == normalizedId) {
-        return item;
-      }
-    }
-    return null;
+    final data = await _apiClient.get<Map<String, dynamic>>(
+      '/documents/$normalizedId',
+      decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+    final localEdits = _readLocalEdits()[normalizedId] ?? const {};
+    final title =
+        localEdits['title'] as String? ?? data['title'] as String? ?? '';
+    final markdown =
+        localEdits['markdown'] as String? ??
+        data['content_markdown'] as String?;
+    return DocumentItem(
+      id: data['document_id'] as String? ?? normalizedId,
+      name: title,
+      updatedAt:
+          DateTime.tryParse(data['created_at'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      type: data['doc_type'] as String? ?? '法律文书',
+      markdown: _resolveMarkdown(markdown),
+      status: data['status'] as String? ?? 'queued',
+    );
   }
 
   Future<DocumentItem?> updateDocument({
@@ -100,31 +101,135 @@ class DocumentRepository {
       return null;
     }
 
-    final documents = await loadSaved();
-    final index = documents.indexWhere((item) => item.id == normalizedId);
-    if (index < 0) {
+    final current = await loadById(normalizedId);
+    if (current == null) {
       return null;
     }
 
-    final current = documents[index];
-    final resolvedTitle = _resolveTitle(title);
-    final updated = current.copyWith(
-      name: resolvedTitle,
-      markdown: _resolveMarkdown(markdown, fallback: current.markdown),
+    final updates = _readLocalEdits();
+    updates[normalizedId] = {
+      'title': _resolveTitle(title),
+      'markdown': _resolveMarkdown(markdown),
+    };
+    await _preferences.setString(_localEditsStorageKey, jsonEncode(updates));
+
+    return current.copyWith(
+      name: _resolveTitle(title),
+      markdown: _resolveMarkdown(markdown),
       updatedAt: DateTime.now(),
-      type: _resolveType(resolvedTitle, fallbackType: current.type),
+    );
+  }
+
+  Future<DocumentPdfExportResult> exportPdf(
+    String documentId, {
+    int maxPollAttempts = 20,
+    Duration pollInterval = const Duration(seconds: 2),
+  }) async {
+    final normalizedId = documentId.trim();
+    if (normalizedId.isEmpty) {
+      return const DocumentPdfExportResult(
+        completed: false,
+        status: 'failed',
+        errorMessage: '文档 ID 为空，无法导出 PDF',
+      );
+    }
+
+    final exportTask = await _apiClient.post<Map<String, dynamic>>(
+      '/pdf/export',
+      data: {'document_id': normalizedId},
+      decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
     );
 
-    final nextDocuments = [...documents]..[index] = updated;
-    final sorted = _sortDocuments(nextDocuments);
-    await _persistDocuments(sorted);
+    final taskId = exportTask['task_id'] as String? ?? '';
+    var status = exportTask['status'] as String? ?? 'queued';
+    String? fileId = exportTask['file_id'] as String?;
+    String? errorMessage = exportTask['error_message'] as String?;
 
-    for (final item in sorted) {
-      if (item.id == normalizedId) {
-        return item;
-      }
+    if (taskId.trim().isEmpty) {
+      return const DocumentPdfExportResult(
+        completed: false,
+        status: 'failed',
+        errorMessage: 'PDF 任务创建失败（task_id 为空）',
+      );
     }
-    return updated;
+
+    for (var attempt = 0; attempt < maxPollAttempts; attempt++) {
+      if (status == 'completed' || status == 'failed') {
+        break;
+      }
+      await Future<void>.delayed(pollInterval);
+      final taskInfo = await _apiClient.get<Map<String, dynamic>>(
+        '/pdf/tasks/$taskId',
+        decoder: (value) =>
+            (value as Map?)?.cast<String, dynamic>() ?? const {},
+      );
+      status = taskInfo['status'] as String? ?? status;
+      fileId = taskInfo['file_id'] as String? ?? fileId;
+      errorMessage = taskInfo['error_message'] as String? ?? errorMessage;
+    }
+
+    if (status != 'completed') {
+      return DocumentPdfExportResult(
+        completed: false,
+        taskId: taskId,
+        status: status,
+        errorMessage: errorMessage ?? 'PDF 导出超时，请稍后重试',
+      );
+    }
+
+    if (fileId == null || fileId.trim().isEmpty) {
+      return DocumentPdfExportResult(
+        completed: false,
+        taskId: taskId,
+        status: 'failed',
+        errorMessage: 'PDF 导出完成但未返回 file_id',
+      );
+    }
+
+    final downloadData = await _apiClient.get<Map<String, dynamic>>(
+      '/pdf/download/$fileId',
+      decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+    final downloadUrl = downloadData['download_url'] as String?;
+    if (downloadUrl == null || downloadUrl.trim().isEmpty) {
+      return DocumentPdfExportResult(
+        completed: false,
+        taskId: taskId,
+        fileId: fileId,
+        status: 'failed',
+        errorMessage: 'PDF 下载地址为空',
+      );
+    }
+
+    return DocumentPdfExportResult(
+      completed: true,
+      taskId: taskId,
+      fileId: fileId,
+      status: status,
+      downloadUrl: downloadUrl,
+    );
+  }
+
+  Map<String, Map<String, dynamic>> _readLocalEdits() {
+    final raw = _preferences.getString(_localEditsStorageKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return {};
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return {};
+      }
+      final result = <String, Map<String, dynamic>>{};
+      decoded.forEach((key, value) {
+        if (key is String && value is Map) {
+          result[key] = value.cast<String, dynamic>();
+        }
+      });
+      return result;
+    } catch (_) {
+      return {};
+    }
   }
 
   String _resolveTitle(String title) {
@@ -132,19 +237,11 @@ class DocumentRepository {
     return normalized.isEmpty ? '未命名文档' : normalized;
   }
 
-  String _resolveMarkdown(String markdown, {String? fallback}) {
-    final normalized = markdown.trim();
-    if (normalized.isNotEmpty) {
-      return normalized;
-    }
-    final normalizedFallback = fallback?.trim() ?? '';
-    if (normalizedFallback.isNotEmpty) {
-      return normalizedFallback;
-    }
-    return '# 未命名文档\n\n请补充正文内容。';
+  String _resolveMarkdown(String? markdown) {
+    return markdown?.trim() ?? '';
   }
 
-  String _resolveType(String title, {String? fallbackType}) {
+  String _resolveType(String title) {
     if (title.contains('律师函')) {
       return '律师函';
     }
@@ -154,24 +251,31 @@ class DocumentRepository {
     if (title.contains('审查') || title.contains('意见')) {
       return '审查意见';
     }
-    final normalizedFallback = fallbackType?.trim() ?? '';
-    if (normalizedFallback.isNotEmpty) {
-      return normalizedFallback;
-    }
     return '法律文书';
   }
-
-  List<DocumentItem> _sortDocuments(List<DocumentItem> documents) {
-    final sorted = [...documents];
-    sorted.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-    return sorted;
-  }
-
-  Future<void> _persistDocuments(List<DocumentItem> documents) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _storageKey,
-      jsonEncode(documents.map((item) => item.toJson()).toList()),
-    );
-  }
 }
+
+class DocumentPdfExportResult {
+  const DocumentPdfExportResult({
+    required this.completed,
+    required this.status,
+    this.taskId,
+    this.fileId,
+    this.downloadUrl,
+    this.errorMessage,
+  });
+
+  final bool completed;
+  final String status;
+  final String? taskId;
+  final String? fileId;
+  final String? downloadUrl;
+  final String? errorMessage;
+}
+
+final documentRepositoryProvider = Provider<DocumentRepository>((ref) {
+  return DocumentRepository(
+    ref.watch(apiClientProvider),
+    ref.watch(sharedPreferencesProvider),
+  );
+});

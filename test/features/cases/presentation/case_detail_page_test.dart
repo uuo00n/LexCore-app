@@ -25,7 +25,7 @@ void main() {
         GoRoute(
           path: RouteNames.caseDetailPath,
           builder: (context, state) =>
-              CaseDetailPage(detail: CaseDetailData.demo()),
+              CaseDetailPage(detail: _sampleCaseDetail()),
         ),
         GoRoute(
           path: RouteNames.analysisDetailPath,
@@ -74,17 +74,12 @@ void main() {
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
     expect(find.text('张三与李四房屋所有权纠纷案'), findsOneWidget);
     expect(find.text('案件分析速览'), findsOneWidget);
-    expect(find.text('已生成分析'), findsOneWidget);
-    expect(find.text('事实完整度'), findsOneWidget);
-    expect(find.text('82%'), findsOneWidget);
-    expect(find.text('证据强度'), findsOneWidget);
-    expect(find.text('76%'), findsOneWidget);
-    expect(find.text('程序风险'), findsOneWidget);
-    expect(find.text('中'), findsOneWidget);
-    expect(find.text('重点提示'), findsOneWidget);
-    expect(find.text('关键书面证据缺失'), findsOneWidget);
-    expect(find.text('查看完整分析'), findsOneWidget);
-    expect(find.text('开始分析'), findsNothing);
+    expect(find.text('当前版本暂未接入案件分析数据。'), findsOneWidget);
+    expect(find.text('已生成分析'), findsNothing);
+    expect(find.text('事实完整度'), findsNothing);
+    expect(find.text('证据强度'), findsNothing);
+    expect(find.text('程序风险'), findsNothing);
+    expect(find.text('重点提示'), findsNothing);
     expect(find.text('当前进度 (65%)'), findsOneWidget);
     expect(find.text('当前节点：开庭中'), findsOneWidget);
     expect(find.text('当事人信息'), findsOneWidget);
@@ -120,15 +115,11 @@ void main() {
     expect(find.text('分析详情占位'), findsOneWidget);
   });
 
-  testWidgets('opens analysis detail page when tapping preview CTA row', (
+  testWidgets('preview CTA row is hidden when analysis is unavailable', (
     tester,
   ) async {
     await pumpCaseDetailPage(tester);
-
-    await tester.tap(find.byKey(CaseAnalysisPreviewCard.ctaKey));
-    await tester.pumpAndSettle();
-
-    expect(find.text('分析详情占位'), findsOneWidget);
+    expect(find.byKey(CaseAnalysisPreviewCard.ctaKey), findsNothing);
   });
 
   testWidgets('shares case summary from top action', (tester) async {
@@ -143,6 +134,40 @@ void main() {
     expect(arguments['text'], contains('(2023) 沪0115民初12345号'));
     expect(arguments['text'], contains('关联文档'));
   });
+}
+
+CaseDetailData _sampleCaseDetail() {
+  return const CaseDetailData(
+    status: CaseDetailStatus.inProgress,
+    statusLabel: '进行中',
+    lastUpdatedLabel: '更新于 2小时前',
+    title: '张三与李四房屋所有权纠纷案',
+    caseNumber: '(2023) 沪0115民初12345号',
+    dateLabel: '立案日期',
+    dateValue: '2023-10-15',
+    progress: 0.65,
+    progressLabel: '开庭中',
+    activeStepIndex: 2,
+    progressSteps: ['证据交换', '庭审准备', '开庭中', '判决'],
+    summary:
+        '原告张三与被告李四于 2022 年签订房屋买卖协议，原告已支付全部房款，但被告迟迟未办理房产过户手续。原告遂起诉要求被告履行合同义务并赔偿违约金。',
+    plaintiffName: '张三',
+    plaintiffCounsel: '代理律师：王律师',
+    defendantName: '李四',
+    defendantCounsel: '未指定代理',
+    documents: [
+      CaseDocumentData(
+        type: CaseDocumentType.pdf,
+        title: '起诉状_张三.pdf',
+        meta: '1.2 MB · 2023-10-16',
+      ),
+      CaseDocumentData(
+        type: CaseDocumentType.image,
+        title: '房产证复印件.jpg',
+        meta: '2.5 MB · 2023-10-18',
+      ),
+    ],
+  );
 }
 
 class _LabelPage extends StatelessWidget {

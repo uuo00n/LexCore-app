@@ -224,7 +224,7 @@ class MockLegalRepository {
 申请人自 2024 年 3 月入职，被申请人连续拖欠工资两个月。申请人已多次催告无果。
 
 ## 证据示意图
-![证据截图示意](https://picsum.photos/960/520)
+![证据截图示意](lexcore://evidence-info-card)
 
 ## 证据目录
 - 劳动合同

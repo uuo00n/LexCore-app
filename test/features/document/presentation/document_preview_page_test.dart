@@ -129,10 +129,18 @@ void main() {
     expect(find.byType(AppShellTopBar), findsOneWidget);
     expect(
       tester.widget<AppPageScaffold>(find.byType(AppPageScaffold)).bodyPadding,
-      const EdgeInsets.fromLTRB(16, 6, 16, 110),
+      const EdgeInsets.fromLTRB(16, 6, 16, 16),
     );
     expect(find.text('文档预览'), findsOneWidget);
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
+  });
+
+  testWidgets('document preview renders evidence info card', (tester) async {
+    await pumpDocumentPreviewPage(tester);
+
+    expect(find.byIcon(Icons.inventory_2_outlined), findsOneWidget);
+    expect(find.text('证据材料示意（非真实图片）'), findsOneWidget);
+    expect(find.text('建议材料'), findsOneWidget);
   });
 
   testWidgets('document preview top action exports markdown file', (

@@ -142,7 +142,7 @@ class LocalAppExportService implements AppExportService {
   List<pw.Widget> _buildPdfWidgets(String markdown, pw.Font font) {
     if (markdown.isEmpty) {
       return [
-        pw.Text('暂无可导出的内容', style: pw.TextStyle(font: font, fontSize: 12)),
+        pw.Text('暂无可导出的内容', style: pw.TextStyle(font: font, fontSize: 10)),
       ];
     }
 
@@ -184,7 +184,7 @@ class LocalAppExportService implements AppExportService {
             ),
             child: pw.Text(
               rawLine,
-              style: pw.TextStyle(font: font, fontSize: 10),
+              style: pw.TextStyle(font: font, fontSize: 9),
             ),
           ),
         );
@@ -202,10 +202,10 @@ class LocalAppExportService implements AppExportService {
               style: pw.TextStyle(
                 font: font,
                 fontSize: switch (level) {
-                  1 => 20,
-                  2 => 16,
-                  3 => 14,
-                  _ => 12,
+                  1 => 16,
+                  2 => 13.5,
+                  3 => 12,
+                  _ => 10.5,
                 },
                 fontWeight: pw.FontWeight.bold,
               ),
@@ -222,7 +222,7 @@ class LocalAppExportService implements AppExportService {
             padding: const pw.EdgeInsets.only(left: 8, bottom: 4),
             child: pw.Text(
               '• ${_stripInlineMarkdown(bulletMatch.group(1)!)}',
-              style: pw.TextStyle(font: font, fontSize: 11.5),
+              style: pw.TextStyle(font: font, fontSize: 9.5),
             ),
           ),
         );
@@ -236,7 +236,7 @@ class LocalAppExportService implements AppExportService {
             padding: const pw.EdgeInsets.only(left: 8, bottom: 4),
             child: pw.Text(
               '${orderedMatch.group(1)}. ${_stripInlineMarkdown(orderedMatch.group(2)!)}',
-              style: pw.TextStyle(font: font, fontSize: 11.5),
+              style: pw.TextStyle(font: font, fontSize: 9.5),
             ),
           ),
         );
@@ -258,7 +258,7 @@ class LocalAppExportService implements AppExportService {
             ),
             child: pw.Text(
               _stripInlineMarkdown(quoteMatch.group(1)!),
-              style: pw.TextStyle(font: font, fontSize: 11.5),
+              style: pw.TextStyle(font: font, fontSize: 9.5),
             ),
           ),
         );
@@ -270,7 +270,7 @@ class LocalAppExportService implements AppExportService {
           padding: const pw.EdgeInsets.only(bottom: 6),
           child: pw.Text(
             _stripInlineMarkdown(trimmed),
-            style: pw.TextStyle(font: font, fontSize: 11.5, lineSpacing: 2),
+            style: pw.TextStyle(font: font, fontSize: 9.5, lineSpacing: 1.2),
           ),
         ),
       );

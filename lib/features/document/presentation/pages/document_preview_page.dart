@@ -120,12 +120,7 @@ class DocumentPreviewPage extends ConsumerWidget {
               tooltip: '更多操作',
             ),
           ],
-          bodyPadding: EdgeInsets.fromLTRB(
-            16,
-            6,
-            16,
-            showBottomActions ? 110 : 16,
-          ),
+          bodyPadding: EdgeInsets.fromLTRB(16, 6, 16, 16),
           body: splitLayout
               ? AppAdaptiveSplitView(
                   splitMinWidth: 980,
@@ -216,68 +211,6 @@ class _DocumentBody extends StatelessWidget {
     return ListView(
       children: [
         AppFadeSlideIn(
-          delay: const Duration(milliseconds: 70),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              height: 170,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Theme.of(context).colorScheme.primary,
-                    Theme.of(context).colorScheme.secondary,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    top: -30,
-                    right: -20,
-                    child: Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onPrimary.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    left: 14,
-                    bottom: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(999),
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onPrimary.withValues(alpha: 0.2),
-                      ),
-                      child: Text(
-                        '智能分析',
-                        style: Theme.of(context).textTheme.labelMedium
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        AppFadeSlideIn(
           delay: const Duration(milliseconds: 120),
           child: AppSurfaceCard(
             padding: const EdgeInsets.all(16),
@@ -297,6 +230,12 @@ class _DocumentBody extends StatelessWidget {
                   data: markdown,
                   styleSheet: styleSheet,
                   sizedImageBuilder: (config) {
+                    if (_isEvidenceIllustrationPlaceholder(config.uri)) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        child: _EvidenceIllustrationCard(),
+                      );
+                    }
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       child: ClipRRect(
@@ -343,6 +282,100 @@ class _DocumentBody extends StatelessWidget {
                   },
                 ),
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+bool _isEvidenceIllustrationPlaceholder(Uri uri) {
+  return uri.scheme == 'lexcore' && uri.host == 'evidence-info-card';
+}
+
+class _EvidenceIllustrationCard extends StatelessWidget {
+  const _EvidenceIllustrationCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.inventory_2_outlined,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '证据材料示意（非真实图片）',
+                style: textTheme.titleSmall?.copyWith(
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '用于占位展示证据截图区域，导出前请替换为真实证据材料。',
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _EvidenceMetaRow(label: '建议材料', value: '劳动合同 / 工资流水 / 催告记录'),
+          const SizedBox(height: 6),
+          _EvidenceMetaRow(label: '材料要求', value: '可核验、可追溯、时间线清晰'),
+        ],
+      ),
+    );
+  }
+}
+
+class _EvidenceMetaRow extends StatelessWidget {
+  const _EvidenceMetaRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 60,
+          child: Text(
+            label,
+            style: textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurface,
+              height: 1.35,
             ),
           ),
         ),
@@ -427,6 +460,11 @@ class _ActionButtons extends StatelessWidget {
           )
         : const Icon(Icons.save_outlined);
     final saveLabel = saving ? '保存中...' : (isCompact ? '保存' : '保存文档');
+    final compactTextStyle = Theme.of(context).textTheme.labelMedium?.copyWith(
+      fontSize: 13,
+      fontWeight: FontWeight.w700,
+      height: 1.1,
+    );
 
     if (isCompact) {
       return Row(
@@ -435,10 +473,17 @@ class _ActionButtons extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () =>
                   showFeatureInProgressSnackBar(context, featureLabel: '编辑'),
-              icon: const Icon(Icons.edit_outlined),
-              label: const Text('编辑'),
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text(
+                '编辑',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textScaler: TextScaler.linear(1),
+              ),
               style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
+                minimumSize: const Size.fromHeight(42),
+                textStyle: compactTextStyle,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 shape: const StadiumBorder(),
               ),
             ),
@@ -447,10 +492,17 @@ class _ActionButtons extends StatelessWidget {
           Expanded(
             child: FilledButton.tonalIcon(
               onPressed: () => onExport(context),
-              icon: const Icon(Icons.ios_share_outlined),
-              label: const Text('导出文件'),
+              icon: const Icon(Icons.ios_share_outlined, size: 18),
+              label: const Text(
+                '导出文件',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textScaler: TextScaler.linear(1),
+              ),
               style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
+                minimumSize: const Size.fromHeight(42),
+                textStyle: compactTextStyle,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 shape: const StadiumBorder(),
               ),
             ),
@@ -460,9 +512,16 @@ class _ActionButtons extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: saving ? null : onSave,
               icon: saveIcon,
-              label: Text(saveLabel),
+              label: Text(
+                saveLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textScaler: const TextScaler.linear(1),
+              ),
               style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(44),
+                minimumSize: const Size.fromHeight(42),
+                textStyle: compactTextStyle,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
                 shape: const StadiumBorder(),
               ),
             ),

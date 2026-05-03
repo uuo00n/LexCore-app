@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/core/error/app_exception.dart';
 import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/features/history/data/repositories/history_repository.dart';
 import 'package:lexcore/features/search/data/repositories/search_repository.dart';
@@ -45,6 +46,96 @@ class _FakeSearchApiClient extends ApiClient {
       return decoder({'items': const []});
     }
     throw UnimplementedError('Unhandled GET path: $path');
+  }
+}
+
+class _TrackingSearchApiClient extends ApiClient {
+  _TrackingSearchApiClient() : super(Dio());
+
+  String? lastGetPath;
+  Map<String, dynamic>? lastGetQueryParameters;
+  String? lastPostPath;
+  Object? lastPostData;
+
+  @override
+  Future<T> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    required T Function(Object? data) decoder,
+  }) async {
+    lastGetPath = path;
+    lastGetQueryParameters = queryParameters;
+    if (path == '/laws') {
+      return decoder({'items': const []});
+    }
+    throw UnimplementedError('Unhandled GET path: $path');
+  }
+
+  @override
+  Future<T> post<T>(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    required T Function(Object? data) decoder,
+  }) async {
+    lastPostPath = path;
+    lastPostData = data;
+    if (path == '/search/cases') {
+      return decoder({
+        'body': {
+          'data': [
+            {
+              'caseName': '婚姻纠纷案件示例',
+              'caseNo': '(2024) 沪01民终0001号',
+              'courtName': '上海市第一中级人民法院',
+              'judgementDate': '2024-11-11',
+              'caseType': '民事',
+            },
+          ],
+        },
+      });
+    }
+    throw UnimplementedError('Unhandled POST path: $path');
+  }
+}
+
+class _CaseFallbackApiClient extends ApiClient {
+  _CaseFallbackApiClient() : super(Dio());
+
+  @override
+  Future<T> get<T>(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    required T Function(Object? data) decoder,
+  }) async {
+    if (path == '/laws') {
+      return decoder({
+        'items': [
+          {
+            'id': 'LAW-CASE-FALLBACK',
+            'title': '民法典（节选）',
+            'category': '法律',
+            'issuing_authority': '全国人大常委会',
+            'effective_status': '现行有效',
+          },
+        ],
+      });
+    }
+    throw UnimplementedError('Unhandled GET path: $path');
+  }
+
+  @override
+  Future<T> post<T>(
+    String path, {
+    Object? data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    required T Function(Object? data) decoder,
+  }) async {
+    throw AppException('mock failure', code: 'REQUEST_FAILED');
   }
 }
 
@@ -102,4 +193,75 @@ void main() {
       expect(detail.content, contains('法规标题：地方性法规示例'));
     },
   );
+
+  test(
+    'search applies category filter when selecting law category tab',
+    () async {
+      final apiClient = _TrackingSearchApiClient();
+      final repository = SearchRepository(apiClient);
+      final filterIndex = repository.searchFilterLabels().indexOf('地方性法规');
+
+      expect(filterIndex, isNonNegative);
+
+      await repository.search('婚姻', filterIndex: filterIndex);
+
+      expect(apiClient.lastGetPath, '/laws');
+      expect(apiClient.lastPostPath, isNull);
+      expect(apiClient.lastGetQueryParameters?['keyword'], '婚姻');
+      expect(apiClient.lastGetQueryParameters?['category'], '地方性法规');
+    },
+  );
+
+  test('search does not send category when selecting all tab', () async {
+    final apiClient = _TrackingSearchApiClient();
+    final repository = SearchRepository(apiClient);
+    final filterIndex = repository.searchFilterLabels().indexOf('全部');
+
+    expect(filterIndex, isNonNegative);
+
+    await repository.search('婚姻', filterIndex: filterIndex);
+
+    expect(apiClient.lastGetPath, '/laws');
+    expect(apiClient.lastPostPath, isNull);
+    expect(apiClient.lastGetQueryParameters?['keyword'], '婚姻');
+    expect(apiClient.lastGetQueryParameters?.containsKey('category'), isFalse);
+  });
+
+  test('search routes to upstream cases when selecting case tab', () async {
+    final apiClient = _TrackingSearchApiClient();
+    final repository = SearchRepository(apiClient);
+    final filterIndex = repository.searchFilterLabels().indexOf('裁判文书');
+
+    expect(filterIndex, isNonNegative);
+
+    final result = await repository.search('婚姻', filterIndex: filterIndex);
+
+    expect(apiClient.lastPostPath, '/search/cases');
+    expect(apiClient.lastGetPath, isNull);
+
+    final payload = apiClient.lastPostData as Map<String, dynamic>;
+    expect(payload['pageSize'], 10);
+    expect((payload['condition'] as Map<String, dynamic>)['keywordArr'], [
+      '婚姻',
+    ]);
+    expect(result.items, hasLength(1));
+    expect(result.items.first.resultType, SearchResultType.caseDoc);
+    expect(result.items.first.courtName, '上海市第一中级人民法院');
+    expect(result.items.first.judgementDate, '2024-11-11');
+    expect(result.items.first.caseType, '民事');
+  });
+
+  test('search keeps law type when case search degrades to laws', () async {
+    final apiClient = _CaseFallbackApiClient();
+    final repository = SearchRepository(apiClient);
+    final filterIndex = repository.searchFilterLabels().indexOf('裁判文书');
+
+    expect(filterIndex, isNonNegative);
+
+    final result = await repository.search('婚姻', filterIndex: filterIndex);
+
+    expect(result.degraded, isTrue);
+    expect(result.items, hasLength(1));
+    expect(result.items.first.resultType, SearchResultType.law);
+  });
 }

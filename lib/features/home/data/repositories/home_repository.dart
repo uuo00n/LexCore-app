@@ -30,7 +30,8 @@ class HomeRepository {
               (item) => ActivityRecord(
                 title: item.title,
                 time: item.time,
-                tag: _tagFromCategory(item.category),
+                category: item.category,
+                resourceKey: item.resourceKey,
               ),
             )
             .toList(growable: false);
@@ -57,7 +58,12 @@ class HomeRepository {
               time:
                   DateTime.tryParse(map['created_at'] as String? ?? '') ??
                   DateTime.fromMillisecondsSinceEpoch(0),
-              tag: _tagFromEventType(map['event_type'] as String? ?? ''),
+              category: _categoryFromEventType(
+                map['event_type'] as String? ?? '',
+              ),
+              resourceKey:
+                  map['resource_key'] as String? ??
+                  map['resourceKey'] as String?,
             );
           })
           .where((item) => item.title.trim().isNotEmpty)
@@ -69,21 +75,13 @@ class HomeRepository {
     }
   }
 
-  String _tagFromEventType(String eventType) {
+  HistoryCategory _categoryFromEventType(String eventType) {
     if (eventType.contains('document') || eventType.contains('pdf')) {
-      return '文档';
+      return HistoryCategory.document;
     }
     if (eventType.contains('search') || eventType.contains('analysis')) {
-      return '分析';
+      return HistoryCategory.analysis;
     }
-    return '咨询';
-  }
-
-  String _tagFromCategory(HistoryCategory category) {
-    return switch (category) {
-      HistoryCategory.consultation => '咨询',
-      HistoryCategory.analysis => '分析',
-      HistoryCategory.document => '文档',
-    };
+    return HistoryCategory.consultation;
   }
 }

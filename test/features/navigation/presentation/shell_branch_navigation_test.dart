@@ -6,6 +6,10 @@ import 'package:go_router/go_router.dart';
 import 'package:lexcore/app/navigation/main_shell_page.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/extensions/router_navigation_extensions.dart';
+import 'package:lexcore/features/home/application/home_providers.dart';
+import 'package:lexcore/features/home/domain/entities/home_entity.dart';
+import 'package:lexcore/features/home/presentation/pages/home_page.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_bottom_navigation.dart';
 
 void main() {
@@ -132,6 +136,57 @@ void main() {
     );
   }
 
+  GoRouter buildHomeRefreshRouter() {
+    return GoRouter(
+      initialLocation: RouteNames.profilePath,
+      routes: [
+        StatefulShellRoute(
+          builder: (context, state, navigationShell) =>
+              MainShellPage(navigationShell: navigationShell),
+          navigatorContainerBuilder: (context, navigationShell, children) =>
+              IndexedStack(
+                index: navigationShell.currentIndex,
+                children: children,
+              ),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: RouteNames.homePath,
+                  builder: (context, state) => const HomePage(),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: RouteNames.legalSearchPath,
+                  builder: (context, state) => const _LabelPage('搜索页'),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: RouteNames.historyPath,
+                  builder: (context, state) => const _LabelPage('历史页'),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: RouteNames.profilePath,
+                  builder: (context, state) => const _LabelPage('Profile Root'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   testWidgets(
     'navigating from profile history menu keeps bottom nav functional',
     (tester) async {
@@ -171,6 +226,45 @@ void main() {
     await tester.tap(bottomNavItem('我的'));
     await tester.pumpAndSettle();
     expect(find.text('Profile Root'), findsOneWidget);
+  });
+
+  testWidgets('switching to home tab refreshes home data provider', (
+    tester,
+  ) async {
+    await setPhoneViewport(tester);
+    var loadCount = 0;
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          homeDataProvider.overrideWith((ref) async {
+            loadCount += 1;
+            return const HomeEntity(
+              actions: [
+                QuickAction(
+                  title: '法律咨询',
+                  subtitle: '智能问答',
+                  icon: 'chat_bubble',
+                  route: '/consultation',
+                ),
+              ],
+              activities: [],
+            );
+          }),
+        ],
+        child: MaterialApp.router(routerConfig: buildHomeRefreshRouter()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final beforeSwitch = loadCount;
+    expect(find.text('Profile Root'), findsOneWidget);
+
+    await tester.tap(bottomNavItem('首页'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HomePage), findsOneWidget);
+    expect(loadCount, greaterThan(beforeSwitch));
   });
 }
 

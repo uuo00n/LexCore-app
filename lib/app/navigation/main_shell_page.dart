@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/navigation/app_shell_destinations.dart';
 import 'package:lexcore/app/navigation/app_sidebar_navigation.dart';
+import 'package:lexcore/features/home/application/home_providers.dart';
 import 'package:lexcore/shared/widgets/app_bottom_navigation.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 
-class MainShellPage extends StatelessWidget {
+class MainShellPage extends ConsumerWidget {
   const MainShellPage({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
@@ -28,7 +30,7 @@ class MainShellPage extends StatelessWidget {
                 child: AppBottomNavigation(
                   currentIndex: navigationShell.currentIndex,
                   items: appShellDestinations,
-                  onTap: _onDestinationTap,
+                  onTap: (index) => _onDestinationTap(ref, index),
                 ),
               ),
             ),
@@ -46,7 +48,7 @@ class MainShellPage extends StatelessWidget {
                   child: AppSidebarNavigation(
                     currentIndex: navigationShell.currentIndex,
                     items: appShellDestinations,
-                    onSelect: _onDestinationTap,
+                    onSelect: (index) => _onDestinationTap(ref, index),
                   ),
                 ),
                 VerticalDivider(
@@ -63,7 +65,10 @@ class MainShellPage extends StatelessWidget {
     );
   }
 
-  void _onDestinationTap(int index) {
+  void _onDestinationTap(WidgetRef ref, int index) {
+    if (index == 0) {
+      ref.invalidate(homeDataProvider);
+    }
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,

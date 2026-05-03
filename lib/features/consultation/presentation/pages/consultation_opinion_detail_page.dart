@@ -48,7 +48,9 @@ class ConsultationOpinionDetailPage extends ConsumerWidget {
           ..showSnackBar(
             SnackBar(
               content: Text(
-                result == DocumentSaveResult.created ? '意见书已保存' : '意见书已更新',
+                result.result == DocumentSaveResult.created
+                    ? '意见书已保存'
+                    : '意见书已更新',
               ),
             ),
           );
@@ -64,7 +66,6 @@ class ConsultationOpinionDetailPage extends ConsumerWidget {
 
     return AppPageScaffold(
       title: '法律意见书',
-      subtitle: '咨询深度分析',
       actions: [
         if (resolvedSummary.isNotEmpty)
           Builder(

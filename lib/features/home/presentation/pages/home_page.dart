@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
@@ -10,6 +11,7 @@ import 'package:lexcore/features/home/application/home_providers.dart';
 import 'package:lexcore/features/home/domain/entities/home_entity.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
@@ -269,16 +271,78 @@ class _RecentActivitySection extends StatelessWidget {
   final HomeEntity homeData;
   static const int _maxVisibleActivities = 5;
 
-  IconData _iconFromTag(String tag) {
-    switch (tag) {
-      case '文档':
+  IconData _iconFromCategory(HistoryCategory category) {
+    switch (category) {
+      case HistoryCategory.document:
         return Icons.article_outlined;
-      case '分析':
+      case HistoryCategory.analysis:
         return Icons.analytics_outlined;
-      case '咨询':
-      default:
+      case HistoryCategory.consultation:
         return Icons.history;
     }
+  }
+
+  String _tagFromCategory(HistoryCategory category) {
+    return switch (category) {
+      HistoryCategory.consultation => '咨询',
+      HistoryCategory.analysis => '分析',
+      HistoryCategory.document => '文档',
+    };
+  }
+
+  void _openActivity(BuildContext context, ActivityRecord item) {
+    switch (item.category) {
+      case HistoryCategory.consultation:
+        final threadId = item.resourceKey?.trim();
+        if (threadId != null && threadId.isNotEmpty) {
+          context.pushNamed(
+            RouteNames.consultationChat,
+            pathParameters: {
+              RouteNames.consultationChatThreadIdParam: threadId,
+            },
+            extra: item.title,
+          );
+          return;
+        }
+        context.pushNamed(RouteNames.consultation);
+        return;
+      case HistoryCategory.analysis:
+        final articleCode = _resolveArticleCode(item);
+        if (articleCode == null) {
+          context.pushNamed(RouteNames.legalArticle);
+          return;
+        }
+        context.pushNamed(
+          RouteNames.legalArticle,
+          extra: LawSearchItem(
+            title: item.title,
+            snippet: item.title,
+            articleCode: articleCode,
+          ),
+        );
+        return;
+      case HistoryCategory.document:
+        final documentId = item.resourceKey?.trim();
+        if (documentId != null && documentId.isNotEmpty) {
+          context.pushNamed(
+            RouteNames.savedDocumentDetail,
+            pathParameters: {RouteNames.savedDocumentIdParam: documentId},
+            queryParameters: const {'mode': 'view'},
+          );
+          return;
+        }
+        context.pushNamed(RouteNames.savedDocuments);
+        return;
+    }
+  }
+
+  String? _resolveArticleCode(ActivityRecord item) {
+    final resourceKey = item.resourceKey?.trim();
+    if (resourceKey != null && resourceKey.isNotEmpty) {
+      return resourceKey;
+    }
+    final match = RegExp(r'([A-Za-z]+[-_]\d+)').firstMatch(item.title);
+    return match?.group(1)?.trim();
   }
 
   @override
@@ -317,13 +381,13 @@ class _RecentActivitySection extends StatelessWidget {
                   key: ValueKey<String>('home_recent_activity_item_$index'),
                   title: item.title,
                   subtitle:
-                      '${DateTimeUtils.relativeFromNow(item.time)} • ${item.tag}',
+                      '${DateTimeUtils.relativeFromNow(item.time)} • ${_tagFromCategory(item.category)}',
                   subtitleKey: ValueKey<String>(
                     'home_recent_activity_subtitle_$index',
                   ),
-                  leadingIcon: _iconFromTag(item.tag),
+                  leadingIcon: _iconFromCategory(item.category),
                   showBottomDivider: !isLast,
-                  onTap: () {},
+                  onTap: () => _openActivity(context, item),
                 );
               }),
             ),

@@ -35,7 +35,6 @@ class ConsultationStitchDetailPage extends StatelessWidget {
 
     return AppPageScaffold(
       title: 'LexCore 解答详情',
-      subtitle: 'AI 生成摘要与建议重点',
       maxContentWidth: 560,
       actions: [
         if (hasSummary)

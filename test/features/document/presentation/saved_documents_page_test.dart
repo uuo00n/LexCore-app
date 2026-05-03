@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,8 +6,69 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/core/network/api_client.dart';
+import 'package:lexcore/features/document/data/repositories/document_repository.dart';
 import 'package:lexcore/features/document/presentation/pages/saved_document_detail_page.dart';
 import 'package:lexcore/features/document/presentation/pages/saved_documents_page.dart';
+import 'package:lexcore/shared/models/legal_models.dart';
+
+class _NoopApiClient extends ApiClient {
+  _NoopApiClient() : super(Dio());
+}
+
+class _InMemoryDocumentRepository extends DocumentRepository {
+  _InMemoryDocumentRepository({
+    required SharedPreferences preferences,
+    List<DocumentItem>? initialDocuments,
+  }) : _documents =
+           initialDocuments ??
+           [
+             DocumentItem(
+               id: 'doc_1',
+               name: '劳动仲裁申请书-2026-03-06',
+               updatedAt: DateTime.parse('2026-03-06T10:00:00.000Z'),
+               type: '仲裁文书',
+               markdown: '# 劳动仲裁申请书-2026-03-06',
+               status: 'completed',
+             ),
+             DocumentItem(
+               id: 'doc_2',
+               name: '仅 content 字段文档',
+               updatedAt: DateTime.parse('2026-03-05T10:00:00.000Z'),
+               type: '律师函',
+               markdown: '# 仅 content 字段文档',
+               status: 'completed',
+             ),
+           ],
+       super(_NoopApiClient(), preferences);
+
+  final List<DocumentItem> _documents;
+
+  @override
+  Future<List<DocumentItem>> loadSaved() async {
+    return [..._documents];
+  }
+
+  @override
+  Future<DocumentItem?> loadById(String id) async {
+    for (final item in _documents) {
+      if (item.id == id) {
+        return item;
+      }
+    }
+    return null;
+  }
+}
+
+Future<_InMemoryDocumentRepository> _buildRepository({
+  List<DocumentItem>? initialDocuments,
+}) async {
+  final preferences = await SharedPreferences.getInstance();
+  return _InMemoryDocumentRepository(
+    preferences: preferences,
+    initialDocuments: initialDocuments,
+  );
+}
 
 void main() {
   setUp(() {
@@ -17,14 +79,20 @@ void main() {
     WidgetTester tester, {
     required Size size,
     double textScale = 1.0,
+    DocumentRepository? repository,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
 
+    final resolvedRepository = repository ?? await _buildRepository();
+
     await tester.pumpWidget(
       ProviderScope(
+        overrides: [
+          documentRepositoryProvider.overrideWithValue(resolvedRepository),
+        ],
         child: MaterialApp(
           home: Builder(
             builder: (context) {
@@ -67,23 +135,25 @@ void main() {
     expect(find.text('劳动仲裁申请书-2026-03-06'), findsOneWidget);
   });
 
-  testWidgets('renders persisted saved document from local storage', (
-    tester,
-  ) async {
-    SharedPreferences.setMockInitialValues({
-      'saved_documents_v1': '''
-[
-  {
-    "id": "doc_1",
-    "name": "本地保存的合同审查报告",
-    "updatedAt": "2026-03-14T08:00:00.000",
-    "type": "审查意见"
-  }
-]
-''',
-    });
+  testWidgets('renders provided saved document records', (tester) async {
+    final repository = await _buildRepository(
+      initialDocuments: [
+        DocumentItem(
+          id: 'doc_custom_1',
+          name: '本地保存的合同审查报告',
+          updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+          type: '审查意见',
+          markdown: '# 本地保存的合同审查报告',
+          status: 'completed',
+        ),
+      ],
+    );
 
-    await pumpSavedDocumentsPage(tester, size: const Size(390, 844));
+    await pumpSavedDocumentsPage(
+      tester,
+      size: const Size(390, 844),
+      repository: repository,
+    );
 
     expect(find.text('本地保存的合同审查报告'), findsOneWidget);
     expect(find.textContaining('审查意见 · 更新于'), findsOneWidget);
@@ -92,6 +162,7 @@ void main() {
   testWidgets('view and edit buttons open the same detail page with modes', (
     tester,
   ) async {
+    final repository = await _buildRepository();
     final router = GoRouter(
       initialLocation: RouteNames.savedDocumentsPath,
       routes: [
@@ -117,7 +188,10 @@ void main() {
     });
 
     await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      ProviderScope(
+        overrides: [documentRepositoryProvider.overrideWithValue(repository)],
+        child: MaterialApp.router(routerConfig: router),
+      ),
     );
     await tester.pumpAndSettle();
 

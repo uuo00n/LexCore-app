@@ -63,7 +63,6 @@ void main() {
       isNull,
     );
     expect(find.text('LexCore 解答详情'), findsOneWidget);
-    expect(find.text('AI 生成摘要与建议重点'), findsOneWidget);
     expect(find.text('智能解答摘要'), findsOneWidget);
     expect(find.text('回复内容'), findsOneWidget);
     expect(find.widgetWithText(FilledButton, '生成法律意见书'), findsOneWidget);

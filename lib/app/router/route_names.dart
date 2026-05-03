@@ -26,8 +26,16 @@ class RouteNames {
   static const profilePersonalInfo = 'profile_personal_info';
   static const profileSecurity = 'profile_security';
   static const profileBilling = 'profile_billing';
+  static const profileBillingOrders = 'profile_billing_orders';
+  static const profileBillingPaymentMethods = 'profile_billing_payment_methods';
   static const profileSubscriptionManage = 'profile_subscription_manage';
+  static const profileSubscriptionUpgrade = 'profile_subscription_upgrade';
+  static const profileSubscriptionRenewalCycle =
+      'profile_subscription_renewal_cycle';
+  static const profileSubscriptionCancelRenewal =
+      'profile_subscription_cancel_renewal';
   static const settings = 'settings';
+  static const about = 'about';
   static const privacyPolicy = 'privacy_policy';
   static const termsOfService = 'terms_of_service';
 
@@ -60,8 +68,18 @@ class RouteNames {
   static const profilePersonalInfoPath = '/profile/personal-info';
   static const profileSecurityPath = '/profile/security';
   static const profileBillingPath = '/profile/billing';
+  static const profileBillingOrdersPath = '/profile/billing/orders';
+  static const profileBillingPaymentMethodsPath =
+      '/profile/billing/payment-methods';
   static const profileSubscriptionManagePath = '/profile/subscription/manage';
+  static const profileSubscriptionUpgradePath =
+      '/profile/subscription/manage/upgrade';
+  static const profileSubscriptionRenewalCyclePath =
+      '/profile/subscription/manage/renewal-cycle';
+  static const profileSubscriptionCancelRenewalPath =
+      '/profile/subscription/manage/cancel-renewal';
   static const settingsPath = '/settings';
+  static const aboutPath = '/about';
   static const privacyPolicyPath = '/legal/privacy-policy';
   static const termsOfServicePath = '/legal/terms-of-service';
 }

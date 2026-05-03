@@ -4,7 +4,7 @@ import 'package:lexcore/features/document/application/document_controller.dart';
 import 'package:lexcore/features/document/data/repositories/document_repository.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 
-final generatedDraftProvider = Provider<DocumentDraft>((ref) {
+final generatedDraftProvider = StateProvider<DocumentDraft>((ref) {
   return ref.watch(documentRepositoryProvider).generatePreview();
 });
 

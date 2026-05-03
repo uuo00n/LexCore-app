@@ -25,6 +25,7 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
   Widget build(BuildContext context) {
     final documentState = ref.watch(documentControllerProvider);
     final docs = ref.watch(savedDocumentsProvider);
+    final onRefresh = ref.read(documentControllerProvider.notifier).refresh;
 
     return AppPageScaffold(
       title: '已保存的文档',
@@ -43,23 +44,49 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
       body: LayoutBuilder(
         builder: (context, constraints) {
           if (documentState.loading && docs.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return RefreshIndicator(
+              onRefresh: onRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 240),
+                  Center(child: CircularProgressIndicator()),
+                ],
+              ),
+            );
           }
 
           if (documentState.errorMessage != null && docs.isEmpty) {
-            return _DocumentStatePlaceholder(
-              title: '文档加载失败',
-              subtitle: documentState.errorMessage!,
-              actionLabel: '重新加载',
-              onPressed: () =>
-                  ref.read(documentControllerProvider.notifier).refresh(),
+            return RefreshIndicator(
+              onRefresh: onRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                  const SizedBox(height: 80),
+                  _DocumentStatePlaceholder(
+                    title: '文档加载失败',
+                    subtitle: documentState.errorMessage!,
+                    actionLabel: '重新加载',
+                    onPressed: onRefresh,
+                  ),
+                ],
+              ),
             );
           }
 
           if (docs.isEmpty) {
-            return const _DocumentStatePlaceholder(
-              title: '还没有已保存的文档',
-              subtitle: '在文档预览页保存后，会显示在这里。',
+            return RefreshIndicator(
+              onRefresh: onRefresh,
+              child: ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 80),
+                  _DocumentStatePlaceholder(
+                    title: '还没有已保存的文档',
+                    subtitle: '在文档预览页保存后，会显示在这里。',
+                  ),
+                ],
+              ),
             );
           }
 
@@ -77,93 +104,96 @@ class _SavedDocumentsPageState extends ConsumerState<SavedDocumentsPage> {
           final scaleDelta = (textScale - 1).clamp(0.0, 0.6).toDouble();
           final mainAxisExtent = mainAxisExtentBase + (scaleDelta * 90.0);
 
-          return ListView(
-            children: [
-              SizedBox(
-                height: 42,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: 4,
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(width: 8),
+          return RefreshIndicator(
+            onRefresh: onRefresh,
+            child: ListView(
+              children: [
+                SizedBox(
+                  height: 42,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: 4,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      const labels = ['全部', '草稿', '已完成', '已归档'];
+                      final selected = _tab == index;
+                      return ChoiceChip(
+                        label: Text(labels[index]),
+                        selected: selected,
+                        selectedColor: Theme.of(context).colorScheme.primary,
+                        labelStyle: TextStyle(
+                          color: selected
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        onSelected: (_) => setState(() => _tab = index),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: gridColumns,
+                    crossAxisSpacing: 10,
+                    mainAxisSpacing: 10,
+                    mainAxisExtent: mainAxisExtent,
+                  ),
+                  itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    const labels = ['全部', '草稿', '已完成', '已归档'];
-                    final selected = _tab == index;
-                    return ChoiceChip(
-                      label: Text(labels[index]),
-                      selected: selected,
-                      selectedColor: Theme.of(context).colorScheme.primary,
-                      labelStyle: TextStyle(
-                        color: selected
-                            ? Theme.of(context).colorScheme.onPrimary
-                            : Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
+                    final item = docs[index];
+                    final status = switch (item.status) {
+                      'completed' => (
+                        '已完成',
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.onPrimary,
                       ),
-                      onSelected: (_) => setState(() => _tab = index),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                      'failed' => (
+                        '失败',
+                        Theme.of(context).colorScheme.error,
+                        Theme.of(context).colorScheme.onError,
+                      ),
+                      'processing' => (
+                        '处理中',
+                        Theme.of(context).colorScheme.tertiary,
+                        Theme.of(context).colorScheme.onTertiary,
+                      ),
+                      _ => (
+                        '排队中',
+                        Theme.of(context).colorScheme.onSurfaceVariant,
+                        Theme.of(context).colorScheme.surface,
+                      ),
+                    };
+                    return _DocumentCard(
+                      item: item,
+                      status: status,
+                      onView: () => context.pushNamed(
+                        RouteNames.savedDocumentDetail,
+                        pathParameters: {
+                          RouteNames.savedDocumentIdParam: item.id,
+                        },
+                        queryParameters: const {'mode': 'view'},
+                      ),
+                      onEdit: () => context.pushNamed(
+                        RouteNames.savedDocumentDetail,
+                        pathParameters: {
+                          RouteNames.savedDocumentIdParam: item.id,
+                        },
+                        queryParameters: const {'mode': 'edit'},
                       ),
                     );
                   },
                 ),
-              ),
-              const SizedBox(height: 12),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: gridColumns,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
-                  mainAxisExtent: mainAxisExtent,
-                ),
-                itemCount: docs.length,
-                itemBuilder: (context, index) {
-                  final item = docs[index];
-                  final status = switch (item.status) {
-                    'completed' => (
-                      '已完成',
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    'failed' => (
-                      '失败',
-                      Theme.of(context).colorScheme.error,
-                      Theme.of(context).colorScheme.onError,
-                    ),
-                    'processing' => (
-                      '处理中',
-                      Theme.of(context).colorScheme.tertiary,
-                      Theme.of(context).colorScheme.onTertiary,
-                    ),
-                    _ => (
-                      '排队中',
-                      Theme.of(context).colorScheme.onSurfaceVariant,
-                      Theme.of(context).colorScheme.surface,
-                    ),
-                  };
-                  return _DocumentCard(
-                    item: item,
-                    status: status,
-                    onView: () => context.pushNamed(
-                      RouteNames.savedDocumentDetail,
-                      pathParameters: {
-                        RouteNames.savedDocumentIdParam: item.id,
-                      },
-                      queryParameters: const {'mode': 'view'},
-                    ),
-                    onEdit: () => context.pushNamed(
-                      RouteNames.savedDocumentDetail,
-                      pathParameters: {
-                        RouteNames.savedDocumentIdParam: item.id,
-                      },
-                      queryParameters: const {'mode': 'edit'},
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(height: 8),
+              ],
+            ),
           );
         },
       ),

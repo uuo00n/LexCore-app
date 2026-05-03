@@ -21,8 +21,10 @@ class AuthPage extends ConsumerStatefulWidget {
 class _AuthPageState extends ConsumerState<AuthPage> {
   static const _topAlignmentSpacerHeight = 54.0;
 
-  final _accountController = TextEditingController();
-  final _credentialController = TextEditingController();
+  final _accountController = TextEditingController(
+    text: 'customer@example.com',
+  );
+  final _credentialController = TextEditingController(text: 'Passw0rd!');
   bool _passwordVisible = false;
 
   @override

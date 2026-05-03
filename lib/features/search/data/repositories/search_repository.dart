@@ -8,13 +8,42 @@ import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/shared/config/static_ui_config.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 
+enum _SearchFilterMode { catalogLaws, upstreamCases }
+
+class _SearchFilterConfig {
+  const _SearchFilterConfig.catalog(this.label, {this.category})
+    : mode = _SearchFilterMode.catalogLaws;
+
+  const _SearchFilterConfig.cases(this.label)
+    : mode = _SearchFilterMode.upstreamCases,
+      category = null;
+
+  final String label;
+  final _SearchFilterMode mode;
+  final String? category;
+}
+
 class SearchRepository {
   const SearchRepository(this._apiClient, [this._historyRepository]);
+
+  static const int _upstreamSearchPageSize = 10;
+  static const List<_SearchFilterConfig> _searchFilters = [
+    _SearchFilterConfig.catalog('全部'),
+    _SearchFilterConfig.cases('裁判文书'),
+    _SearchFilterConfig.catalog('地方性法规', category: '地方性法规'),
+    _SearchFilterConfig.catalog('行政法规', category: '行政法规'),
+    _SearchFilterConfig.catalog('司法解释', category: '司法解释'),
+    _SearchFilterConfig.catalog('法律', category: '法律'),
+    _SearchFilterConfig.catalog('部门规章', category: '部门规章'),
+    _SearchFilterConfig.catalog('宪法', category: '宪法'),
+  ];
 
   final ApiClient _apiClient;
   final HistoryRepository? _historyRepository;
 
   List<String> hotKeywords() => StaticUiConfig.hotKeywords;
+  List<String> searchFilterLabels() =>
+      _searchFilters.map((filter) => filter.label).toList(growable: false);
 
   List<SearchScenarioGroup> searchScenarioGroups() =>
       StaticUiConfig.searchScenarioGroups;
@@ -24,16 +53,16 @@ class SearchRepository {
     required int filterIndex,
   }) async {
     final normalizedKeyword = keyword.trim();
-    switch (filterIndex) {
-      case 1:
-        return _searchUpstreamLaws(normalizedKeyword);
-      case 2:
-        return _searchUpstreamCases(normalizedKeyword);
-      default:
-        return SearchResultBundle(
-          items: await _searchCatalogLaws(normalizedKeyword),
-        );
+    final resolvedFilter = _resolveSearchFilter(filterIndex);
+    if (resolvedFilter.mode == _SearchFilterMode.upstreamCases) {
+      return _searchUpstreamCases(normalizedKeyword);
     }
+    return SearchResultBundle(
+      items: await _searchCatalogLaws(
+        normalizedKeyword,
+        category: resolvedFilter.category,
+      ),
+    );
   }
 
   Future<LawArticleDetail> articleDetail([LawSearchItem? item]) async {
@@ -156,11 +185,23 @@ ${fallbackMessage ?? '暂无正文内容。'}''';
     return resolvedDetail;
   }
 
-  Future<List<LawSearchItem>> _searchCatalogLaws(String keyword) async {
+  _SearchFilterConfig _resolveSearchFilter(int filterIndex) {
+    if (filterIndex >= 0 && filterIndex < _searchFilters.length) {
+      return _searchFilters[filterIndex];
+    }
+    return _searchFilters.first;
+  }
+
+  Future<List<LawSearchItem>> _searchCatalogLaws(
+    String keyword, {
+    String? category,
+  }) async {
     final response = await _apiClient.get<Map<String, dynamic>>(
       '/laws',
       queryParameters: {
         if (keyword.isNotEmpty) 'keyword': keyword,
+        if (category != null && category.trim().isNotEmpty)
+          'category': category.trim(),
         'offset': 0,
         'limit': 50,
       },
@@ -182,52 +223,9 @@ ${fallbackMessage ?? '暂无正文内容。'}''';
           status,
         ].where((value) => value.trim().isNotEmpty).join(' · '),
         articleCode: id,
+        resultType: SearchResultType.law,
       );
     }).toList();
-  }
-
-  Future<SearchResultBundle> _searchUpstreamLaws(String keyword) async {
-    if (keyword.isEmpty) {
-      return SearchResultBundle(items: await _searchCatalogLaws(keyword));
-    }
-
-    try {
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        '/search/laws',
-        data: _buildLawSearchPayload(keyword),
-        decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
-      );
-      final items = _extractUpstreamItems(response).map((item) {
-        final title =
-            item['title'] as String? ??
-            item['name'] as String? ??
-            item['lawName'] as String? ??
-            '法规检索结果';
-        final code =
-            item['id'] as String? ??
-            item['lawId'] as String? ??
-            item['law_no'] as String? ??
-            title.hashCode.toString();
-        final snippet =
-            item['summary'] as String? ??
-            item['brief'] as String? ??
-            item['publishDepartment'] as String? ??
-            '来自高级法规检索';
-        return LawSearchItem(title: title, snippet: snippet, articleCode: code);
-      }).toList();
-
-      if (items.isNotEmpty) {
-        return SearchResultBundle(items: items);
-      }
-    } on AppException {
-      // fall through to graceful degrade.
-    }
-
-    return SearchResultBundle(
-      items: await _searchCatalogLaws(keyword),
-      degraded: true,
-      noticeMessage: '高级法规检索暂不可用（503），已自动降级为本地法规库检索。',
-    );
   }
 
   Future<SearchResultBundle> _searchUpstreamCases(String keyword) async {
@@ -266,6 +264,10 @@ ${fallbackMessage ?? '暂无正文内容。'}''';
           title: title,
           snippet: snippet.isEmpty ? '来自裁判文书检索' : snippet,
           articleCode: code,
+          resultType: SearchResultType.caseDoc,
+          courtName: item['courtName'] as String?,
+          judgementDate: item['judgementDate'] as String?,
+          caseType: item['caseType'] as String?,
         );
       }).toList();
       return SearchResultBundle(items: items);
@@ -278,23 +280,10 @@ ${fallbackMessage ?? '暂无正文内容。'}''';
     }
   }
 
-  Map<String, dynamic> _buildLawSearchPayload(String keyword) {
-    return {
-      'pageNo': 1,
-      'pageSize': 20,
-      'sortField': 'correlation',
-      'sortOrder': 'desc',
-      'condition': {
-        'keywords': [keyword],
-        'fieldName': 'title',
-      },
-    };
-  }
-
   Map<String, dynamic> _buildCaseSearchPayload(String keyword) {
     return {
       'pageNo': 1,
-      'pageSize': 20,
+      'pageSize': _upstreamSearchPageSize,
       'sortField': 'correlation',
       'sortOrder': 'desc',
       'condition': {

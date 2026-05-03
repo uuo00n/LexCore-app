@@ -90,7 +90,9 @@ void main() {
 
     expect(find.byType(AppShellTopBar), findsOneWidget);
     expect(find.text('分析详情'), findsOneWidget);
-    expect(find.text('案件摘要与法条匹配'), findsOneWidget);
+    expect(find.text('暂无分析数据'), findsNothing);
+    expect(find.text('案件分析摘要'), findsOneWidget);
+    expect(find.text('关键法条匹配'), findsOneWidget);
   });
 
   testWidgets('analysis result uses unified top bar', (tester) async {
@@ -98,7 +100,9 @@ void main() {
 
     expect(find.byType(AppShellTopBar), findsOneWidget);
     expect(find.text('案件分析结果'), findsOneWidget);
-    expect(find.text('智能报告与证据评估'), findsOneWidget);
+    expect(find.text('暂无分析结果'), findsNothing);
+    expect(find.text('LexCore 案件分析报告'), findsOneWidget);
+    expect(find.text('风险指标评估'), findsOneWidget);
   });
 
   testWidgets('analysis result top action exports pdf file', (tester) async {

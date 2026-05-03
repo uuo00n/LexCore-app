@@ -81,4 +81,34 @@ void main() {
 
     expect(openedUri?.toString(), 'https://example.com/law.html');
   });
+
+  testWidgets('maps localhost URL to Android emulator loopback', (
+    tester,
+  ) async {
+    final loadState = ValueNotifier(InAppWebViewLoadState.error);
+    Uri? openedUri;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: InAppWebViewPage(
+          title: 'HTML 原文',
+          url: 'http://127.0.0.1:9000/laws/sample.html',
+          kind: InAppWebViewKind.html,
+          loadStateListenable: loadState,
+          webViewChild: const Placeholder(),
+          isAndroidOverride: true,
+          onOpenExternalOverride: (uri) async {
+            openedUri = uri;
+            return true;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(TextButton, '在浏览器中打开'));
+    await tester.pump();
+
+    expect(openedUri?.toString(), 'http://10.0.2.2:9000/laws/sample.html');
+  });
 }

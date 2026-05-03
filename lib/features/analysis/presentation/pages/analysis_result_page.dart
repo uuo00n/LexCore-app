@@ -69,7 +69,6 @@ class AnalysisResultPage extends ConsumerWidget {
 
     return AppPageScaffold(
       title: '案件分析结果',
-      subtitle: '智能报告与证据评估',
       actions: [
         Builder(
           builder: (buttonContext) => IconButton(
@@ -230,7 +229,6 @@ class _AnalysisResultUnavailablePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPageScaffold(
       title: '案件分析结果',
-      subtitle: '智能报告与证据评估',
       body: Center(
         child: AppSurfaceCard(
           child: Column(

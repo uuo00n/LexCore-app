@@ -23,7 +23,6 @@ class AnalysisDetailPage extends ConsumerWidget {
 
     return AppPageScaffold(
       title: '分析详情',
-      subtitle: '案件摘要与法条匹配',
       body: LayoutBuilder(
         builder: (context, constraints) {
           final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
@@ -159,7 +158,6 @@ class _AnalysisUnavailablePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPageScaffold(
       title: '分析详情',
-      subtitle: '案件摘要与法条匹配',
       body: Center(
         child: AppSurfaceCard(
           child: Column(

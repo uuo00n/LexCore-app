@@ -6,16 +6,14 @@ class AnalysisPageHeader extends StatelessWidget {
   const AnalysisPageHeader({
     super.key,
     required this.title,
-    this.subtitle,
     this.actions = const [],
   });
 
   final String title;
-  final String? subtitle;
   final List<Widget> actions;
 
   @override
   Widget build(BuildContext context) {
-    return AppSubPageHeader(title: title, subtitle: subtitle, actions: actions);
+    return AppSubPageHeader(title: title, actions: actions);
   }
 }

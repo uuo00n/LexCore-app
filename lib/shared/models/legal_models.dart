@@ -20,12 +20,22 @@ class ActivityRecord {
   const ActivityRecord({
     required this.title,
     required this.time,
-    required this.tag,
+    required this.category,
+    this.resourceKey,
   });
 
   final String title;
   final DateTime time;
-  final String tag;
+  final HistoryCategory category;
+  final String? resourceKey;
+
+  String get tag {
+    return switch (category) {
+      HistoryCategory.consultation => '咨询',
+      HistoryCategory.analysis => '分析',
+      HistoryCategory.document => '文档',
+    };
+  }
 }
 
 class ConsultationSession {
@@ -98,13 +108,34 @@ class RiskAlert {
 }
 
 class DocumentDraft {
-  const DocumentDraft({required this.title, required this.markdown});
+  const DocumentDraft({
+    required this.title,
+    required this.markdown,
+    this.docType = '法律文书',
+    this.userInput = '',
+    this.templateParams = const <String, Object?>{},
+  });
 
   final String title;
   final String markdown;
+  final String docType;
+  final String userInput;
+  final Map<String, Object?> templateParams;
 }
 
 enum DocumentSaveResult { created, updated }
+
+class DocumentSaveOutcome {
+  const DocumentSaveOutcome({
+    required this.result,
+    required this.documentId,
+    required this.status,
+  });
+
+  final DocumentSaveResult result;
+  final String documentId;
+  final String status;
+}
 
 class DocumentItem {
   const DocumentItem({
@@ -114,6 +145,7 @@ class DocumentItem {
     required this.type,
     this.markdown = '',
     this.status = 'completed',
+    this.errorMessage,
   });
 
   final String id;
@@ -122,6 +154,7 @@ class DocumentItem {
   final String type;
   final String markdown;
   final String status;
+  final String? errorMessage;
 
   DocumentItem copyWith({
     String? id,
@@ -130,6 +163,7 @@ class DocumentItem {
     String? type,
     String? markdown,
     String? status,
+    String? errorMessage,
   }) {
     return DocumentItem(
       id: id ?? this.id,
@@ -138,6 +172,7 @@ class DocumentItem {
       type: type ?? this.type,
       markdown: markdown ?? this.markdown,
       status: status ?? this.status,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
@@ -149,6 +184,7 @@ class DocumentItem {
       'type': type,
       'markdown': markdown,
       'status': status,
+      'errorMessage': errorMessage,
     };
   }
 
@@ -168,6 +204,8 @@ class DocumentItem {
           ? _legacyDocumentMarkdownFallback(name: name, type: type)
           : normalizedMarkdown,
       status: json['status'] as String? ?? 'completed',
+      errorMessage:
+          json['errorMessage'] as String? ?? json['error_message'] as String?,
     );
   }
 }
@@ -193,12 +231,22 @@ class LawSearchItem {
     required this.title,
     required this.snippet,
     required this.articleCode,
+    this.resultType = SearchResultType.law,
+    this.courtName,
+    this.judgementDate,
+    this.caseType,
   });
 
   final String title;
   final String snippet;
   final String articleCode;
+  final SearchResultType resultType;
+  final String? courtName;
+  final String? judgementDate;
+  final String? caseType;
 }
+
+enum SearchResultType { law, caseDoc }
 
 class SearchScenarioItem {
   const SearchScenarioItem({

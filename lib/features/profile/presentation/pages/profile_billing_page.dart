@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
-import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class ProfileBillingPage extends StatelessWidget {
@@ -56,15 +55,14 @@ class ProfileBillingPage extends StatelessWidget {
             icon: Icons.receipt_long_outlined,
             title: '历史订单',
             subtitle: '查看历史支付记录与发票信息',
-            onTap: () =>
-                showFeatureInProgressSnackBar(context, featureLabel: '历史订单'),
+            onTap: () => context.push(RouteNames.profileBillingOrdersPath),
           ),
           _BillingAction(
             icon: Icons.credit_card_outlined,
             title: '支付方式',
             subtitle: '管理银行卡和支付渠道',
             onTap: () =>
-                showFeatureInProgressSnackBar(context, featureLabel: '支付方式'),
+                context.push(RouteNames.profileBillingPaymentMethodsPath),
           ),
           _BillingAction(
             icon: Icons.workspace_premium_outlined,

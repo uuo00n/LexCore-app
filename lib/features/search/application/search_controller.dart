@@ -19,6 +19,10 @@ final searchControllerProvider =
 
 final searchFilterProvider = StateProvider<int>((ref) => 0);
 
+final searchFilterLabelsProvider = Provider<List<String>>((ref) {
+  return ref.watch(searchRepositoryProvider).searchFilterLabels();
+});
+
 final hotKeywordsProvider = Provider<List<String>>((ref) {
   return ref.watch(searchRepositoryProvider).hotKeywords();
 });

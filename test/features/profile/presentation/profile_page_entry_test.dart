@@ -5,11 +5,17 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_billing_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_billing_orders_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_billing_payment_methods_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_personal_info_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_security_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_cancel_renewal_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_subscription_manage_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_renewal_cycle_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_upgrade_page.dart';
 
 void main() {
   setUp(() {
@@ -42,8 +48,30 @@ void main() {
           builder: (context, state) => const ProfileBillingPage(),
         ),
         GoRoute(
+          path: RouteNames.profileBillingOrdersPath,
+          builder: (context, state) => const ProfileBillingOrdersPage(),
+        ),
+        GoRoute(
+          path: RouteNames.profileBillingPaymentMethodsPath,
+          builder: (context, state) => const ProfileBillingPaymentMethodsPage(),
+        ),
+        GoRoute(
           path: RouteNames.profileSubscriptionManagePath,
           builder: (context, state) => const ProfileSubscriptionManagePage(),
+        ),
+        GoRoute(
+          path: RouteNames.profileSubscriptionUpgradePath,
+          builder: (context, state) => const ProfileSubscriptionUpgradePage(),
+        ),
+        GoRoute(
+          path: RouteNames.profileSubscriptionRenewalCyclePath,
+          builder: (context, state) =>
+              const ProfileSubscriptionRenewalCyclePage(),
+        ),
+        GoRoute(
+          path: RouteNames.profileSubscriptionCancelRenewalPath,
+          builder: (context, state) =>
+              const ProfileSubscriptionCancelRenewalPage(),
         ),
         GoRoute(
           path: RouteNames.savedDocumentsPath,
@@ -66,7 +94,14 @@ void main() {
     });
 
     await tester.pumpWidget(
-      ProviderScope(child: MaterialApp.router(routerConfig: router)),
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(
+            await SharedPreferences.getInstance(),
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -125,5 +160,48 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(ProfileSubscriptionManagePage), findsOneWidget);
+  });
+
+  testWidgets('billing sub entries navigate to dedicated pages', (
+    tester,
+  ) async {
+    await pumpProfileRouter(tester);
+
+    await tester.tap(find.text('账单与订阅').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileBillingPage), findsOneWidget);
+
+    await tester.tap(find.text('历史订单').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileBillingOrdersPage), findsOneWidget);
+
+    await tapTopBackButton(tester);
+    await tester.tap(find.text('支付方式').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileBillingPaymentMethodsPage), findsOneWidget);
+  });
+
+  testWidgets('manage subscription sub entries navigate to dedicated pages', (
+    tester,
+  ) async {
+    await pumpProfileRouter(tester);
+
+    await tester.tap(find.text('管理订阅'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileSubscriptionManagePage), findsOneWidget);
+
+    await tester.tap(find.text('升级套餐').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileSubscriptionUpgradePage), findsOneWidget);
+
+    await tapTopBackButton(tester);
+    await tester.tap(find.text('调整续费周期').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileSubscriptionRenewalCyclePage), findsOneWidget);
+
+    await tapTopBackButton(tester);
+    await tester.tap(find.text('取消自动续费').first);
+    await tester.pumpAndSettle();
+    expect(find.byType(ProfileSubscriptionCancelRenewalPage), findsOneWidget);
   });
 }

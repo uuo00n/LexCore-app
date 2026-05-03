@@ -25,12 +25,18 @@ import 'package:lexcore/features/home/presentation/pages/home_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/privacy_policy_page.dart';
 import 'package:lexcore/features/legal/presentation/pages/terms_of_service_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_billing_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_billing_orders_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_billing_payment_methods_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_personal_info_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_security_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_cancel_renewal_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_subscription_manage_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_renewal_cycle_page.dart';
+import 'package:lexcore/features/profile/presentation/pages/profile_subscription_upgrade_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
+import 'package:lexcore/features/settings/presentation/pages/about_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/in_app_webview_page.dart';
@@ -381,6 +387,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: RouteNames.profileBillingOrdersPath,
+        name: RouteNames.profileBillingOrders,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileBillingOrdersPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profileBillingPaymentMethodsPath,
+        name: RouteNames.profileBillingPaymentMethods,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileBillingPaymentMethodsPage(),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.profileSubscriptionManagePath,
         name: RouteNames.profileSubscriptionManage,
         parentNavigatorKey: _rootNavigatorKey,
@@ -392,6 +420,39 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: RouteNames.profileSubscriptionUpgradePath,
+        name: RouteNames.profileSubscriptionUpgrade,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileSubscriptionUpgradePage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profileSubscriptionRenewalCyclePath,
+        name: RouteNames.profileSubscriptionRenewalCycle,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileSubscriptionRenewalCyclePage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.profileSubscriptionCancelRenewalPath,
+        name: RouteNames.profileSubscriptionCancelRenewal,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const ProfileSubscriptionCancelRenewalPage(),
+        ),
+      ),
+      GoRoute(
         path: RouteNames.settingsPath,
         name: RouteNames.settings,
         parentNavigatorKey: _rootNavigatorKey,
@@ -400,6 +461,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: const SettingsPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.aboutPath,
+        name: RouteNames.about,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const AboutPage(),
         ),
       ),
       GoRoute(

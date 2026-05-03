@@ -6,6 +6,7 @@ import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/theme/theme_mode_controller.dart';
+import 'package:lexcore/features/auth/application/auth_controller.dart';
 import 'package:lexcore/features/settings/application/settings_controller.dart';
 import 'package:lexcore/features/settings/domain/entities/settings_state.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
@@ -30,9 +31,31 @@ class SettingsPage extends ConsumerWidget {
       case 'description':
         context.push(RouteNames.termsOfServicePath);
         return;
+      case 'info':
+        context.push(RouteNames.aboutPath);
+        return;
       default:
         return;
     }
+  }
+
+  Future<void> _confirmLogout(BuildContext context, WidgetRef ref) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      barrierColor: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.45),
+      builder: (dialogContext) {
+        return const _LogoutConfirmDialog();
+      },
+    );
+
+    if (shouldLogout != true || !context.mounted) {
+      return;
+    }
+    await ref.read(authControllerProvider.notifier).logout();
+    if (!context.mounted) {
+      return;
+    }
+    context.go(RouteNames.authPath);
   }
 
   void _showHelpSupport(BuildContext context) {
@@ -131,6 +154,7 @@ class SettingsPage extends ConsumerWidget {
                   .setBiometric(value),
               onSettingTap: (item) => _handleSettingTap(context, ref, item),
               onHelpTap: () => _showHelpSupport(context),
+              onLogout: () => _confirmLogout(context, ref),
             );
           }
 
@@ -152,6 +176,7 @@ class SettingsPage extends ConsumerWidget {
                   .setBiometric(value),
               onSettingTap: (item) => _handleSettingTap(context, ref, item),
               onHelpTap: () => _showHelpSupport(context),
+              onLogout: () => _confirmLogout(context, ref),
             ),
             secondary: _SettingsSidePanel(
               version: version,
@@ -159,6 +184,105 @@ class SettingsPage extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+class _LogoutConfirmDialog extends StatelessWidget {
+  const _LogoutConfirmDialog();
+
+  static const actionsRowKey = ValueKey('logout_confirm_actions_row');
+  static const cancelButtonKey = ValueKey('logout_confirm_cancel_button');
+  static const confirmButtonKey = ValueKey('logout_confirm_submit_button');
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      backgroundColor: colorScheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer.withValues(alpha: 0.88),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.logout_rounded,
+                    color: colorScheme.error,
+                    size: 24,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '确定退出登录？',
+                style: textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '退出后需要重新输入账号密码登录。',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                key: actionsRowKey,
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      key: cancelButtonKey,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        backgroundColor: colorScheme.surfaceContainerHigh,
+                        foregroundColor: colorScheme.onSurface,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('取消'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: FilledButton(
+                      key: confirmButtonKey,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(46),
+                        backgroundColor: colorScheme.error,
+                        foregroundColor: colorScheme.onError,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text('退出登录'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -176,6 +300,7 @@ class _SettingsMain extends StatelessWidget {
     required this.onBiometricChanged,
     required this.onSettingTap,
     required this.onHelpTap,
+    required this.onLogout,
   });
 
   final SettingsState state;
@@ -188,6 +313,7 @@ class _SettingsMain extends StatelessWidget {
   final ValueChanged<bool> onBiometricChanged;
   final ValueChanged<SettingItem> onSettingTap;
   final VoidCallback onHelpTap;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) {
@@ -242,7 +368,7 @@ class _SettingsMain extends StatelessWidget {
           ),
         const SizedBox(height: 18),
         FilledButton.icon(
-          onPressed: () {},
+          onPressed: onLogout,
           style: FilledButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.errorContainer,
             foregroundColor: Theme.of(context).colorScheme.onErrorContainer,

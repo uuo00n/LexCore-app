@@ -74,12 +74,12 @@ void main() {
     expect(find.byIcon(Icons.more_vert_rounded), findsOneWidget);
     expect(find.text('张三与李四房屋所有权纠纷案'), findsOneWidget);
     expect(find.text('案件分析速览'), findsOneWidget);
-    expect(find.text('当前版本暂未接入案件分析数据。'), findsOneWidget);
-    expect(find.text('已生成分析'), findsNothing);
-    expect(find.text('事实完整度'), findsNothing);
-    expect(find.text('证据强度'), findsNothing);
-    expect(find.text('程序风险'), findsNothing);
-    expect(find.text('重点提示'), findsNothing);
+    expect(find.text('当前版本暂未接入案件分析数据。'), findsNothing);
+    expect(find.text('已生成分析'), findsOneWidget);
+    expect(find.text('事实完整度'), findsOneWidget);
+    expect(find.text('证据强度'), findsOneWidget);
+    expect(find.text('程序风险'), findsOneWidget);
+    expect(find.text('重点提示'), findsOneWidget);
     expect(find.text('当前进度 (65%)'), findsOneWidget);
     expect(find.text('当前节点：开庭中'), findsOneWidget);
     expect(find.text('当事人信息'), findsOneWidget);
@@ -115,11 +115,11 @@ void main() {
     expect(find.text('分析详情占位'), findsOneWidget);
   });
 
-  testWidgets('preview CTA row is hidden when analysis is unavailable', (
+  testWidgets('preview CTA row is visible when analysis data is ready', (
     tester,
   ) async {
     await pumpCaseDetailPage(tester);
-    expect(find.byKey(CaseAnalysisPreviewCard.ctaKey), findsNothing);
+    expect(find.byKey(CaseAnalysisPreviewCard.ctaKey), findsOneWidget);
   });
 
   testWidgets('shares case summary from top action', (tester) async {

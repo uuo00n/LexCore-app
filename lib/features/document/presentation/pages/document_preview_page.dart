@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -10,6 +11,7 @@ import 'package:lexcore/app/adaptive/app_adaptive_split_view.dart';
 import 'package:lexcore/app/adaptive/app_breakpoints.dart';
 import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/export/app_export_service.dart';
 import 'package:lexcore/core/network/dio_provider.dart';
 import 'package:lexcore/core/utils/app_share.dart';
@@ -118,15 +120,18 @@ class DocumentPreviewPage extends ConsumerWidget {
             .read(documentControllerProvider.notifier)
             .saveDraft(draft);
         if (!context.mounted) return;
-        messenger
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(
-                result == DocumentSaveResult.created ? '文档已保存' : '文档已更新',
-              ),
-            ),
-          );
+        final documentId = result.documentId.trim();
+        if (documentId.isEmpty) {
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(const SnackBar(content: Text('保存失败，请稍后重试')));
+          return;
+        }
+        context.pushNamed(
+          RouteNames.savedDocumentDetail,
+          pathParameters: {RouteNames.savedDocumentIdParam: documentId},
+          queryParameters: const {'mode': 'view'},
+        );
       } catch (_) {
         if (!context.mounted) return;
         messenger

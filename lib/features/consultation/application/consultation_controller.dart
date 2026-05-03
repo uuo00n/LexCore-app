@@ -47,14 +47,16 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
 
   final ConsultationRepository _repository;
   final HistoryRepository? _historyRepository;
+  Future<void> _persistQueue = Future<void>.value();
 
   static ConsultationState _buildInitialState(
     ConsultationRepository repository,
   ) {
+    final localState = repository.loadLocalState();
     return ConsultationState(
-      sessions: repository.loadSessions(),
-      threads: const {},
-      remoteConversationIds: const {},
+      sessions: localState?.sessions ?? repository.loadSessions(),
+      threads: localState?.threads ?? const {},
+      remoteConversationIds: localState?.remoteConversationIds ?? const {},
       pendingAssistantThreadIds: const <String>{},
     );
   }
@@ -88,10 +90,14 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
   void selectThread(String threadId) {
     final hasSession = state.sessions.any((session) => session.id == threadId);
     if (!hasSession) return;
-    state = state.copyWith(
-      sessions: state.sessions
-          .map((session) => session.copyWith(isActive: session.id == threadId))
-          .toList(),
+    _commitState(
+      state.copyWith(
+        sessions: state.sessions
+            .map(
+              (session) => session.copyWith(isActive: session.id == threadId),
+            )
+            .toList(),
+      ),
     );
   }
 
@@ -224,11 +230,13 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
     final pendingThreads = {...state.pendingAssistantThreadIds}
       ..remove(threadId);
 
-    state = state.copyWith(
-      threads: threads,
-      sessions: sessions,
-      remoteConversationIds: remoteIds,
-      pendingAssistantThreadIds: pendingThreads,
+    _commitState(
+      state.copyWith(
+        threads: threads,
+        sessions: sessions,
+        remoteConversationIds: remoteIds,
+        pendingAssistantThreadIds: pendingThreads,
+      ),
     );
     return true;
   }
@@ -309,11 +317,13 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
   }
 
   void _setRemoteConversationId(String threadId, String remoteId) {
-    state = state.copyWith(
-      remoteConversationIds: {
-        ...state.remoteConversationIds,
-        threadId: remoteId,
-      },
+    _commitState(
+      state.copyWith(
+        remoteConversationIds: {
+          ...state.remoteConversationIds,
+          threadId: remoteId,
+        },
+      ),
     );
   }
 
@@ -386,7 +396,7 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
           .toList(growable: false);
     }
 
-    state = state.copyWith(threads: nextThreads, sessions: sessions);
+    _commitState(state.copyWith(threads: nextThreads, sessions: sessions));
   }
 
   String _previewFromMessages(List<ChatMessage> messages) {
@@ -422,7 +432,34 @@ class ConsultationStateController extends StateNotifier<ConsultationState> {
     final next = {...state.pendingAssistantThreadIds};
     final changed = pending ? next.add(threadId) : next.remove(threadId);
     if (!changed) return;
-    state = state.copyWith(pendingAssistantThreadIds: next);
+    _commitState(
+      state.copyWith(pendingAssistantThreadIds: next),
+      persistLocalState: false,
+    );
+  }
+
+  void _commitState(
+    ConsultationState nextState, {
+    bool persistLocalState = true,
+  }) {
+    state = nextState;
+    if (!persistLocalState) {
+      return;
+    }
+    _enqueuePersistLocalState();
+  }
+
+  void _enqueuePersistLocalState() {
+    final snapshot = ConsultationLocalState(
+      sessions: state.sessions,
+      threads: state.threads,
+      remoteConversationIds: state.remoteConversationIds,
+    );
+    _persistQueue = _persistQueue
+        .then((_) => _repository.persistLocalState(snapshot))
+        .catchError((_) {
+          // Keep chat flow resilient when local persistence is unavailable.
+        });
   }
 
   String _newLocalMessageId({required ChatRole role}) {

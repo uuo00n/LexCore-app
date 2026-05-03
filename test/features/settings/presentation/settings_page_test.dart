@@ -97,4 +97,28 @@ void main() {
 
     expect(find.text('浅色模式'), findsOneWidget);
   });
+
+  testWidgets('tapping logout opens confirmation dialog', (tester) async {
+    await pumpSettings(tester, surfaceSize: const Size(390, 844));
+
+    await tester.tap(find.text('退出登录'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('确定退出登录？'), findsOneWidget);
+    expect(find.text('退出后需要重新输入账号密码登录。'), findsOneWidget);
+    expect(find.text('取消'), findsOneWidget);
+    expect(find.text('退出登录'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('logout_confirm_actions_row')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('logout_confirm_cancel_button')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('logout_confirm_submit_button')),
+      findsOneWidget,
+    );
+  });
 }

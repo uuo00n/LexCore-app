@@ -252,18 +252,42 @@ String? _resolveRemoteResourceKey(Map<String, dynamic> data) {
   const keyCandidates = [
     'resource_key',
     'resourceKey',
+    'conversation_id',
+    'conversationId',
     'thread_id',
     'threadId',
     'article_code',
     'articleCode',
     'document_id',
     'documentId',
+    'file_id',
+    'fileId',
+    'task_id',
+    'taskId',
     'target_id',
     'targetId',
   ];
+  final topLevelKey = _resolveResourceKeyFromMap(data, keyCandidates);
+  if (topLevelKey != null) {
+    return topLevelKey;
+  }
 
+  final payload = data['payload'];
+  if (payload is Map) {
+    return _resolveResourceKeyFromMap(
+      payload.cast<String, dynamic>(),
+      keyCandidates,
+    );
+  }
+  return null;
+}
+
+String? _resolveResourceKeyFromMap(
+  Map<String, dynamic> source,
+  List<String> keyCandidates,
+) {
   for (final key in keyCandidates) {
-    final value = data[key];
+    final value = source[key];
     if (value is String && value.trim().isNotEmpty) {
       return value.trim();
     }

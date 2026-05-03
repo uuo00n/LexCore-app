@@ -6,6 +6,7 @@ import 'package:tdesign_flutter/tdesign_flutter.dart';
 import 'package:lexcore/app/motion/app_motion_widgets.dart';
 import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/feature_notice.dart';
+import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
@@ -54,9 +55,8 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
     final hotArticles = ref.watch(filteredHotSearchArticlesProvider);
     final searchNoticeAsync = ref.watch(searchNoticeProvider);
     final scenarioGroups = ref.watch(searchScenarioGroupsProvider);
+    final filters = ref.watch(searchFilterLabelsProvider);
     final searchNotice = searchNoticeAsync.asData?.value;
-
-    const filters = ['全部', '法律法规', '裁判文书', '行政执法'];
 
     return Scaffold(
       key: _scaffoldKey,
@@ -600,13 +600,63 @@ class _ResultsSection extends StatelessWidget {
                 leadingIcon: Icons.gavel_outlined,
                 subtitleMaxLines: 2,
                 showBottomDivider: index != results.length - 1,
-                onTap: () =>
-                    context.pushNamed(RouteNames.legalArticle, extra: item),
+                onTap: () => _openResultDetail(context, item),
               ),
             );
           }),
         ],
       ),
+    );
+  }
+
+  void _openResultDetail(BuildContext context, LawSearchItem item) {
+    if (item.resultType == SearchResultType.caseDoc) {
+      context.pushNamed(
+        RouteNames.caseDetail,
+        extra: _buildCaseDetailData(item),
+      );
+      return;
+    }
+    context.pushNamed(RouteNames.legalArticle, extra: item);
+  }
+
+  CaseDetailData _buildCaseDetailData(LawSearchItem item) {
+    final resolvedCaseNumber = item.articleCode.trim().isNotEmpty
+        ? item.articleCode.trim()
+        : '待补充';
+    final resolvedDate = item.judgementDate?.trim();
+    final resolvedCourt = item.courtName?.trim();
+    final resolvedCaseType = item.caseType?.trim();
+    final summarySegments = [
+      if (resolvedCourt != null && resolvedCourt.isNotEmpty)
+        '法院：$resolvedCourt',
+      if (resolvedDate != null && resolvedDate.isNotEmpty) '裁判日期：$resolvedDate',
+      if (resolvedCaseType != null && resolvedCaseType.isNotEmpty)
+        '案件类型：$resolvedCaseType',
+      if (item.snippet.trim().isNotEmpty) item.snippet.trim(),
+      '来自裁判文书检索（列表详情）',
+    ];
+
+    return CaseDetailData(
+      status: CaseDetailStatus.waiting,
+      statusLabel: '检索结果',
+      lastUpdatedLabel: '来自裁判文书检索',
+      title: item.title,
+      caseNumber: resolvedCaseNumber,
+      dateLabel: '裁判日期',
+      dateValue: resolvedDate == null || resolvedDate.isEmpty
+          ? '待补充'
+          : resolvedDate,
+      progress: 0,
+      progressLabel: '详情待补充',
+      activeStepIndex: 0,
+      progressSteps: const ['检索结果', '详情待补充'],
+      summary: summarySegments.join('\n'),
+      plaintiffName: '待补充',
+      plaintiffCounsel: '待补充',
+      defendantName: '待补充',
+      defendantCounsel: '待补充',
+      documents: const [],
     );
   }
 }

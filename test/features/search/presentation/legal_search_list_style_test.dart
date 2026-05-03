@@ -119,6 +119,31 @@ void main() {
     await tester.pump(const Duration(milliseconds: 900));
   }
 
+  testWidgets('search filter chips align with data categories in order', (
+    tester,
+  ) async {
+    await pumpLegalSearchPage(tester);
+
+    final filterListFinder = find.byType(ListView).first;
+
+    expect(find.text('全部'), findsOneWidget);
+    expect(find.text('裁判文书'), findsOneWidget);
+    expect(find.text('地方性法规'), findsOneWidget);
+    expect(find.text('行政法规'), findsOneWidget);
+
+    await tester.drag(filterListFinder, const Offset(-260, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('司法解释'), findsOneWidget);
+    expect(find.text('法律'), findsOneWidget);
+    expect(find.text('部门规章'), findsOneWidget);
+
+    await tester.drag(filterListFinder, const Offset(-220, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('宪法'), findsOneWidget);
+  });
+
   testWidgets('search results use unified list tile style', (tester) async {
     await pumpLegalSearchPage(tester);
 

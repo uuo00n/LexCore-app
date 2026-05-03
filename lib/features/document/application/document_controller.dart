@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lexcore/core/error/app_exception.dart';
 import 'package:lexcore/features/document/data/repositories/document_repository.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 
@@ -10,6 +13,7 @@ class DocumentState {
     required this.saving,
     required this.exportingPdf,
     required this.detailLoading,
+    this.latestSavedDocumentId,
     this.errorMessage,
     this.feedbackMessage,
   });
@@ -29,6 +33,7 @@ class DocumentState {
   final bool saving;
   final bool exportingPdf;
   final bool detailLoading;
+  final String? latestSavedDocumentId;
   final String? errorMessage;
   final String? feedbackMessage;
 
@@ -38,6 +43,7 @@ class DocumentState {
     bool? saving,
     bool? exportingPdf,
     bool? detailLoading,
+    String? latestSavedDocumentId,
     String? errorMessage,
     String? feedbackMessage,
     bool clearErrorMessage = false,
@@ -49,6 +55,8 @@ class DocumentState {
       saving: saving ?? this.saving,
       exportingPdf: exportingPdf ?? this.exportingPdf,
       detailLoading: detailLoading ?? this.detailLoading,
+      latestSavedDocumentId:
+          latestSavedDocumentId ?? this.latestSavedDocumentId,
       errorMessage: clearErrorMessage
           ? null
           : errorMessage ?? this.errorMessage,
@@ -72,7 +80,7 @@ class DocumentController extends StateNotifier<DocumentState> {
     await _loadSavedDocuments();
   }
 
-  Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
+  Future<DocumentSaveOutcome> saveDraft(DocumentDraft draft) async {
     if (state.saving) {
       throw StateError('document save already in progress');
     }
@@ -85,12 +93,25 @@ class DocumentController extends StateNotifier<DocumentState> {
         documents: documents,
         loading: false,
         saving: false,
+        latestSavedDocumentId: result.documentId,
         clearErrorMessage: true,
-        feedbackMessage: result == DocumentSaveResult.created
-            ? '文档已保存'
-            : '文档已更新',
+        feedbackMessage: result.status == 'failed'
+            ? '文档生成失败，请稍后重试'
+            : result.status == 'completed'
+            ? (result.result == DocumentSaveResult.created
+                  ? '文档已保存并生成完成'
+                  : '文档已更新并生成完成')
+            : '文档已提交生成，正在处理中',
       );
       return result;
+    } on AppException catch (error) {
+      state = state.copyWith(
+        loading: false,
+        saving: false,
+        errorMessage: error.message,
+        feedbackMessage: error.message,
+      );
+      rethrow;
     } catch (_) {
       state = state.copyWith(
         loading: false,
@@ -108,9 +129,11 @@ class DocumentController extends StateNotifier<DocumentState> {
       return null;
     }
 
+    DocumentItem? cachedItem;
     for (final item in state.documents) {
       if (item.id == normalizedId) {
-        return item;
+        cachedItem = item;
+        break;
       }
     }
 
@@ -119,7 +142,7 @@ class DocumentController extends StateNotifier<DocumentState> {
       final item = await _repository.loadById(normalizedId);
       if (item == null) {
         state = state.copyWith(detailLoading: false);
-        return null;
+        return cachedItem;
       }
 
       final nextDocuments = [
@@ -135,9 +158,9 @@ class DocumentController extends StateNotifier<DocumentState> {
     } catch (_) {
       state = state.copyWith(
         detailLoading: false,
-        errorMessage: '文档加载失败，请稍后重试',
+        errorMessage: cachedItem == null ? '文档加载失败，请稍后重试' : null,
       );
-      return null;
+      return cachedItem;
     }
   }
 
@@ -184,6 +207,13 @@ class DocumentController extends StateNotifier<DocumentState> {
         }
       }
       return updated;
+    } on AppException catch (error) {
+      state = state.copyWith(
+        saving: false,
+        errorMessage: error.message,
+        feedbackMessage: error.message,
+      );
+      return null;
     } catch (_) {
       state = state.copyWith(
         saving: false,
@@ -194,29 +224,43 @@ class DocumentController extends StateNotifier<DocumentState> {
     }
   }
 
-  Future<DocumentPdfExportResult?> exportDraftPdf(DocumentDraft draft) async {
+  Future<DocumentPdfExportResult?> exportDraftPdf(
+    DocumentDraft draft, {
+    String? preferredDocumentId,
+    int maxPollAttempts = 20,
+    Duration pollInterval = const Duration(seconds: 2),
+  }) async {
     if (state.exportingPdf) {
       return null;
     }
 
-    var target = _findDocumentByTitle(draft.title);
-    if (target == null) {
+    var targetDocumentId = preferredDocumentId?.trim();
+    if (targetDocumentId == null || targetDocumentId.isEmpty) {
+      targetDocumentId = state.latestSavedDocumentId?.trim();
+    }
+    if (targetDocumentId == null || targetDocumentId.isEmpty) {
       try {
-        await saveDraft(draft);
+        final saveOutcome = await saveDraft(draft);
+        targetDocumentId = saveOutcome.documentId.trim();
       } catch (_) {
         return null;
       }
-      target = _findDocumentByTitle(draft.title);
-      target ??= state.documents.isEmpty ? null : state.documents.first;
     }
-
-    if (target == null) {
+    if (targetDocumentId.isEmpty) {
+      final fallback = _findDocumentByTitle(draft.title);
+      targetDocumentId = fallback?.id ?? '';
+    }
+    if (targetDocumentId.isEmpty) {
       return null;
     }
 
     state = state.copyWith(exportingPdf: true, clearErrorMessage: true);
     try {
-      final result = await _repository.exportPdf(target.id);
+      final result = await _repository.exportPdf(
+        targetDocumentId,
+        maxPollAttempts: maxPollAttempts,
+        pollInterval: pollInterval,
+      );
       state = state.copyWith(
         exportingPdf: false,
         errorMessage: result.errorMessage,

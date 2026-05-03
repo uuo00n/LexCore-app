@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
 
 import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/features/document/data/repositories/document_repository.dart';
@@ -68,6 +69,156 @@ class _InMemoryDocumentRepository extends DocumentRepository {
   }
 }
 
+class _StaleListFreshDetailRepository extends DocumentRepository {
+  _StaleListFreshDetailRepository({required SharedPreferences preferences})
+    : super(_NoopApiClient(), preferences);
+
+  int loadByIdCalls = 0;
+
+  static final DocumentItem _listItem = DocumentItem(
+    id: 'doc_stale_1',
+    name: '关于海米公寓不退换房租押金的问题',
+    updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+    type: '律师函',
+    markdown: '',
+    status: 'completed',
+  );
+
+  static final DocumentItem _detailItem = DocumentItem(
+    id: 'doc_stale_1',
+    name: '关于海米公寓不退换房租押金的问题',
+    updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+    type: '律师函',
+    markdown: '# 关于海米公寓不退换房租押金的问题\n\n## 一、事实与理由\n\n正文补全内容',
+    status: 'completed',
+  );
+
+  @override
+  Future<List<DocumentItem>> loadSaved() async {
+    return [_listItem];
+  }
+
+  @override
+  Future<DocumentItem?> loadById(String id) async {
+    loadByIdCalls += 1;
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    if (id == _detailItem.id) {
+      return _detailItem;
+    }
+    return null;
+  }
+
+  @override
+  Future<DocumentItem?> updateDocument({
+    required String id,
+    required String title,
+    required String markdown,
+  }) async {
+    return null;
+  }
+}
+
+class _QueuedThenCompletedRepository extends DocumentRepository {
+  _QueuedThenCompletedRepository({required SharedPreferences preferences})
+    : super(_NoopApiClient(), preferences);
+
+  int loadByIdCalls = 0;
+
+  @override
+  Future<List<DocumentItem>> loadSaved() async {
+    return [
+      DocumentItem(
+        id: 'doc_queue_1',
+        name: '排队中的文书',
+        updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+        type: '仲裁文书',
+        markdown: '',
+        status: 'queued',
+      ),
+    ];
+  }
+
+  @override
+  Future<DocumentItem?> loadById(String id) async {
+    loadByIdCalls += 1;
+    if (id != 'doc_queue_1') {
+      return null;
+    }
+    if (loadByIdCalls == 1) {
+      return DocumentItem(
+        id: 'doc_queue_1',
+        name: '排队中的文书',
+        updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+        type: '仲裁文书',
+        markdown: '',
+        status: 'queued',
+      );
+    }
+    return DocumentItem(
+      id: 'doc_queue_1',
+      name: '排队中的文书',
+      updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+      type: '仲裁文书',
+      markdown: '# 排队中的文书\\n\\n生成完成正文',
+      status: 'completed',
+    );
+  }
+
+  @override
+  Future<DocumentItem?> updateDocument({
+    required String id,
+    required String title,
+    required String markdown,
+  }) async {
+    return null;
+  }
+}
+
+class _FailedDocumentRepository extends DocumentRepository {
+  _FailedDocumentRepository({required SharedPreferences preferences})
+    : super(_NoopApiClient(), preferences);
+
+  @override
+  Future<List<DocumentItem>> loadSaved() async {
+    return [
+      DocumentItem(
+        id: 'doc_failed_1',
+        name: '失败文书',
+        updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+        type: '仲裁文书',
+        markdown: '',
+        status: 'failed',
+        errorMessage: 'yuanqi business error: 400',
+      ),
+    ];
+  }
+
+  @override
+  Future<DocumentItem?> loadById(String id) async {
+    if (id != 'doc_failed_1') {
+      return null;
+    }
+    return DocumentItem(
+      id: 'doc_failed_1',
+      name: '失败文书',
+      updatedAt: DateTime.parse('2026-03-14T08:00:00.000Z'),
+      type: '仲裁文书',
+      markdown: '',
+      status: 'failed',
+      errorMessage: 'yuanqi business error: 400',
+    );
+  }
+
+  @override
+  Future<DocumentItem?> updateDocument({
+    required String id,
+    required String title,
+    required String markdown,
+  }) async {
+    return null;
+  }
+}
+
 Future<_InMemoryDocumentRepository> _buildRepository() async {
   final preferences = await SharedPreferences.getInstance();
   return _InMemoryDocumentRepository(preferences: preferences);
@@ -83,6 +234,7 @@ void main() {
     required String documentId,
     bool startInEditMode = false,
     required DocumentRepository repository,
+    bool settle = true,
   }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {
@@ -100,7 +252,11 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    if (settle) {
+      await tester.pumpAndSettle();
+      return;
+    }
+    await tester.pump();
   }
 
   testWidgets('saved document detail renders read-only mode by default', (
@@ -150,5 +306,78 @@ void main() {
     final updated = docs.firstWhere((item) => item.id == 'doc_test_1');
     expect(updated.name, '测试文档-更新');
     expect(updated.markdown, contains('更新后的正文'));
+  });
+
+  testWidgets(
+    'saved document detail refreshes markdown from detail api when list markdown is empty',
+    (tester) async {
+      final preferences = await SharedPreferences.getInstance();
+      final repository = _StaleListFreshDetailRepository(
+        preferences: preferences,
+      );
+      await pumpSavedDocumentDetailPage(
+        tester,
+        documentId: 'doc_stale_1',
+        repository: repository,
+      );
+
+      expect(repository.loadByIdCalls, greaterThanOrEqualTo(1));
+      expect(find.text('一、事实与理由'), findsOneWidget);
+    },
+  );
+
+  testWidgets('saved document detail auto polls queued document to completed', (
+    tester,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    final repository = _QueuedThenCompletedRepository(preferences: preferences);
+    await pumpSavedDocumentDetailPage(
+      tester,
+      documentId: 'doc_queue_1',
+      repository: repository,
+    );
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+
+    expect(repository.loadByIdCalls, greaterThanOrEqualTo(2));
+    expect(find.text('已完成'), findsOneWidget);
+  });
+
+  testWidgets('saved document detail shows generation animation state', (
+    tester,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    final repository = _QueuedThenCompletedRepository(preferences: preferences);
+    await pumpSavedDocumentDetailPage(
+      tester,
+      documentId: 'doc_queue_1',
+      repository: repository,
+      settle: false,
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('文书生成中'), findsOneWidget);
+    expect(find.textContaining('正在整理案件要点'), findsOneWidget);
+    expect(find.byType(Shimmer), findsWidgets);
+
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('saved document detail shows backend failure message', (
+    tester,
+  ) async {
+    final preferences = await SharedPreferences.getInstance();
+    final repository = _FailedDocumentRepository(preferences: preferences);
+    await pumpSavedDocumentDetailPage(
+      tester,
+      documentId: 'doc_failed_1',
+      repository: repository,
+    );
+
+    expect(find.text('文书生成失败'), findsOneWidget);
+    expect(find.text('yuanqi business error: 400'), findsOneWidget);
+    expect(find.text('重试刷新'), findsOneWidget);
   });
 }

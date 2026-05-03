@@ -100,6 +100,29 @@ void main() {
     },
   );
 
+  test('loadAll resolves resourceKey from remote payload fields', () async {
+    final preferences = await SharedPreferences.getInstance();
+    final apiClient = _FakeApiClient()
+      ..historyPayload = {
+        'items': [
+          {
+            'history_id': 'remote_doc_1',
+            'event_summary': '导出 PDF 完成',
+            'event_type': 'pdf_export_completed',
+            'created_at': '2026-04-04T10:00:00.000Z',
+            'payload': {'document_id': 'doc_from_payload_001'},
+          },
+        ],
+      };
+    final repository = HistoryRepository(apiClient, preferences);
+
+    final items = await repository.loadAll();
+
+    expect(items, hasLength(1));
+    expect(items.single.category, HistoryCategory.document);
+    expect(items.single.resourceKey, 'doc_from_payload_001');
+  });
+
   test(
     'loadAll still returns local history when remote request fails',
     () async {

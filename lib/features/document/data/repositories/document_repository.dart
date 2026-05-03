@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,11 +13,21 @@ class DocumentRepository {
 
   final ApiClient _apiClient;
   final SharedPreferences _preferences;
-
-  static const _localEditsStorageKey = 'saved_documents_local_edits_v2';
+  static const String _laborArbitrationType = '劳动仲裁';
+  static const String _lawyerLetterType = '律师函';
 
   DocumentDraft generatePreview() {
-    return const DocumentDraft(title: '未命名文档', markdown: '');
+    return const DocumentDraft(
+      title: '劳动仲裁申请书（草稿）',
+      docType: _laborArbitrationType,
+      markdown:
+          '# 劳动仲裁申请书（草稿）\n\n'
+          '## 申请事项\n\n'
+          '1. 请求裁令被申请人支付拖欠工资。\n'
+          '2. 请求裁令被申请人承担仲裁费用。\n\n'
+          '## 证据目录\n\n'
+          '![证据材料示意（非真实图片）](lexcore://evidence-info-card)\n',
+    );
   }
 
   Future<List<DocumentItem>> loadSaved() async {
@@ -28,18 +37,17 @@ class DocumentRepository {
       decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
     );
     final items = (data['items'] as List?) ?? const [];
-    final localEdits = _readLocalEdits();
     return items.whereType<Map>().map((item) {
       final map = item.cast<String, dynamic>();
       final id = map['document_id'] as String? ?? '';
-      final local = localEdits[id] ?? const {};
-      final title = local['title'] as String? ?? map['title'] as String? ?? '';
-      final markdown =
-          local['markdown'] as String? ?? map['content_markdown'] as String?;
+      final title = map['title'] as String? ?? '';
+      final markdown = _resolveRemoteMarkdown(map);
       final updatedAt =
-          DateTime.tryParse(map['created_at'] as String? ?? '') ??
+          DateTime.tryParse(
+            map['updated_at'] as String? ?? map['created_at'] as String? ?? '',
+          ) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final docType = map['doc_type'] as String? ?? '法律文书';
+      final docType = _normalizeDocumentTypeForRead(map['doc_type'] as String?);
       return DocumentItem(
         id: id,
         name: title,
@@ -47,21 +55,32 @@ class DocumentRepository {
         type: docType,
         markdown: _resolveMarkdown(markdown),
         status: map['status'] as String? ?? 'queued',
+        errorMessage: map['error_message'] as String?,
       );
     }).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
-  Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
-    await _apiClient.post<Map<String, dynamic>>(
+  Future<DocumentSaveOutcome> saveDraft(DocumentDraft draft) async {
+    final userInput = _resolveUserInput(
+      userInput: draft.userInput,
+      markdown: draft.markdown,
+    );
+    final response = await _apiClient.post<Map<String, dynamic>>(
       '/documents/generate',
       data: {
         'title': _resolveTitle(draft.title),
-        'doc_type': _resolveType(draft.title),
-        'prompt': _resolveMarkdown(draft.markdown),
+        'doc_type': _resolveType(draft.docType, draft.title),
+        'user_input': userInput,
       },
       decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
     );
-    return DocumentSaveResult.created;
+    final documentId = response['document_id'] as String? ?? '';
+    final status = response['status'] as String? ?? 'queued';
+    return DocumentSaveOutcome(
+      result: DocumentSaveResult.created,
+      documentId: documentId,
+      status: status,
+    );
   }
 
   Future<DocumentItem?> loadById(String id) async {
@@ -73,21 +92,22 @@ class DocumentRepository {
       '/documents/$normalizedId',
       decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
     );
-    final localEdits = _readLocalEdits()[normalizedId] ?? const {};
-    final title =
-        localEdits['title'] as String? ?? data['title'] as String? ?? '';
-    final markdown =
-        localEdits['markdown'] as String? ??
-        data['content_markdown'] as String?;
+    final title = data['title'] as String? ?? '';
+    final markdown = _resolveRemoteMarkdown(data);
     return DocumentItem(
       id: data['document_id'] as String? ?? normalizedId,
       name: title,
       updatedAt:
-          DateTime.tryParse(data['created_at'] as String? ?? '') ??
+          DateTime.tryParse(
+            data['updated_at'] as String? ??
+                data['created_at'] as String? ??
+                '',
+          ) ??
           DateTime.fromMillisecondsSinceEpoch(0),
-      type: data['doc_type'] as String? ?? '法律文书',
+      type: _normalizeDocumentTypeForRead(data['doc_type'] as String?),
       markdown: _resolveMarkdown(markdown),
       status: data['status'] as String? ?? 'queued',
+      errorMessage: data['error_message'] as String?,
     );
   }
 
@@ -100,23 +120,28 @@ class DocumentRepository {
     if (normalizedId.isEmpty) {
       return null;
     }
-
-    final current = await loadById(normalizedId);
-    if (current == null) {
-      return null;
-    }
-
-    final updates = _readLocalEdits();
-    updates[normalizedId] = {
-      'title': _resolveTitle(title),
-      'markdown': _resolveMarkdown(markdown),
-    };
-    await _preferences.setString(_localEditsStorageKey, jsonEncode(updates));
-
-    return current.copyWith(
-      name: _resolveTitle(title),
-      markdown: _resolveMarkdown(markdown),
-      updatedAt: DateTime.now(),
+    final data = await _apiClient.patch<Map<String, dynamic>>(
+      '/documents/$normalizedId',
+      data: {
+        'title': _resolveTitle(title),
+        'content_markdown': _resolveMarkdown(markdown),
+      },
+      decoder: (value) => (value as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+    return DocumentItem(
+      id: data['document_id'] as String? ?? normalizedId,
+      name: data['title'] as String? ?? _resolveTitle(title),
+      updatedAt:
+          DateTime.tryParse(
+            data['updated_at'] as String? ??
+                data['created_at'] as String? ??
+                '',
+          ) ??
+          DateTime.now(),
+      type: _normalizeDocumentTypeForRead(data['doc_type'] as String?),
+      markdown: _resolveMarkdown(_resolveRemoteMarkdown(data)),
+      status: data['status'] as String? ?? 'completed',
+      errorMessage: data['error_message'] as String?,
     );
   }
 
@@ -210,28 +235,6 @@ class DocumentRepository {
     );
   }
 
-  Map<String, Map<String, dynamic>> _readLocalEdits() {
-    final raw = _preferences.getString(_localEditsStorageKey);
-    if (raw == null || raw.trim().isEmpty) {
-      return {};
-    }
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map) {
-        return {};
-      }
-      final result = <String, Map<String, dynamic>>{};
-      decoded.forEach((key, value) {
-        if (key is String && value is Map) {
-          result[key] = value.cast<String, dynamic>();
-        }
-      });
-      return result;
-    } catch (_) {
-      return {};
-    }
-  }
-
   String _resolveTitle(String title) {
     final normalized = title.trim();
     return normalized.isEmpty ? '未命名文档' : normalized;
@@ -241,17 +244,66 @@ class DocumentRepository {
     return markdown?.trim() ?? '';
   }
 
-  String _resolveType(String title) {
+  String _resolveUserInput({
+    required String? userInput,
+    required String? markdown,
+  }) {
+    final normalizedInput = userInput?.trim() ?? '';
+    if (normalizedInput.isNotEmpty) {
+      return normalizedInput;
+    }
+    return _resolveMarkdown(markdown);
+  }
+
+  String _resolveRemoteMarkdown(Map<String, dynamic> data) {
+    final markdown =
+        _readStringField(data, 'content_markdown') ??
+        _readStringField(data, 'content') ??
+        _readStringField(data, 'markdown');
+    return _resolveMarkdown(markdown);
+  }
+
+  String? _readStringField(Map<String, dynamic> data, String key) {
+    final value = data[key];
+    return value is String ? value : null;
+  }
+
+  String _resolveType(String docType, String title) {
+    final normalizedType = _normalizeDocumentType(docType);
+    if (normalizedType != null) {
+      return normalizedType;
+    }
     if (title.contains('律师函')) {
-      return '律师函';
+      return _lawyerLetterType;
     }
-    if (title.contains('申请书') || title.contains('仲裁')) {
-      return '仲裁文书';
+    return _laborArbitrationType;
+  }
+
+  String _normalizeDocumentTypeForRead(String? value) {
+    final normalized = _normalizeDocumentType(value ?? '');
+    if (normalized != null) {
+      return normalized;
     }
-    if (title.contains('审查') || title.contains('意见')) {
-      return '审查意见';
+    final raw = value?.trim() ?? '';
+    return raw.isNotEmpty ? raw : _laborArbitrationType;
+  }
+
+  String? _normalizeDocumentType(String value) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) {
+      return null;
     }
-    return '法律文书';
+    if (normalized == _lawyerLetterType) {
+      return _lawyerLetterType;
+    }
+    if (normalized == _laborArbitrationType ||
+        normalized == '劳动仲裁申请书' ||
+        normalized == '仲裁文书' ||
+        normalized == '仲裁申请书' ||
+        normalized == '劳动仲裁文书') {
+      return _laborArbitrationType;
+    }
+    return null;
   }
 }
 

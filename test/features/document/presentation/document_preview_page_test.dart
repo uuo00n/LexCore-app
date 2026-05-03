@@ -5,13 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/app/di/app_providers.dart';
 import 'package:lexcore/core/export/app_export_service.dart';
 import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/features/document/data/repositories/document_repository.dart';
 import 'package:lexcore/features/document/presentation/pages/document_preview_page.dart';
+import 'package:lexcore/features/document/presentation/pages/saved_document_detail_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
@@ -81,7 +84,7 @@ class _InMemoryDocumentRepository extends DocumentRepository {
   }
 
   @override
-  Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
+  Future<DocumentSaveOutcome> saveDraft(DocumentDraft draft) async {
     final now = DateTime.now();
     final existingIndex = _documents.indexWhere(
       (item) => item.name == draft.title,
@@ -91,13 +94,18 @@ class _InMemoryDocumentRepository extends DocumentRepository {
         markdown: draft.markdown,
         updatedAt: now,
       );
-      return DocumentSaveResult.updated;
+      return DocumentSaveOutcome(
+        result: DocumentSaveResult.updated,
+        documentId: _documents[existingIndex].id,
+        status: _documents[existingIndex].status,
+      );
     }
 
+    final docId = 'doc_${_documents.length + 1}';
     _documents.insert(
       0,
       DocumentItem(
-        id: 'doc_${_documents.length + 1}',
+        id: docId,
         name: draft.title,
         updatedAt: now,
         type: '法律文书',
@@ -105,7 +113,11 @@ class _InMemoryDocumentRepository extends DocumentRepository {
         status: 'queued',
       ),
     );
-    return DocumentSaveResult.created;
+    return DocumentSaveOutcome(
+      result: DocumentSaveResult.created,
+      documentId: docId,
+      status: 'queued',
+    );
   }
 
   @override
@@ -129,7 +141,7 @@ class _FailingDocumentRepository extends DocumentRepository {
   }
 
   @override
-  Future<DocumentSaveResult> saveDraft(DocumentDraft draft) async {
+  Future<DocumentSaveOutcome> saveDraft(DocumentDraft draft) async {
     throw Exception('save failed');
   }
 }
@@ -165,17 +177,34 @@ void main() {
             appExportServiceProvider.overrideWithValue(exportService),
           documentRepositoryProvider.overrideWithValue(repository),
         ],
-        child: MaterialApp(
-          home: Builder(
-            builder: (context) {
-              final mediaQuery = MediaQuery.of(context);
-              return MediaQuery(
-                data: mediaQuery.copyWith(
-                  textScaler: TextScaler.linear(textScale),
+        child: MaterialApp.router(
+          routerConfig: GoRouter(
+            initialLocation: RouteNames.documentPreviewPath,
+            routes: [
+              GoRoute(
+                path: RouteNames.documentPreviewPath,
+                name: RouteNames.documentPreview,
+                builder: (context, state) {
+                  final mediaQuery = MediaQuery.of(context);
+                  return MediaQuery(
+                    data: mediaQuery.copyWith(
+                      textScaler: TextScaler.linear(textScale),
+                    ),
+                    child: const DocumentPreviewPage(),
+                  );
+                },
+              ),
+              GoRoute(
+                path: RouteNames.savedDocumentDetailPath,
+                name: RouteNames.savedDocumentDetail,
+                builder: (context, state) => SavedDocumentDetailPage(
+                  documentId:
+                      state.pathParameters[RouteNames.savedDocumentIdParam] ??
+                      '',
+                  startInEditMode: state.uri.queryParameters['mode'] == 'edit',
                 ),
-                child: const DocumentPreviewPage(),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),
@@ -264,21 +293,7 @@ void main() {
     expect(find.text('分享失败，请稍后重试'), findsNothing);
   });
 
-  testWidgets('document preview save shows success snackbar', (tester) async {
-    final repository = await _buildInMemoryRepository();
-    await pumpDocumentPreviewPage(tester, documentRepository: repository);
-
-    await tester.tap(find.text('保存'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-
-    expect(find.text('文档已更新'), findsOneWidget);
-
-    final documents = await repository.loadSaved();
-    expect(documents.where((item) => item.name == '劳动仲裁申请书（草稿）'), hasLength(1));
-  });
-
-  testWidgets('document preview repeated save shows updated snackbar', (
+  testWidgets('document preview save navigates to saved document detail', (
     tester,
   ) async {
     final repository = await _buildInMemoryRepository();
@@ -286,12 +301,25 @@ void main() {
 
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
-    expect(find.text('文档已更新'), findsOneWidget);
+
+    final documents = await repository.loadSaved();
+    expect(documents.where((item) => item.name == '劳动仲裁申请书（草稿）'), hasLength(1));
+    expect(find.byType(SavedDocumentDetailPage), findsOneWidget);
+    expect(find.text('查看模式'), findsOneWidget);
+  });
+
+  testWidgets('document preview save opens detail page in view mode', (
+    tester,
+  ) async {
+    final repository = await _buildInMemoryRepository();
+    await pumpDocumentPreviewPage(tester, documentRepository: repository);
 
     await tester.tap(find.text('保存'));
     await tester.pumpAndSettle();
 
-    expect(find.text('文档已更新'), findsOneWidget);
+    expect(find.byType(SavedDocumentDetailPage), findsOneWidget);
+    expect(find.text('查看模式'), findsOneWidget);
+    expect(find.text('编辑模式'), findsNothing);
   });
 
   testWidgets('document preview save failure shows snackbar', (tester) async {
@@ -314,6 +342,6 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('文档预览'), findsOneWidget);
-    expect(find.text('劳动仲裁申请书（草稿）'), findsOneWidget);
+    expect(find.text('劳动仲裁申请书（草稿）'), findsAtLeastNWidgets(1));
   });
 }

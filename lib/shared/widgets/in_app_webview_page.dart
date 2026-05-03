@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -32,6 +33,7 @@ class InAppWebViewPage extends StatefulWidget {
     this.webViewChild,
     this.onReloadOverride,
     this.onOpenExternalOverride,
+    this.isAndroidOverride,
   });
 
   final String title;
@@ -43,6 +45,7 @@ class InAppWebViewPage extends StatefulWidget {
   final Widget? webViewChild;
   final Future<void> Function()? onReloadOverride;
   final Future<bool> Function(Uri uri)? onOpenExternalOverride;
+  final bool? isAndroidOverride;
 
   @override
   State<InAppWebViewPage> createState() => _InAppWebViewPageState();
@@ -74,7 +77,7 @@ class _InAppWebViewPageState extends State<InAppWebViewPage> {
   }
 
   void _initializeWebView() {
-    _uri = Uri.tryParse(widget.url);
+    _uri = _normalizeUriForAndroidEmulator(Uri.tryParse(widget.url));
     if (widget.webViewChild != null) {
       return;
     }
@@ -116,6 +119,27 @@ class _InAppWebViewPageState extends State<InAppWebViewPage> {
       ..loadRequest(_uri!);
 
     _controller = controller;
+  }
+
+  Uri? _normalizeUriForAndroidEmulator(Uri? uri) {
+    if (uri == null) {
+      return null;
+    }
+    final isAndroid = widget.isAndroidOverride ?? Platform.isAndroid;
+    if (!isAndroid) {
+      return uri;
+    }
+    if (!_isLoopbackHost(uri.host)) {
+      return uri;
+    }
+    return uri.replace(host: '10.0.2.2');
+  }
+
+  bool _isLoopbackHost(String host) {
+    final normalized = host.trim().toLowerCase();
+    return normalized == '127.0.0.1' ||
+        normalized == 'localhost' ||
+        normalized == '::1';
   }
 
   bool _isHttpUri(Uri uri) =>

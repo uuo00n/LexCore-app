@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'package:lexcore/core/utils/feature_notice.dart';
+import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/features/profile/application/profile_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
@@ -14,7 +15,6 @@ class ProfileSubscriptionManagePage extends ConsumerWidget {
     final snapshotAsync = ref.watch(profileSubscriptionSnapshotProvider);
     return AppPageScaffold(
       title: '管理订阅',
-      subtitle: '会员计划与计费',
       body: snapshotAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => const Center(child: Text('订阅信息加载失败')),
@@ -58,25 +58,21 @@ class ProfileSubscriptionManagePage extends ConsumerWidget {
               title: '升级套餐',
               subtitle: '切换到团队版或企业版',
               onTap: () =>
-                  showFeatureInProgressSnackBar(context, featureLabel: '升级套餐'),
+                  context.push(RouteNames.profileSubscriptionUpgradePath),
             ),
             _SubscriptionActionTile(
               icon: Icons.calendar_month_outlined,
               title: '调整续费周期',
               subtitle: '月付 / 年付灵活切换',
-              onTap: () => showFeatureInProgressSnackBar(
-                context,
-                featureLabel: '续费周期调整',
-              ),
+              onTap: () =>
+                  context.push(RouteNames.profileSubscriptionRenewalCyclePath),
             ),
             _SubscriptionActionTile(
               icon: Icons.cancel_outlined,
               title: '取消自动续费',
               subtitle: '到期后自动停止计费',
-              onTap: () => showFeatureInProgressSnackBar(
-                context,
-                featureLabel: '取消自动续费',
-              ),
+              onTap: () =>
+                  context.push(RouteNames.profileSubscriptionCancelRenewalPath),
             ),
           ],
         ),

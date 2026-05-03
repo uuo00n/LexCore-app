@@ -12,7 +12,6 @@ class AppPageScaffold extends StatelessWidget {
     super.key,
     required this.title,
     required this.body,
-    this.subtitle,
     this.actions = const [],
     this.bottomNavigationBar,
     this.showBackButton = true,
@@ -25,7 +24,6 @@ class AppPageScaffold extends StatelessWidget {
   });
 
   final String title;
-  final String? subtitle;
   final Widget body;
   final List<Widget> actions;
   final Widget? bottomNavigationBar;
@@ -67,7 +65,6 @@ class AppPageScaffold extends StatelessWidget {
                 beginOffset: const Offset(0, -0.02),
                 child: AppSubPageHeader(
                   title: title,
-                  subtitle: subtitle,
                   actions: actions,
                   showBackButton: showBackButton,
                   onBackPressed: onBackPressed,

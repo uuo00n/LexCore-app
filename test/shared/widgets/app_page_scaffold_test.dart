@@ -71,22 +71,6 @@ void main() {
     expectTitleCentered(tester, '设置');
   });
 
-  testWidgets('renders subtitle without affecting centered title', (
-    tester,
-  ) async {
-    await pumpPageScaffold(
-      tester,
-      scaffold: const AppPageScaffold(
-        title: '分析详情',
-        subtitle: '案件摘要与法条匹配',
-        body: SizedBox.expand(),
-      ),
-    );
-
-    expect(find.text('案件摘要与法条匹配'), findsOneWidget);
-    expectTitleCentered(tester, '分析详情');
-  });
-
   testWidgets('applies compact and medium body paddings consistently', (
     tester,
   ) async {

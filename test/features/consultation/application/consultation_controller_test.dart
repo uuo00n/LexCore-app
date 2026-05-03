@@ -12,7 +12,8 @@ import 'package:lexcore/features/history/data/repositories/history_repository.da
 import 'package:lexcore/shared/models/legal_models.dart';
 
 class _FakeConsultationRepository extends ConsultationRepository {
-  _FakeConsultationRepository() : super(null);
+  _FakeConsultationRepository([SharedPreferences? preferences])
+    : super(null, preferences);
 
   String? createConversationResult = 'remote-conversation-1';
   List<ChatMessage>? listedMessages;
@@ -310,6 +311,112 @@ void main() {
       expect(historyItems.single.title, contains('房屋租赁纠纷怎么处理'));
     },
   );
+
+  test(
+    'controller restores persisted threads, messages and remote ids',
+    () async {
+      final preferences = await SharedPreferences.getInstance();
+      final repository = _FakeConsultationRepository(preferences)
+        ..createConversationResult = 'remote-conversation-restore'
+        ..sendResult = const ConsultationSendResult(
+          userMessage: ChatMessage(
+            id: 'u_501',
+            role: ChatRole.user,
+            content: '恢复前的问题',
+          ),
+          assistantMessage: ChatMessage(
+            id: 'a_601',
+            role: ChatRole.assistant,
+            content: '恢复前的回复',
+          ),
+        );
+
+      final controller = ConsultationStateController(repository);
+      addTearDown(controller.dispose);
+
+      controller.ensureThread('thread_restore', title: '恢复测试');
+      await controller.send('thread_restore', '恢复前的问题');
+
+      await _waitUntilPersisted(repository, (snapshot) {
+        final restoredThread = snapshot.threads['thread_restore'];
+        return restoredThread != null &&
+            restoredThread.messages.length == 2 &&
+            snapshot.remoteConversationIds['thread_restore'] ==
+                'remote-conversation-restore';
+      });
+
+      final restoredController = ConsultationStateController(repository);
+      addTearDown(restoredController.dispose);
+
+      final restoredThread = restoredController.state.threads['thread_restore'];
+      expect(restoredThread, isNotNull);
+      expect(restoredThread!.title, '恢复测试');
+      expect(restoredThread.messages.map((message) => message.id), [
+        'u_501',
+        'a_601',
+      ]);
+      expect(
+        restoredController.state.remoteConversationIds['thread_restore'],
+        'remote-conversation-restore',
+      );
+      expect(restoredController.state.pendingAssistantThreadIds, isEmpty);
+    },
+  );
+
+  test('controller persists rename clear and delete operations', () async {
+    final preferences = await SharedPreferences.getInstance();
+    final repository = _FakeConsultationRepository(preferences)
+      ..createConversationResult = 'remote-conversation-edit'
+      ..sendResult = const ConsultationSendResult(
+        userMessage: ChatMessage(
+          id: 'u_701',
+          role: ChatRole.user,
+          content: '需要清空的问题',
+        ),
+        assistantMessage: ChatMessage(
+          id: 'a_801',
+          role: ChatRole.assistant,
+          content: '会被清空的回复',
+        ),
+      );
+
+    final controller = ConsultationStateController(repository);
+    addTearDown(controller.dispose);
+
+    controller.ensureThread('thread_edit', title: '原始标题');
+    await controller.send('thread_edit', '需要清空的问题');
+    controller.renameThread('thread_edit', '重命名后的标题');
+    controller.clearThread('thread_edit');
+
+    controller.ensureThread('thread_remove', title: '待删除');
+    controller.deleteThread('thread_remove');
+
+    await _waitUntilPersisted(repository, (snapshot) {
+      final editThread = snapshot.threads['thread_edit'];
+      return editThread != null &&
+          editThread.title == '重命名后的标题' &&
+          editThread.messages.isEmpty &&
+          !snapshot.threads.containsKey('thread_remove');
+    });
+
+    final restoredController = ConsultationStateController(repository);
+    addTearDown(restoredController.dispose);
+
+    final restoredThread = restoredController.state.threads['thread_edit'];
+    expect(restoredThread, isNotNull);
+    expect(restoredThread!.title, '重命名后的标题');
+    expect(restoredThread.messages, isEmpty);
+    expect(
+      restoredController.state.threads.containsKey('thread_remove'),
+      isFalse,
+    );
+    expect(
+      restoredController.state.sessions.any(
+        (session) => session.id == 'thread_remove',
+      ),
+      isFalse,
+    );
+  });
 }
 
 Future<void> _waitUntil(bool Function() predicate) async {
@@ -318,4 +425,14 @@ Future<void> _waitUntil(bool Function() predicate) async {
     await Future<void>.delayed(const Duration(milliseconds: 10));
   }
   fail('condition not met in time');
+}
+
+Future<void> _waitUntilPersisted(
+  ConsultationRepository repository,
+  bool Function(ConsultationLocalState snapshot) predicate,
+) async {
+  await _waitUntil(() {
+    final snapshot = repository.loadLocalState();
+    return snapshot != null && predicate(snapshot);
+  });
 }

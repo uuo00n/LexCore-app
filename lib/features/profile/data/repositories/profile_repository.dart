@@ -8,24 +8,15 @@ class ProfileRepository {
   final ApiClient _apiClient;
 
   Future<ProfileSummary> summary() async {
-    final me = await _apiClient.get<Map<String, dynamic>>(
-      '/users/me',
-      decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
-    );
-    final subscription = await _apiClient.get<Map<String, dynamic>>(
-      '/subscriptions/me',
-      decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
-    );
-    final quota = await _apiClient.get<Map<String, dynamic>>(
-      '/subscriptions/quota',
-      decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
-    );
-    final plans = await _loadPlans();
+    final me = await _safeGetMap('/users/me');
+    final subscription = await _safeGetMap('/subscriptions/me');
+    final quota = await _safeGetMap('/subscriptions/quota');
+    final plans = await _safeLoadPlans();
 
     final profile =
         (me['profile'] as Map?)?.cast<String, dynamic>() ?? const {};
-    final docRemaining = quota['document_remaining'] as int? ?? 0;
-    final pdfRemaining = quota['pdf_remaining'] as int? ?? 0;
+    final docRemaining = _toInt(quota['document_remaining']);
+    final pdfRemaining = _toInt(quota['pdf_remaining']);
     final planCode = (subscription['plan_code'] as String? ?? 'free')
         .toLowerCase();
 
@@ -41,22 +32,16 @@ class ProfileRepository {
   }
 
   Future<ProfileSubscriptionSnapshot> subscriptionSnapshot() async {
-    final subscription = await _apiClient.get<Map<String, dynamic>>(
-      '/subscriptions/me',
-      decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
-    );
-    final quota = await _apiClient.get<Map<String, dynamic>>(
-      '/subscriptions/quota',
-      decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
-    );
-    final plans = await _loadPlans();
+    final subscription = await _safeGetMap('/subscriptions/me');
+    final quota = await _safeGetMap('/subscriptions/quota');
+    final plans = await _safeLoadPlans();
     final planCode = (subscription['plan_code'] as String? ?? 'free')
         .toLowerCase();
     return ProfileSubscriptionSnapshot(
       planCode: _resolvePlanName(planCode, plans),
       status: subscription['status'] as String? ?? 'active',
-      documentRemaining: quota['document_remaining'] as int? ?? 0,
-      pdfRemaining: quota['pdf_remaining'] as int? ?? 0,
+      documentRemaining: _toInt(quota['document_remaining']),
+      pdfRemaining: _toInt(quota['pdf_remaining']),
     );
   }
 
@@ -82,6 +67,38 @@ class ProfileRepository {
             .toList();
       },
     );
+  }
+
+  Future<Map<String, dynamic>> _safeGetMap(String path) async {
+    try {
+      return await _apiClient.get<Map<String, dynamic>>(
+        path,
+        decoder: (data) => (data as Map?)?.cast<String, dynamic>() ?? const {},
+      );
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _safeLoadPlans() async {
+    try {
+      return await _loadPlans();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  int _toInt(Object? value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value.trim()) ?? 0;
+    }
+    return 0;
   }
 
   String _resolvePlanName(String planCode, List<Map<String, dynamic>> plans) {

@@ -8,7 +8,6 @@ import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
-import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 

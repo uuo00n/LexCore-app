@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
@@ -41,12 +43,69 @@ void main() {
     );
   }
 
+  Future<ProviderScope> buildProviderScope(Widget child) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('consultation_state_local_v1', '''
+{
+  "schemaVersion": 1,
+  "sessions": [
+    {
+      "id": "thread_legal_assistant",
+      "title": "LexCore 法律助手",
+      "preview": "您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。",
+      "updatedAt": "2026-05-04T09:00:00.000",
+      "icon": "smart_toy",
+      "isActive": true
+    },
+    {
+      "id": "thread_real_estate",
+      "title": "房产买卖纠纷咨询",
+      "preview": "房屋买卖合同履行争议",
+      "updatedAt": "2026-05-04T08:00:00.000",
+      "icon": "home",
+      "isActive": false
+    },
+    {
+      "id": "thread_startup_equity",
+      "title": "初创企业股权架构",
+      "preview": "创始团队股权分配",
+      "updatedAt": "2026-05-04T07:00:00.000",
+      "icon": "business",
+      "isActive": false
+    }
+  ],
+  "threads": {
+    "thread_legal_assistant": {
+      "id": "thread_legal_assistant",
+      "title": "LexCore 法律助手",
+      "messages": [
+        {
+          "id": "a_welcome",
+          "role": "assistant",
+          "content": "您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。",
+          "references": []
+        }
+      ]
+    }
+  },
+  "remoteConversationIds": {}
+}
+''');
+    return ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+      child: child,
+    );
+  }
+
   testWidgets('consultation list supports local search filtering', (
     tester,
   ) async {
     await setPhoneViewport(tester);
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: ConsultationListPage())),
+      await buildProviderScope(
+        const MaterialApp(home: ConsultationListPage()),
+      ),
     );
     await tester.pump(const Duration(milliseconds: 800));
 
@@ -73,8 +132,8 @@ void main() {
   ) async {
     await setPhoneViewport(tester);
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();
@@ -96,8 +155,8 @@ void main() {
   ) async {
     await setPhoneViewport(tester);
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();
@@ -112,9 +171,6 @@ void main() {
       const EdgeInsets.fromLTRB(12, 10, 12, 12),
     );
     expect(find.text('新建咨询会话'), findsOneWidget);
-    expect(
-      find.text('您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。'),
-      findsOneWidget,
-    );
+    expect(find.text('请输入您的问题...'), findsOneWidget);
   });
 }

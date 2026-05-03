@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/features/auth/presentation/pages/auth_page.dart';
 import 'package:lexcore/features/auth/presentation/pages/register_page.dart';
 import 'package:lexcore/shared/widgets/app_shell_top_bar.dart';
 
 void main() {
+  Future<ProviderScope> buildProviderScope(Widget child) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    return ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+      child: child,
+    );
+  }
+
   testWidgets('login page shows LexCore branding copy', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: AuthPage())),
+      await buildProviderScope(const MaterialApp(home: AuthPage())),
     );
     await tester.pumpAndSettle();
 
@@ -25,7 +36,7 @@ void main() {
 
   testWidgets('register page shows LexCore branding copy', (tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: RegisterPage())),
+      await buildProviderScope(const MaterialApp(home: RegisterPage())),
     );
     await tester.pumpAndSettle();
 

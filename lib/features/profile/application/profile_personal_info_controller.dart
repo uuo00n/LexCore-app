@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -173,17 +175,21 @@ class ProfilePersonalInfoController
           '${directory.path}/profile_avatar_${DateTime.now().millisecondsSinceEpoch}$extension';
       await selectedImage.saveTo(savedPath);
 
+      final previousAvatarPath = state.info.avatarPath;
       final avatarFileId = await _repository.uploadAvatar(savedPath);
       await _saveInfo(
         state.info.copyWith(avatarPath: savedPath, avatarFileId: avatarFileId),
       );
+      await _deleteAvatarFileSilently(previousAvatarPath, exclude: savedPath);
     } catch (_) {
       state = state.copyWith(feedbackMessage: '头像更新失败，请稍后重试');
     }
   }
 
   Future<void> resetAvatar() async {
+    final previousAvatarPath = state.info.avatarPath;
     await _saveInfo(state.info.copyWith(avatarPath: null, avatarFileId: null));
+    await _deleteAvatarFileSilently(previousAvatarPath);
   }
 
   void clearFeedbackMessage() {
@@ -275,6 +281,26 @@ class ProfilePersonalInfoController
       return '.jpg';
     }
     return source.substring(index);
+  }
+
+  Future<void> _deleteAvatarFileSilently(
+    String? path, {
+    String? exclude,
+  }) async {
+    if (path == null || path.trim().isEmpty) {
+      return;
+    }
+    if (exclude != null && exclude == path) {
+      return;
+    }
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // 旧头像清理失败属非致命，忽略即可。
+    }
   }
 
   String _normalizePhone(String value) {

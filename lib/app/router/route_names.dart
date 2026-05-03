@@ -35,6 +35,7 @@ class RouteNames {
   static const profileSubscriptionCancelRenewal =
       'profile_subscription_cancel_renewal';
   static const settings = 'settings';
+  static const helpSupport = 'help_support';
   static const about = 'about';
   static const privacyPolicy = 'privacy_policy';
   static const termsOfService = 'terms_of_service';
@@ -79,6 +80,7 @@ class RouteNames {
   static const profileSubscriptionCancelRenewalPath =
       '/profile/subscription/manage/cancel-renewal';
   static const settingsPath = '/settings';
+  static const helpSupportPath = '/settings/help-support';
   static const aboutPath = '/about';
   static const privacyPolicyPath = '/legal/privacy-policy';
   static const termsOfServicePath = '/legal/terms-of-service';

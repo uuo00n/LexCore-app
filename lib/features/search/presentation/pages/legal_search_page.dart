@@ -8,6 +8,8 @@ import 'package:lexcore/app/router/route_names.dart';
 import 'package:lexcore/core/utils/feature_notice.dart';
 import 'package:lexcore/features/cases/presentation/pages/case_detail_page.dart';
 import 'package:lexcore/features/search/application/search_controller.dart';
+import 'package:lexcore/features/search/application/voice_search_controller.dart';
+import 'package:lexcore/features/search/presentation/widgets/voice_search_sheet.dart';
 import 'package:lexcore/shared/components/app_list_tile_item.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/app_mobile_canvas.dart';
@@ -108,6 +110,7 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
                     setState(() => _selectedFilter = index);
                     ref.read(searchFilterProvider.notifier).state = index;
                   },
+                  onMicTap: _startVoiceSearch,
                 ),
               ),
               Expanded(
@@ -215,6 +218,32 @@ class _LegalSearchPageState extends ConsumerState<LegalSearchPage> {
       curve: Curves.easeOutCubic,
     );
   }
+
+  Future<void> _startVoiceSearch() async {
+    if (!isVoiceSearchSupportedPlatform()) {
+      showFeatureInProgressSnackBar(context, featureLabel: '语音检索');
+      return;
+    }
+    final spoken = await showVoiceSearchSheet(context);
+    if (!mounted) {
+      return;
+    }
+    final cleaned = spoken?.trim() ?? '';
+    if (cleaned.isEmpty) {
+      return;
+    }
+    // 语音输入视作用户主动改写关键词：清除场景选中，让 _onQueryChanged 走默认分支即可。
+    if (_selectedScenarioId != null) {
+      setState(() {
+        _selectedScenarioId = null;
+      });
+    }
+    _isApplyingScenarioSelection = false;
+    _searchController.value = TextEditingValue(
+      text: cleaned,
+      selection: TextSelection.collapsed(offset: cleaned.length),
+    );
+  }
 }
 
 class _SearchInputAndFilter extends StatelessWidget {
@@ -223,12 +252,14 @@ class _SearchInputAndFilter extends StatelessWidget {
     required this.filters,
     required this.selectedFilter,
     required this.onFilterChanged,
+    required this.onMicTap,
   });
 
   final TextEditingController controller;
   final List<String> filters;
   final int selectedFilter;
   final ValueChanged<int> onFilterChanged;
+  final VoidCallback onMicTap;
 
   @override
   Widget build(BuildContext context) {
@@ -242,10 +273,9 @@ class _SearchInputAndFilter extends StatelessWidget {
               hintText: '搜索法律、案例、法规...',
               prefixIcon: const Icon(Icons.search),
               suffixIcon: IconButton(
-                onPressed: () => showFeatureInProgressSnackBar(
-                  context,
-                  featureLabel: '语音检索',
-                ),
+                key: const ValueKey<String>('legal_search_voice_button'),
+                tooltip: '语音搜索',
+                onPressed: onMicTap,
                 icon: const Icon(Icons.mic_none),
               ),
               border: OutlineInputBorder(

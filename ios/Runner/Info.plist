@@ -28,6 +28,12 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>用于从相册选择头像并更新个人信息。</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>用于开启生物识别登录并保护您的账号安全。</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>用于语音搜索功能录入语音指令。</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>用于将语音转换为搜索关键词。</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

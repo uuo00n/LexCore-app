@@ -221,10 +221,10 @@ class _InAppWebViewPageState extends State<InAppWebViewPage> {
                           : WebViewWidget(controller: _controller!)),
                 ),
                 if (loadState == InAppWebViewLoadState.loading)
-                  const Positioned.fill(
+                  Positioned.fill(
                     child: ColoredBox(
-                      color: Colors.white,
-                      child: Center(child: CircularProgressIndicator()),
+                      color: Theme.of(context).colorScheme.surface,
+                      child: const Center(child: CircularProgressIndicator()),
                     ),
                   ),
               ],

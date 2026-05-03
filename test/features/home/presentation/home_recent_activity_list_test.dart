@@ -51,7 +51,7 @@ void main() {
     );
   }
 
-  Future<void> _setDefaultSurfaceSize(WidgetTester tester) async {
+  Future<void> setDefaultSurfaceSize(WidgetTester tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
@@ -59,7 +59,7 @@ void main() {
   }
 
   Future<void> pumpHomePage(WidgetTester tester, {HomeEntity? homeData}) async {
-    await _setDefaultSurfaceSize(tester);
+    await setDefaultSurfaceSize(tester);
 
     final resolvedHomeData = homeData ?? buildHomeData();
 
@@ -78,7 +78,7 @@ void main() {
     WidgetTester tester, {
     HomeEntity? homeData,
   }) async {
-    await _setDefaultSurfaceSize(tester);
+    await setDefaultSurfaceSize(tester);
 
     final resolvedHomeData = homeData ?? buildHomeData();
     final router = GoRouter(

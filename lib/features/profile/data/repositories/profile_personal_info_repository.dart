@@ -1,21 +1,35 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/core/network/api_client.dart';
 import 'package:lexcore/core/network/dio_provider.dart';
 import 'package:lexcore/features/profile/domain/entities/profile_personal_info.dart';
 
 class ProfilePersonalInfoRepository {
-  const ProfilePersonalInfoRepository(this._apiClient);
+  ProfilePersonalInfoRepository({
+    required ApiClient apiClient,
+    SharedPreferences? preferences,
+  }) : _apiClient = apiClient,
+       _preferences = preferences;
+
+  static const _avatarPathKey = 'profile_avatar_local_path';
+  static const _avatarFileIdKey = 'profile_avatar_local_file_id';
 
   final ApiClient _apiClient;
+  final SharedPreferences? _preferences;
 
   Future<ProfilePersonalInfo> load() async {
     final result = await _apiClient.get<ProfilePersonalInfo>(
       '/users/me',
       decoder: _decodeMeInfo,
     );
-    return result;
+    final effectiveAvatarPath = await _resolveCachedAvatarPath(
+      result.avatarFileId,
+    );
+    return result.copyWith(avatarPath: effectiveAvatarPath);
   }
 
   Future<ProfilePersonalInfo> save(ProfilePersonalInfo info) async {
@@ -34,9 +48,14 @@ class ProfilePersonalInfoRepository {
       data: payload,
       decoder: _decodeProfileInfo,
     );
+    final mergedFileId = result.avatarFileId ?? info.avatarFileId;
+    await _persistAvatarCache(
+      path: info.avatarPath,
+      fileId: mergedFileId,
+    );
     return result.copyWith(
       avatarPath: info.avatarPath,
-      avatarFileId: result.avatarFileId ?? info.avatarFileId,
+      avatarFileId: mergedFileId,
     );
   }
 
@@ -56,6 +75,79 @@ class ProfilePersonalInfoRepository {
       },
     );
     return fileId;
+  }
+
+  /// 根据服务端返回的 [serverFileId] 决定本地缓存里那张图能不能继续用。
+  ///
+  /// - 服务端没有头像 → 清掉本地缓存，返回 null。
+  /// - 服务端的 fileId 与本地缓存的 fileId 一致，且本地文件还在 → 复用本地路径。
+  /// - 其他情况（fileId 不匹配 / 文件已被清理）→ 视为脏数据，清掉缓存返回 null。
+  Future<String?> _resolveCachedAvatarPath(String? serverFileId) async {
+    final cache = await _readAvatarCache();
+
+    if (serverFileId == null || serverFileId.trim().isEmpty) {
+      if (cache.path != null || cache.fileId != null) {
+        await _writeAvatarCache(path: null, fileId: null);
+      }
+      return null;
+    }
+
+    final cachedPath = cache.path;
+    final cachedFileId = cache.fileId;
+    if (cachedFileId != null &&
+        cachedFileId == serverFileId &&
+        cachedPath != null &&
+        cachedPath.isNotEmpty &&
+        File(cachedPath).existsSync()) {
+      return cachedPath;
+    }
+
+    if (cache.path != null || cache.fileId != null) {
+      await _writeAvatarCache(path: null, fileId: null);
+    }
+    return null;
+  }
+
+  Future<void> _persistAvatarCache({
+    required String? path,
+    required String? fileId,
+  }) async {
+    final hasBoth =
+        path != null &&
+        path.isNotEmpty &&
+        fileId != null &&
+        fileId.isNotEmpty;
+    if (hasBoth) {
+      await _writeAvatarCache(path: path, fileId: fileId);
+    } else {
+      await _writeAvatarCache(path: null, fileId: null);
+    }
+  }
+
+  Future<({String? path, String? fileId})> _readAvatarCache() async {
+    final prefs = await _prefs();
+    return (
+      path: prefs.getString(_avatarPathKey),
+      fileId: prefs.getString(_avatarFileIdKey),
+    );
+  }
+
+  Future<void> _writeAvatarCache({
+    required String? path,
+    required String? fileId,
+  }) async {
+    final prefs = await _prefs();
+    if (path == null || path.isEmpty || fileId == null || fileId.isEmpty) {
+      await prefs.remove(_avatarPathKey);
+      await prefs.remove(_avatarFileIdKey);
+      return;
+    }
+    await prefs.setString(_avatarPathKey, path);
+    await prefs.setString(_avatarFileIdKey, fileId);
+  }
+
+  Future<SharedPreferences> _prefs() async {
+    return _preferences ?? SharedPreferences.getInstance();
   }
 
   static ProfilePersonalInfo _decodeMeInfo(Object? data) {
@@ -117,5 +209,7 @@ class ProfilePersonalInfoRepository {
 
 final profilePersonalInfoRepositoryProvider =
     Provider<ProfilePersonalInfoRepository>((ref) {
-      return ProfilePersonalInfoRepository(ref.watch(apiClientProvider));
+      return ProfilePersonalInfoRepository(
+        apiClient: ref.watch(apiClientProvider),
+      );
     });

@@ -12,8 +12,8 @@ class _NoopApiClient extends ApiClient {
 
 class _FakeProfilePersonalInfoRepository extends ProfilePersonalInfoRepository {
   _FakeProfilePersonalInfoRepository({ProfilePersonalInfo? initialInfo})
-    : _info = initialInfo ?? ProfilePersonalInfo.defaults(),
-      super(_NoopApiClient());
+    : _info = initialInfo ?? _mostlyCompleteInfo(),
+      super(apiClient: _NoopApiClient());
 
   ProfilePersonalInfo _info;
 
@@ -32,6 +32,19 @@ class _FakeProfilePersonalInfoRepository extends ProfilePersonalInfoRepository {
   Future<String> uploadAvatar(String filePath) async {
     return 'file_avatar_mock';
   }
+}
+
+ProfilePersonalInfo _mostlyCompleteInfo() {
+  return ProfilePersonalInfo.defaults().copyWith(
+    avatarFileId: 'file_avatar_mock',
+    name: '张三律师',
+    phone: '',
+    email: 'zhangsan@example.com',
+    role: '企业法务',
+    organization: '华东律所',
+    practiceAreas: const ['劳动法'],
+    language: '简体中文',
+  );
 }
 
 void main() {
@@ -79,6 +92,7 @@ void main() {
     final controller = ProfilePersonalInfoController(
       repository: _FakeProfilePersonalInfoRepository(
         initialInfo: ProfilePersonalInfo.defaults().copyWith(
+          avatarFileId: 'file_avatar_mock',
           name: '张三律师',
           phone: '13800138000',
           email: 'zhangsan@example.com',

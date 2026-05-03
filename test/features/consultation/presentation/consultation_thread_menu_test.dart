@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:lexcore/app/router/route_names.dart';
+import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_list_page.dart';
 import 'package:lexcore/features/consultation/presentation/pages/consultation_page.dart';
 
@@ -45,13 +47,78 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  Future<ProviderScope> buildProviderScope(Widget child) async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString('consultation_state_local_v1', '''
+{
+  "schemaVersion": 1,
+  "sessions": [
+    {
+      "id": "thread_legal_assistant",
+      "title": "LexCore 法律助手",
+      "preview": "公司拖欠工资两个月，我该如何维权？",
+      "updatedAt": "2026-05-04T09:00:00.000",
+      "icon": "smart_toy",
+      "isActive": true
+    },
+    {
+      "id": "thread_real_estate",
+      "title": "房产买卖纠纷咨询",
+      "preview": "房屋买卖合同履行争议",
+      "updatedAt": "2026-05-04T08:00:00.000",
+      "icon": "home",
+      "isActive": false
+    }
+  ],
+  "threads": {
+    "thread_legal_assistant": {
+      "id": "thread_legal_assistant",
+      "title": "LexCore 法律助手",
+      "messages": [
+        {
+          "id": "a_welcome",
+          "role": "assistant",
+          "content": "您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。",
+          "references": []
+        },
+        {
+          "id": "u_salary",
+          "role": "user",
+          "content": "公司拖欠工资两个月，我该如何维权？",
+          "references": []
+        }
+      ]
+    },
+    "thread_real_estate": {
+      "id": "thread_real_estate",
+      "title": "房产买卖纠纷咨询",
+      "messages": [
+        {
+          "id": "a_real_estate",
+          "role": "assistant",
+          "content": "请补充合同签署时间、付款节点和交付约定。",
+          "references": []
+        }
+      ]
+    }
+  },
+  "remoteConversationIds": {}
+}
+''');
+    return ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+      child: child,
+    );
+  }
+
   testWidgets('rename thread updates detail header and list title', (
     tester,
   ) async {
     await setPhoneViewport(tester);
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();
@@ -78,11 +145,13 @@ void main() {
     expect(find.text('LexCore 法律助手'), findsNothing);
   });
 
-  testWidgets('clear thread keeps only welcome message', (tester) async {
+  testWidgets('clear thread keeps an empty input-ready conversation', (
+    tester,
+  ) async {
     await setPhoneViewport(tester);
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();
@@ -97,10 +166,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('公司拖欠工资两个月，我该如何维权？'), findsNothing);
-    expect(
-      find.text('您好，我是 LexCore 法律助手。请告诉我您的法律问题，我会给出分步骤建议。'),
-      findsOneWidget,
-    );
+    expect(find.text('请输入您的问题...'), findsOneWidget);
+    expect(find.text('已清空当前对话'), findsOneWidget);
   });
 
   testWidgets('delete thread returns to list and removes the item', (
@@ -108,8 +175,8 @@ void main() {
   ) async {
     await setPhoneViewport(tester);
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();
@@ -140,8 +207,8 @@ void main() {
     });
 
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();
@@ -171,8 +238,8 @@ void main() {
     });
 
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(routerConfig: buildConsultationRouter()),
+      await buildProviderScope(
+        MaterialApp.router(routerConfig: buildConsultationRouter()),
       ),
     );
     await tester.pumpAndSettle();

@@ -9,10 +9,9 @@ import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 
 class DocumentRepository {
-  DocumentRepository(this._apiClient, this._preferences);
+  DocumentRepository(this._apiClient, SharedPreferences _);
 
   final ApiClient _apiClient;
-  final SharedPreferences _preferences;
   static const String _laborArbitrationType = '劳动仲裁';
   static const String _lawyerLetterType = '律师函';
 

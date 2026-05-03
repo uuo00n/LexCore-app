@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/core/storage/local_storage.dart';
 import 'package:lexcore/features/history/presentation/pages/history_page.dart';
 import 'package:lexcore/features/home/presentation/pages/home_page.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_page.dart';
@@ -21,8 +22,14 @@ void main() {
       await tester.binding.setSurfaceSize(null);
     });
 
-    await tester.pumpWidget(ProviderScope(child: MaterialApp(home: page)));
-    await tester.pump(const Duration(milliseconds: 900));
+    final preferences = await SharedPreferences.getInstance();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
+        child: MaterialApp(home: page),
+      ),
+    );
+    await tester.pumpAndSettle();
   }
 
   void expectTitleCentered(WidgetTester tester, String title) {

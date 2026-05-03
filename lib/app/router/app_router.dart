@@ -37,6 +37,7 @@ import 'package:lexcore/features/profile/presentation/pages/profile_subscription
 import 'package:lexcore/features/search/presentation/pages/legal_article_page.dart';
 import 'package:lexcore/features/search/presentation/pages/legal_search_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/about_page.dart';
+import 'package:lexcore/features/settings/presentation/pages/help_support_page.dart';
 import 'package:lexcore/features/settings/presentation/pages/settings_page.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
 import 'package:lexcore/shared/widgets/in_app_webview_page.dart';
@@ -461,6 +462,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           state: state,
           kind: AppRouteTransitionKind.detail,
           child: const SettingsPage(),
+        ),
+      ),
+      GoRoute(
+        path: RouteNames.helpSupportPath,
+        name: RouteNames.helpSupport,
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.build(
+          context: context,
+          state: state,
+          kind: AppRouteTransitionKind.detail,
+          child: const HelpSupportPage(),
         ),
       ),
       GoRoute(

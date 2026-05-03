@@ -1,11 +1,16 @@
 import 'dart:convert';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lexcore/core/network/api_client.dart';
+import 'package:lexcore/core/storage/local_storage.dart';
+import 'package:lexcore/features/profile/data/repositories/profile_personal_info_repository.dart';
+import 'package:lexcore/features/profile/domain/entities/profile_personal_info.dart';
 import 'package:lexcore/features/profile/presentation/pages/profile_personal_info_page.dart';
 
 void main() {
@@ -13,14 +18,28 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  Future<void> pumpPersonalInfoPage(WidgetTester tester) async {
+  Future<void> pumpPersonalInfoPage(
+    WidgetTester tester, {
+    _FakeProfilePersonalInfoRepository? repository,
+  }) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
 
+    final preferences = await SharedPreferences.getInstance();
+    final resolvedRepository =
+        repository ?? _FakeProfilePersonalInfoRepository(preferences);
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: ProfilePersonalInfoPage())),
+      ProviderScope(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          profilePersonalInfoRepositoryProvider.overrideWithValue(
+            resolvedRepository,
+          ),
+        ],
+        child: const MaterialApp(home: ProfilePersonalInfoPage()),
+      ),
     );
     await tester.pumpAndSettle();
   }
@@ -32,7 +51,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('从相册选择'), findsOneWidget);
-    expect(find.text('恢复默认头像'), findsOneWidget);
+    expect(find.text('移除头像'), findsOneWidget);
   });
 
   testWidgets('editing valid phone updates completeness percent', (
@@ -129,9 +148,7 @@ void main() {
 
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();
-    await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: ProfilePersonalInfoPage())),
-    );
+    await pumpPersonalInfoPage(tester);
     await tester.pumpAndSettle();
 
     final prefs = await SharedPreferences.getInstance();
@@ -145,6 +162,75 @@ void main() {
     );
     expect(find.text('张三律师'), findsWidgets);
   });
+}
+
+class _NoopApiClient extends ApiClient {
+  _NoopApiClient() : super(Dio());
+}
+
+class _FakeProfilePersonalInfoRepository extends ProfilePersonalInfoRepository {
+  _FakeProfilePersonalInfoRepository(this._preferences)
+    : super(apiClient: _NoopApiClient(), preferences: _preferences);
+
+  static const _storageKey = 'profile_personal_info_v1';
+
+  final SharedPreferences _preferences;
+
+  @override
+  Future<ProfilePersonalInfo> load() async {
+    final raw = _preferences.getString(_storageKey);
+    if (raw == null || raw.trim().isEmpty) {
+      return _mostlyCompleteInfo();
+    }
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map) {
+      return _mostlyCompleteInfo();
+    }
+    return _infoFromJson(decoded.cast<String, dynamic>());
+  }
+
+  @override
+  Future<ProfilePersonalInfo> save(ProfilePersonalInfo info) async {
+    await _preferences.setString(_storageKey, jsonEncode(info.toJson()));
+    return info;
+  }
+
+  @override
+  Future<String> uploadAvatar(String filePath) async {
+    return 'file_avatar_mock';
+  }
+
+  ProfilePersonalInfo _infoFromJson(Map<String, dynamic> json) {
+    final base = _mostlyCompleteInfo();
+    return base.copyWith(
+      avatarPath: json['avatarPath'] as String?,
+      avatarFileId: json['avatarFileId'] as String?,
+      name: json['name'] as String? ?? base.name,
+      phone: json['phone'] as String? ?? base.phone,
+      email: json['email'] as String? ?? base.email,
+      role: json['role'] as String? ?? base.role,
+      organization: json['organization'] as String? ?? base.organization,
+      practiceAreas: ((json['practiceAreas'] as List?) ?? base.practiceAreas)
+          .whereType<String>()
+          .toList(),
+      language: json['language'] as String? ?? base.language,
+      notificationsEnabled:
+          json['notificationsEnabled'] as bool? ?? base.notificationsEnabled,
+    );
+  }
+}
+
+ProfilePersonalInfo _mostlyCompleteInfo() {
+  return ProfilePersonalInfo.defaults().copyWith(
+    avatarFileId: 'file_avatar_mock',
+    name: '张三律师',
+    phone: '',
+    email: 'zhangsan@example.com',
+    role: '企业法务',
+    organization: '华东律所',
+    practiceAreas: const ['劳动法'],
+    language: '简体中文',
+  );
 }
 
 class ProfilePersonalInfoSnapshot {

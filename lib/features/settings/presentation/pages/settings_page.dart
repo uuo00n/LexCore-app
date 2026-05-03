@@ -25,6 +25,9 @@ class SettingsPage extends ConsumerWidget {
       case 'dark_mode':
         _showThemeModeSheet(context, ref);
         return;
+      case 'cleaning_services':
+        _showCacheManagement(context, ref);
+        return;
       case 'policy':
         context.push(RouteNames.privacyPolicyPath);
         return;
@@ -59,9 +62,19 @@ class SettingsPage extends ConsumerWidget {
   }
 
   void _showHelpSupport(BuildContext context) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('帮助中心建设中，敬请期待')));
+    context.push(RouteNames.helpSupportPath);
+  }
+
+  Future<void> _showCacheManagement(BuildContext context, WidgetRef ref) async {
+    await ref.read(settingsControllerProvider.notifier).refreshCacheSize();
+    if (!context.mounted) {
+      return;
+    }
+    await showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      builder: (_) => const _CacheManagementSheet(),
+    );
   }
 
   Future<void> _showThemeModeSheet(BuildContext context, WidgetRef ref) async {
@@ -128,6 +141,19 @@ class SettingsPage extends ConsumerWidget {
     final items = ref.watch(settingsItemsProvider);
     final version = ref.watch(settingsVersionProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
+
+    ref.listen<String?>(
+      settingsControllerProvider.select((value) => value.feedbackMessage),
+      (previous, message) {
+        if (message == null || message.isEmpty || !context.mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(message)));
+        ref.read(settingsControllerProvider.notifier).clearFeedbackMessage();
+      },
+    );
 
     return AppPageScaffold(
       title: '设置',
@@ -331,19 +357,19 @@ class _SettingsMain extends StatelessWidget {
         _SettingRow(
           icon: Icons.notifications_outlined,
           title: '消息通知',
-          subtitle: '案件进度与文档提醒',
+          subtitle: _notificationSubtitle(state),
           trailing: Switch(
             value: state.notificationsEnabled,
-            onChanged: onNotificationChanged,
+            onChanged: state.loading ? null : onNotificationChanged,
           ),
         ),
         _SettingRow(
           icon: Icons.fingerprint,
           title: '生物识别登录',
-          subtitle: 'Face ID / 指纹快速验证',
+          subtitle: state.biometricAvailable ? 'Face ID / 指纹快速验证' : '当前设备暂不可用',
           trailing: Switch(
             value: state.biometricEnabled,
-            onChanged: onBiometricChanged,
+            onChanged: state.loading ? null : onBiometricChanged,
           ),
         ),
         ...items.map((item) {
@@ -411,6 +437,17 @@ class _SettingsMain extends StatelessWidget {
         return Icons.settings;
     }
   }
+
+  String _notificationSubtitle(SettingsState state) {
+    if (state.notificationsEnabled) {
+      return '案件进度与文档提醒';
+    }
+    return switch (state.notificationPermissionStatus) {
+      SettingsNotificationPermission.permanentlyDenied => '需在系统设置中开启通知权限',
+      SettingsNotificationPermission.restricted => '系统限制通知权限',
+      _ => '已关闭',
+    };
+  }
 }
 
 class _SettingsSidePanel extends StatelessWidget {
@@ -455,6 +492,110 @@ class _SettingsSidePanel extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+class _CacheManagementSheet extends ConsumerWidget {
+  const _CacheManagementSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(settingsControllerProvider);
+    final controller = ref.read(settingsControllerProvider.notifier);
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.cleaning_services_outlined,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text('缓存管理', style: Theme.of(context).textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '临时导出缓存',
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _formatBytes(state.cacheSizeBytes),
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '仅清理导出文件与临时缓存，不影响登录、主题、历史记录和已保存文书。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: state.loading
+                        ? null
+                        : () => controller.refreshCacheSize(),
+                    child: const Text('重新计算'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: state.loading
+                        ? null
+                        : () async {
+                            await controller.clearTemporaryCache();
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          },
+                    icon: state.loading
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.delete_sweep_outlined),
+                    label: Text(state.loading ? '处理中...' : '清理缓存'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) {
+      return '0 B';
+    }
+    const units = ['B', 'KB', 'MB', 'GB'];
+    var value = bytes.toDouble();
+    var unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+      value /= 1024;
+      unitIndex += 1;
+    }
+    final precision = unitIndex == 0 || value >= 10 ? 0 : 1;
+    return '${value.toStringAsFixed(precision)} ${units[unitIndex]}';
   }
 }
 

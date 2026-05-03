@@ -140,6 +140,38 @@ class DocumentPreviewPage extends ConsumerWidget {
       }
     }
 
+    Future<void> editDraft() async {
+      if (documentState.saving) {
+        return;
+      }
+
+      try {
+        final result = await ref
+            .read(documentControllerProvider.notifier)
+            .saveDraft(draft);
+        if (!context.mounted) return;
+        final documentId = result.documentId.trim();
+        if (documentId.isEmpty) {
+          messenger
+            ..hideCurrentSnackBar()
+            ..showSnackBar(const SnackBar(content: Text('进入编辑失败，请稍后重试')));
+          return;
+        }
+        context.pushNamed(
+          RouteNames.savedDocumentDetail,
+          pathParameters: {RouteNames.savedDocumentIdParam: documentId},
+          queryParameters: {
+            'mode': result.status == 'completed' ? 'edit' : 'view',
+          },
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        messenger
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('进入编辑失败，请稍后重试')));
+      }
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewport = AppBreakpoints.fromWidth(constraints.maxWidth);
@@ -177,6 +209,7 @@ class DocumentPreviewPage extends ConsumerWidget {
                   secondary: _DocumentSidePanel(
                     title: draft.title,
                     onExport: shareDraft,
+                    onEdit: editDraft,
                     onSave: saveDraft,
                     saving: documentState.saving,
                   ),
@@ -194,6 +227,7 @@ class DocumentPreviewPage extends ConsumerWidget {
                   child: _ActionButtons(
                     isCompact: true,
                     onExport: shareDraft,
+                    onEdit: editDraft,
                     onSave: saveDraft,
                     saving: documentState.saving,
                   ),
@@ -452,12 +486,14 @@ class _DocumentSidePanel extends StatelessWidget {
   const _DocumentSidePanel({
     required this.title,
     required this.onExport,
+    required this.onEdit,
     required this.onSave,
     required this.saving,
   });
 
   final String title;
   final Future<void> Function(BuildContext anchorContext) onExport;
+  final Future<void> Function() onEdit;
   final Future<void> Function() onSave;
   final bool saving;
 
@@ -494,6 +530,7 @@ class _DocumentSidePanel extends StatelessWidget {
             child: _ActionButtons(
               isCompact: false,
               onExport: onExport,
+              onEdit: onEdit,
               onSave: onSave,
               saving: saving,
             ),
@@ -508,12 +545,14 @@ class _ActionButtons extends StatelessWidget {
   const _ActionButtons({
     required this.isCompact,
     required this.onExport,
+    required this.onEdit,
     required this.onSave,
     required this.saving,
   });
 
   final bool isCompact;
   final Future<void> Function(BuildContext anchorContext) onExport;
+  final Future<void> Function() onEdit;
   final Future<void> Function() onSave;
   final bool saving;
 
@@ -538,8 +577,7 @@ class _ActionButtons extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () =>
-                  showFeatureInProgressSnackBar(context, featureLabel: '编辑'),
+              onPressed: saving ? null : onEdit,
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text(
                 '编辑',
@@ -607,8 +645,7 @@ class _ActionButtons extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         OutlinedButton.icon(
-          onPressed: () =>
-              showFeatureInProgressSnackBar(context, featureLabel: '内容编辑'),
+          onPressed: saving ? null : onEdit,
           icon: const Icon(Icons.edit_outlined),
           label: const Text('编辑内容'),
         ),

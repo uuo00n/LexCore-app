@@ -322,6 +322,26 @@ void main() {
     expect(find.text('编辑模式'), findsNothing);
   });
 
+  testWidgets(
+    'document preview edit opens saved document detail in edit mode',
+    (tester) async {
+      final repository = await _buildInMemoryRepository();
+      await pumpDocumentPreviewPage(tester, documentRepository: repository);
+
+      await tester.tap(find.text('编辑'));
+      await tester.pumpAndSettle();
+
+      final fields = tester
+          .widgetList<TextField>(find.byType(TextField))
+          .toList();
+      expect(find.byType(SavedDocumentDetailPage), findsOneWidget);
+      expect(find.text('编辑模式'), findsOneWidget);
+      expect(fields, hasLength(2));
+      expect(fields.first.controller?.text, '劳动仲裁申请书（草稿）');
+      expect(fields.last.controller?.text, contains('# 劳动仲裁申请书（草稿）'));
+    },
+  );
+
   testWidgets('document preview save failure shows snackbar', (tester) async {
     final preferences = await SharedPreferences.getInstance();
     await pumpDocumentPreviewPage(

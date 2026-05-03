@@ -1,13 +1,20 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'package:lexcore/app/di/app_providers.dart';
+import 'package:lexcore/core/export/app_export_service.dart';
+import 'package:lexcore/core/network/dio_provider.dart';
+import 'package:lexcore/core/utils/app_share.dart';
 import 'package:lexcore/features/document/application/document_providers.dart';
 import 'package:lexcore/shared/components/app_surface_card.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
+import 'package:lexcore/shared/widgets/app_export_sheet.dart';
 import 'package:lexcore/shared/widgets/app_page_scaffold.dart';
 
 class SavedDocumentDetailPage extends ConsumerStatefulWidget {
@@ -34,7 +41,11 @@ class _SavedDocumentDetailPageState
   final TextEditingController _markdownController = TextEditingController();
 
   bool _editMode = false;
-  bool _boundDocument = false;
+  bool _hasLocalEdits = false;
+  bool _syncingControllers = false;
+  String? _boundDocumentId;
+  String _boundTitle = '';
+  String _boundMarkdown = '';
   bool _polling = false;
   bool _pollTimedOut = false;
   int _pollAttempts = 0;
@@ -45,6 +56,8 @@ class _SavedDocumentDetailPageState
   void initState() {
     super.initState();
     _editMode = widget.startInEditMode;
+    _titleController.addListener(_handleEditorChanged);
+    _markdownController.addListener(_handleEditorChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref
           .read(documentControllerProvider.notifier)
@@ -54,6 +67,8 @@ class _SavedDocumentDetailPageState
 
   @override
   void dispose() {
+    _titleController.removeListener(_handleEditorChanged);
+    _markdownController.removeListener(_handleEditorChanged);
     _titleController.dispose();
     _markdownController.dispose();
     super.dispose();
@@ -86,17 +101,17 @@ class _SavedDocumentDetailPageState
           _editMode = false;
         });
       }
+      _syncControllersFromDocument(next);
       _syncPollingState(next);
     });
 
     final documentState = ref.watch(documentControllerProvider);
     final document = ref.watch(documentByIdProvider(widget.documentId));
     final canEdit = document?.status == 'completed';
+    final canShare = document?.status == 'completed';
 
-    if (document != null && !_boundDocument) {
-      _titleController.text = document.name;
-      _markdownController.text = document.markdown;
-      _boundDocument = true;
+    if (document != null) {
+      _syncControllersFromDocument(document);
     }
 
     return AppPageScaffold(
@@ -108,11 +123,21 @@ class _SavedDocumentDetailPageState
           icon: const Icon(Icons.refresh),
         ),
         IconButton(
+          onPressed: canShare && !documentState.exportingPdf
+              ? () => _shareDocument(document!)
+              : null,
+          tooltip: canShare ? '分享文档' : '文档生成完成后可分享',
+          icon: const Icon(Icons.ios_share_outlined),
+        ),
+        IconButton(
           onPressed: canEdit
               ? () {
-                  setState(() {
-                    _editMode = !_editMode;
-                  });
+                  final editableDocument = document!;
+                  if (_editMode) {
+                    _cancelEditing(editableDocument);
+                  } else {
+                    _enterEditMode(editableDocument);
+                  }
                 }
               : null,
           tooltip: canEdit ? (_editMode ? '切换查看' : '进入编辑') : '文档生成完成后可编辑',
@@ -202,13 +227,7 @@ class _SavedDocumentDetailPageState
                     titleController: _titleController,
                     markdownController: _markdownController,
                     saving: documentState.saving,
-                    onCancel: () {
-                      _titleController.text = document.name;
-                      _markdownController.text = document.markdown;
-                      setState(() {
-                        _editMode = false;
-                      });
-                    },
+                    onCancel: () => _cancelEditing(document),
                     onSave: () => _saveDocument(document.id),
                   )
                 else
@@ -229,6 +248,150 @@ class _SavedDocumentDetailPageState
       return;
     }
     _syncPollingState(item);
+  }
+
+  Future<void> _shareDocument(DocumentItem document) async {
+    final format = await showAppExportSheet(
+      context: context,
+      title: '分享文档',
+      subtitle: '选择要生成并分享的文件格式',
+    );
+    if (format == null || !mounted) {
+      return;
+    }
+
+    final payload = _buildDocumentExportPayload(document);
+    final progressOverlay = showAppExportProgressOverlay(
+      context: context,
+      label: format.label,
+    );
+    var overlayVisible = true;
+
+    try {
+      final remotePdfUrl = format == ExportFormat.pdf
+          ? await _tryExportRemotePdf(document)
+          : null;
+      if (remotePdfUrl != null) {
+        final directory = await getTemporaryDirectory();
+        final displayName = '${payload.suggestedFileName}.pdf';
+        final filePath = '${directory.path}/$displayName';
+        final outputFile = File(filePath);
+        if (await outputFile.exists()) {
+          await outputFile.delete();
+        }
+        await ref.read(dioProvider).download(remotePdfUrl, filePath);
+
+        if (overlayVisible) {
+          progressOverlay.remove();
+          overlayVisible = false;
+        }
+        if (!mounted) return;
+        await AppShare.shareFile(
+          pageContext: context,
+          filePath: filePath,
+          fileName: displayName,
+          mimeType: ExportFormat.pdf.mimeType,
+          subject: document.name,
+          title: displayName,
+        );
+        return;
+      }
+
+      final artifact = await ref
+          .read(appExportServiceProvider)
+          .export(payload: payload, format: format);
+      if (overlayVisible) {
+        progressOverlay.remove();
+        overlayVisible = false;
+      }
+      if (!mounted) return;
+      await AppShare.shareFile(
+        pageContext: context,
+        filePath: artifact.filePath,
+        fileName: artifact.displayName,
+        mimeType: artifact.mimeType,
+        subject: document.name,
+        title: artifact.displayName,
+      );
+    } catch (_) {
+      if (overlayVisible) {
+        progressOverlay.remove();
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('分享失败，请稍后重试')));
+    }
+  }
+
+  Future<String?> _tryExportRemotePdf(DocumentItem document) async {
+    final pdfResult = await ref
+        .read(documentControllerProvider.notifier)
+        .exportDraftPdf(
+          _buildDraftFromDocument(document),
+          preferredDocumentId: document.id,
+        );
+    if (pdfResult == null || !pdfResult.completed) {
+      return null;
+    }
+    final downloadUrl = pdfResult.downloadUrl?.trim();
+    if (downloadUrl == null || downloadUrl.isEmpty) {
+      return null;
+    }
+    return downloadUrl;
+  }
+
+  void _handleEditorChanged() {
+    if (_syncingControllers) {
+      return;
+    }
+
+    final document = ref.read(documentByIdProvider(widget.documentId));
+    if (document == null) {
+      _hasLocalEdits = true;
+      return;
+    }
+
+    _hasLocalEdits =
+        _titleController.text != document.name ||
+        _markdownController.text != document.markdown;
+  }
+
+  void _syncControllersFromDocument(
+    DocumentItem document, {
+    bool force = false,
+  }) {
+    final documentChanged =
+        _boundDocumentId != document.id ||
+        _boundTitle != document.name ||
+        _boundMarkdown != document.markdown;
+    if (!force && (!documentChanged || _hasLocalEdits)) {
+      return;
+    }
+
+    _syncingControllers = true;
+    _titleController.text = document.name;
+    _markdownController.text = document.markdown;
+    _syncingControllers = false;
+
+    _hasLocalEdits = false;
+    _boundDocumentId = document.id;
+    _boundTitle = document.name;
+    _boundMarkdown = document.markdown;
+  }
+
+  void _enterEditMode(DocumentItem document) {
+    _syncControllersFromDocument(document, force: true);
+    setState(() {
+      _editMode = true;
+    });
+  }
+
+  void _cancelEditing(DocumentItem document) {
+    _syncControllersFromDocument(document, force: true);
+    setState(() {
+      _editMode = false;
+    });
   }
 
   void _syncPollingState(DocumentItem document) {
@@ -316,12 +479,27 @@ class _SavedDocumentDetailPageState
     if (!mounted || updated == null) {
       return;
     }
-    _titleController.text = updated.name;
-    _markdownController.text = updated.markdown;
+    _syncControllersFromDocument(updated, force: true);
     setState(() {
       _editMode = false;
     });
   }
+}
+
+DocumentDraft _buildDraftFromDocument(DocumentItem document) {
+  return DocumentDraft(
+    title: document.name,
+    markdown: document.markdown,
+    docType: document.type,
+  );
+}
+
+ExportPayload _buildDocumentExportPayload(DocumentItem document) {
+  return ExportPayload(
+    title: document.name,
+    markdown: document.markdown,
+    suggestedFileName: document.name,
+  );
 }
 
 class _StatusChip extends StatelessWidget {

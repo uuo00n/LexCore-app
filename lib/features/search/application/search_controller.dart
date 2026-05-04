@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:lexcore/features/history/application/history_controller.dart';
 import 'package:lexcore/features/search/data/repositories/search_repository.dart';
 import 'package:lexcore/features/search/domain/entities/search_state.dart';
 import 'package:lexcore/shared/models/legal_models.dart';
@@ -58,5 +59,11 @@ final articleDetailProvider = FutureProvider<LawArticleDetail>((ref) async {
 
 final articleDetailByItemProvider =
     FutureProvider.family<LawArticleDetail, LawSearchItem?>((ref, item) async {
-      return ref.watch(searchRepositoryProvider).articleDetail(item);
+      final detail = await ref
+          .watch(searchRepositoryProvider)
+          .articleDetail(item);
+      if (item != null && item.articleCode.trim().isNotEmpty) {
+        ref.invalidate(historyAllItemsProvider);
+      }
+      return detail;
     });

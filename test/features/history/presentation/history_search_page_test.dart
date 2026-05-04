@@ -111,7 +111,12 @@ void main() {
         GoRoute(
           path: RouteNames.legalArticlePath,
           name: RouteNames.legalArticle,
-          builder: (context, state) => const Scaffold(body: Text('法规详情占位页')),
+          builder: (context, state) {
+            final item = state.extra is LawSearchItem
+                ? state.extra! as LawSearchItem
+                : null;
+            return Scaffold(body: Text('法规详情:${item?.articleCode}'));
+          },
         ),
       ],
     );
@@ -145,6 +150,6 @@ void main() {
     await tester.tap(find.text('劳动合同法（LAW-001）'));
     await tester.pumpAndSettle();
 
-    expect(find.text('法规详情占位页'), findsOneWidget);
+    expect(find.text('法规详情:LAW-001'), findsOneWidget);
   });
 }
